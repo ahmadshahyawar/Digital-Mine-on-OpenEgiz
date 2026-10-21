@@ -1,0 +1,15 @@
+.detail .back { margin-bottom: 4px; background: transparent; padding: 7px 0; border: 0; color: #65e6a9; }
+.fleet-list { display: grid; gap: 6px; }
+.fleet-list button { display: grid; grid-template-columns: 8px 1fr auto; align-items: center; gap: 9px; margin: 0; padding: 9px; background: #0e211b; }
+.fleet-list button > i { width: 7px; height: 7px; border-radius: 50%; background: #39e58c; box-shadow: 0 0 8px #39e58c; }
+.fleet-list button > i.breakdown { background: #ff554d; box-shadow: 0 0 8px #ff554d; }
+.fleet-list button span { display: block; min-width: 0; }
+.fleet-list button b, .fleet-list button small { display: block; }
+.fleet-list button b { font-size: 11px; color: #e9f2ed; }
+.fleet-list button small { margin-top: 2px; color: #789087; font-size: 9px; text-transform: capitalize; }
+.fleet-list button em { color: #65e6a9; font-size: 10px; font-style: normal; }
+.platform-card { margin-top: 14px; padding: 11px; border: 1px solid #1c392f; border-radius: 7px; background: #081510; }
+.platform-card span, .platform-card b, .platform-card small { display: block; }
+.platform-card span { color: #6c8379; font-size: 8px; letter-spacing: .14em; }
+.platform-card b { margin: 4px 0; color: #65e6a9; font-size: 12px; }
+.platform-card small { color: #789087; font-size: 9px; }

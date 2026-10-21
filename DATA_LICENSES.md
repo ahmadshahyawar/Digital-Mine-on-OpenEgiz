@@ -18,9 +18,23 @@ This file records every external dataset, code reference, model, texture, and vi
 
 The competition organizer explicitly lists this dataset as a recommended MIT-licensed source for open-pit haulage.
 
+## Included Visual Assets
+
+### SELENE-ISRU — optimized equipment models
+
+- Source repository: <https://github.com/dogum/selene-isru>
+- Pinned source commit: `2dfe2000321cce7f10292f3671df655b3d2f7148`
+- Upstream files: `packages/app/src/assets/models/excavator.glb` and `packages/app/src/assets/models/hauler.glb`
+- Local files: `ademix/frontend/public/models/excavator.glb` and `ademix/frontend/public/models/hauler.glb`
+- Local SHA-256: excavator `2CE9DAA0CC776DA8116F9C34C0BD3847381535367D50C4CC1DF8C7B6C2D8BCD9`; hauler `F3B4D96B5C2E69780FAA4CBF42909451A3C9D751B5E108DCFCBF1DDB55AD60BB`.
+- License: Creative Commons CC0 1.0 Universal, as recorded by upstream in `assets/ASSET_LICENSES.md` and embedded model metadata.
+- Authoring: original procedural geometry from the SELENE-ISRU project; no downloaded textures or paid assets.
+- Optimization evidence: upstream reports 13,132 triangles / 240,868 bytes for the excavator and 11,284 triangles / 206,784 bytes for the hauler.
+- Use: the excavator represents the loading unit; six cloned hauler scenes represent the live Ditto truck twins. Colors/status markers remain driven by runtime twin state.
+
 ## Approved Visual Asset Sources
 
-Assets are not yet committed from these sources. Before an asset is added, record its exact name, creator, source URL, downloaded variant, local path, size, and checksum here.
+Before another asset is added, record its exact name, creator, source URL, downloaded variant, local path, size, and checksum here.
 
 ### Kenney
 
