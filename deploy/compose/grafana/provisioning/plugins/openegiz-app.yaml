@@ -1,0 +1,18 @@
+# The OpenEgiz app does not call Ditto or the extended API from the browser:
+# it calls Grafana's plugin proxy (`routes` in its plugin.json), and the Grafana
+# server forwards to these URLs from inside its container. So they must be
+# compose service names; `localhost` here would be the Grafana container.
+apiVersion: 1
+apps:
+  - type: ertis-opentwins-app
+    org_id: 1
+    jsonData:
+      dittoURL: http://ditto-nginx:80
+      extendedURL: http://extended-api:8080
+      dittoUsername: ditto
+      dittoDevopsUsername: devops
+    secureJsonData:
+      dittoPassword: $DITTO_PASSWORD
+      dittoBasicAuth: $DITTO_BASIC_AUTH
+      dittoDevopsPassword: $DITTO_DEVOPS_PASSWORD
+      dittoDevopsBasicAuth: $DITTO_DEVOPS_BASIC_AUTH

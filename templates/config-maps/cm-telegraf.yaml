@@ -1,0 +1,126 @@
+{{- if and .Values.telegraf.enabled }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "opentwins-telegraf-real-config"
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+data:
+  telegraf.conf: |+
+    [agent]
+      collection_jitter = "0s"
+      debug = true
+      flush_interval = "10s"
+      flush_jitter = "0s"
+      hostname = "$HOSTNAME"
+      interval = "10s"
+      logfile = ""
+      metric_batch_size = 500000
+      metric_buffer_limit = 1000000
+      omit_hostname = false
+      precision = ""
+      quiet = false
+      round_interval = true
+
+{{- if and .Values.influxdb2.enabled .Values.connections.telegraf.target.influxdb2.enabled }}
+    [[outputs.influxdb_v2]]    
+      bucket = "{{ .Values.influxdb2.adminUser.bucket }}"
+      organization = "{{ .Values.influxdb2.adminUser.organization }}"
+      timeout = "120s"
+      token = "{{ .Values.influxdb2.adminUser.token }}"
+      urls = [
+        "http://{{ include "opentwins.influxdb2.fullname" . }}:80"
+      ]
+{{- end }}
+
+{{- if and .Values.externalInfluxdb2 .Values.connections.telegraf.target.influxdb2.enabled }}
+  {{- range $v := .Values.externalInfluxdb2 }}
+    [[outputs.influxdb_v2]]    
+      bucket = "{{ $v.bucket }}"
+      organization = "{{ $v.organization }}"
+      timeout = "120s"
+      token = "{{ $v.token }}"
+      urls = [
+        "{{ $v.url }}"
+      ]
+  {{- end }}
+{{- end }}
+
+{{- if and .Values.mosquitto.enabled .Values.connections.telegraf.source.mosquitto.enabled }}
+    [[inputs.mqtt_consumer]]   
+      qos = 1
+      servers = [
+        "tcp://{{ include "opentwins.mosquitto.fullname" . }}:1883"
+      ]
+      topics = [
+        "{{ .Values.connections.ditto.target.mosquitto.address }}"
+      ]
+      data_format = "json_v2"
+      [[inputs.mqtt_consumer.json_v2]]
+        [[inputs.mqtt_consumer.json_v2.tag]]
+          path = "extra.attributes._parents"
+          rename = "parent"
+          optional = true
+        [[inputs.mqtt_consumer.json_v2.tag]]
+          path = "extra.thingId"
+          rename = "thingId"
+        [[inputs.mqtt_consumer.json_v2.tag]]
+          path = "headers.ditto-originator"
+          rename = "originator"
+          optional = true
+        [[inputs.mqtt_consumer.json_v2.tag]]
+          path = "headers.correlation-id"
+          rename = "correlationId"
+          optional = true
+        [[inputs.mqtt_consumer.json_v2.tag]]
+          path = "extra.features.idSimulationRun.properties.value"
+          rename = "idSimulationRun"
+          optional = true
+        [[inputs.mqtt_consumer.json_v2.object]]
+          path = "{value}"
+          optional = true
+          excluded_keys = ["value_thingId", "value_policyId", "value_attributes", "value_features"]
+        [[inputs.mqtt_consumer.json_v2.object]]
+          path = '{"value":value.features}'
+          optional = true
+
+{{- if .Values.bakery.eventLog.enabled }}
+    # ---------------------------------------------------------------------
+    # Bakery process event log (OpenEgiz course addition).
+    #
+    # This is a SECOND, independent mqtt_consumer. It does NOT go through
+    # Ditto: a batch event ("MixingStarted for batch-0007") is a statement
+    # about the process, not about the state of a device, so there is no twin
+    # feature to modify. The simulator publishes it straight to mosquitto and
+    # Telegraf lands it in its own measurement.
+    #
+    # Plain `json` parser rather than `json_v2`: the payload is one flat
+    # object, and `tag_keys` + `json_string_fields` express exactly what an
+    # event log needs (case / activity / resource as tags, timestamp as a
+    # field). json_v2 would only add ceremony here.
+    #
+    # `ts` is the SIMULATED process time and is kept as a string field. The
+    # InfluxDB point time is ingestion time — with --speedup the two differ on
+    # purpose, and pm4py must read `ts`.
+    # ---------------------------------------------------------------------
+    [[inputs.mqtt_consumer]]
+      qos = 1
+      servers = [
+        "tcp://{{ include "opentwins.mosquitto.fullname" . }}:1883"
+      ]
+      topics = [
+        "{{ .Values.bakery.eventLog.topic }}"
+      ]
+      name_override = "{{ .Values.bakery.eventLog.measurement }}"
+      topic_tag = ""
+      data_format = "json"
+      tag_keys = ["case_id", "activity", "station", "mode"]
+      json_string_fields = ["ts", "run_id"]
+{{- end }}
+{{- end }}
+
+{{- end }}
