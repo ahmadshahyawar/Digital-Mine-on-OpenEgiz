@@ -13,6 +13,7 @@ CAPACITY_T = 77.0
 LOAD_SECONDS = 360.0
 DUMP_SECONDS = 60.0
 BASE_CRUSHER_TPH = 900.0
+INITIAL_ROM_T = 250.0
 
 
 @dataclass
@@ -35,7 +36,8 @@ class MineEngine:
         self.rng = random.Random(seed)
         self.sim_time_s = 0.0
         self.production_t = 0.0
-        self.stockpile_t = 0.0
+        self.delivered_t = 0.0
+        self.rom_inventory_t = INITIAL_ROM_T
         self.scenario = "baseline"
         self.scenario_started_s = 0.0
         self.trucks = [Truck(f"truck-{i:02d}", (i - 1) / 6, state="hauling") for i in range(1, 7)]
@@ -53,10 +55,16 @@ class MineEngine:
                 self.trucks[0].state = "hauling" if self.trucks[0].payload_t else "returning"
 
     def step(self, dt: float):
+        if dt <= 0:
+            raise ValueError("step duration must be positive")
         with self.lock:
             self.sim_time_s += dt
             for truck in self.trucks:
                 self._step_truck(truck, dt)
+            capacity_tph = BASE_CRUSHER_TPH * (0.55 if self.scenario == "crusher_slowdown" else 1.0)
+            processed = min(self.rom_inventory_t, capacity_tph * dt / 3600.0)
+            self.rom_inventory_t -= processed
+            self.production_t += processed
 
     def _step_truck(self, truck: Truck, dt: float):
         if self.scenario == "truck_breakdown" and truck.name == "truck-01":
@@ -80,11 +88,9 @@ class MineEngine:
                 truck.state = "hauling"
                 truck.cycle_started_s = self.sim_time_s
             else:
-                accepted = truck.payload_t
-                if self.scenario == "crusher_slowdown":
-                    accepted *= 0.55
-                self.production_t += accepted
-                self.stockpile_t += accepted
+                delivered = truck.payload_t
+                self.delivered_t += delivered
+                self.rom_inventory_t += delivered
                 truck.payload_t = 0.0
                 truck.direction = -1
                 truck.state = "returning"
@@ -119,6 +125,7 @@ class MineEngine:
             throughput = self.production_t / window_h
             crusher_capacity = BASE_CRUSHER_TPH * (0.55 if self.scenario == "crusher_slowdown" else 1.0)
             impact = {"baseline": 0, "truck_breakdown": -17, "road_closure": -28, "crusher_slowdown": -45}[self.scenario]
+            projected_throughput = BASE_CRUSHER_TPH * (1 + impact / 100)
             things = {
                 "mine-01": {
                     "production_t": self.metric(self.production_t, "t"),
@@ -137,7 +144,8 @@ class MineEngine:
                     "state": self.metric("constrained" if self.scenario == "crusher_slowdown" else "operating"),
                     "capacity_tph": self.metric(crusher_capacity, "t/h"),
                     "queue_length": self.metric(sum(t.state == "dumping" for t in self.trucks)),
-                    "stockpile_t": self.metric(self.stockpile_t, "t"),
+                    "rom_inventory_t": self.metric(self.rom_inventory_t, "t"),
+                    "processed_total_t": self.metric(self.production_t, "t"),
                     "position_x": self.metric(27), "position_z": self.metric(18),
                 },
                 "road-main": {
@@ -149,6 +157,8 @@ class MineEngine:
                     "active": self.metric(self.scenario),
                     "description": self.metric(self.scenario.replace("_", " ").title()),
                     "impact_pct": self.metric(impact, "%"),
+                    "baseline_throughput_tph": self.metric(BASE_CRUSHER_TPH, "t/h"),
+                    "projected_throughput_tph": self.metric(projected_throughput, "t/h"),
                 },
             }
             for truck in self.trucks:
@@ -157,7 +167,11 @@ class MineEngine:
                     "state": self.metric(truck.state),
                     "payload_t": self.metric(truck.payload_t, "t"),
                     "fuel_pct": self.metric(truck.fuel_pct, "%"),
-                    "speed_kmh": self.metric(0 if truck.state not in {"hauling", "returning"} else 25, "km/h"),
+                    "speed_kmh": self.metric(
+                        0 if truck.state not in {"hauling", "returning"}
+                        else 25 * (0.62 if self.scenario == "road_closure" else 1.0),
+                        "km/h",
+                    ),
                     "position_x": self.metric(x), "position_z": self.metric(z),
                     "heading": self.metric(1 if truck.direction == 1 else -1),
                     "trips_total": self.metric(truck.trips),

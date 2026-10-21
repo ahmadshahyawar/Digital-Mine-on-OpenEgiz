@@ -19,7 +19,7 @@
   "org.openegiz.ademix:crusher-01": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Primary Crusher CR-01", "team": "Ademix", "kind": "crusher", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "rated_tph": 900},
-    "features": {"state": {"properties": {"value": "idle"}}, "capacity_tph": {"properties": {"value": 900, "unit": "t/h"}}, "queue_length": {"properties": {"value": 0}}, "stockpile_t": {"properties": {"value": 0, "unit": "t"}}, "position_x": {"properties": {"value": 27}}, "position_z": {"properties": {"value": 18}}}
+    "features": {"state": {"properties": {"value": "idle"}}, "capacity_tph": {"properties": {"value": 900, "unit": "t/h"}}, "queue_length": {"properties": {"value": 0}}, "rom_inventory_t": {"properties": {"value": 250, "unit": "t"}}, "processed_total_t": {"properties": {"value": 0, "unit": "t"}}, "position_x": {"properties": {"value": 27}}, "position_z": {"properties": {"value": 18}}}
   },
   "org.openegiz.ademix:road-main": {
     "policyId": "default:basic_policy",
@@ -29,7 +29,7 @@
   "org.openegiz.ademix:scenario-controller": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Scenario Controller", "team": "Ademix", "kind": "scenario", "_isType": false, "_parents": "org.openegiz.ademix:mine-01"},
-    "features": {"active": {"properties": {"value": "baseline"}}, "description": {"properties": {"value": "Normal operations"}}, "impact_pct": {"properties": {"value": 0, "unit": "%"}}}
+    "features": {"active": {"properties": {"value": "baseline"}}, "description": {"properties": {"value": "Normal operations"}}, "impact_pct": {"properties": {"value": 0, "unit": "%"}}, "baseline_throughput_tph": {"properties": {"value": 900, "unit": "t/h"}}, "projected_throughput_tph": {"properties": {"value": 900, "unit": "t/h"}}}
   },
   "org.openegiz.ademix:truck-01": {"policyId": "default:basic_policy", "attributes": {"name": "Haul Truck HT-01", "team": "Ademix", "kind": "haul-truck", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "capacity_t": 77}, "features": {}},
   "org.openegiz.ademix:truck-02": {"policyId": "default:basic_policy", "attributes": {"name": "Haul Truck HT-02", "team": "Ademix", "kind": "haul-truck", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "capacity_t": 77}, "features": {}},

@@ -129,6 +129,8 @@ A strong submission should ideally provide:
 - The initial React/Python foundation, OpenMines calibration file, and Docker Compose overlay are present on local branch `codex/ademix`.
 - `REUSE_CATALOG.md` records the license-checked reuse strategy. The first selected visual source is the CC0 Ore Processing and Haulage Plant pack; exact models are not yet committed.
 - The simulator and frontend Docker images both build successfully. The frontend now has a dependency lock file and uses `npm ci` for reproducible builds.
+- The deterministic model now conserves ore through a ROM inventory, processes it at scenario-dependent crusher capacity, and has eight passing unit tests.
+- The root `README.md` now contains literal judge startup, verification, reset, Windows, architecture, and repository instructions. `SUBMISSION.md` documents every current module/scenario, data assumptions, verification status, and limitations.
 
 ## Immediate Decisions and Tasks
 
@@ -139,8 +141,8 @@ A strong submission should ideally provide:
 - [x] Select an initial facility and concept: 3D open-pit haulage and crusher optimization.
 - [x] Define the initial user story: help a dispatcher respond to disruption and improve production flow.
 - [x] Select React Three Fiber instead of Unity for AI-first, code-driven implementation.
-- [ ] Define the simulation assumptions, inputs, outputs, and validation method.
-- [ ] Select the what-if scenarios.
+- [x] Define the simulation assumptions, inputs, outputs, and validation method.
+- [x] Select the what-if scenarios.
 - [ ] Create an implementation plan split between the two team members.
 - [ ] Define the final demo, screenshots/video, documentation, and presentation deliverables.
 - [ ] Confirm submission mechanics and deadline timezone.
@@ -185,7 +187,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 | Owner | Task | Branch | Status | Notes |
 | --- | --- | --- | --- | --- |
-| Codex | Integrate and validate the Ademix foundation on the official template | `codex/ademix` | In progress | Next: select/download minimal CC0 models, finish image builds, then run the complete OpenEgiz data path |
+| Codex | Integrate and validate the Ademix foundation on the official template | `codex/ademix` | In progress | Source and local tests progressing; complete OpenEgiz pull is blocked until the Windows C: drive has substantially more free space |
 
 ## Completed Work Log
 
@@ -200,6 +202,9 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Created a license-first reuse catalog covering mining simulation, CC0 mining/industrial assets, 3D performance tooling, charts, and rejected sources | Sources classified as Adopt, Shortlist, Reference, or Reject in `REUSE_CATALOG.md` |
 | 2026-10-22 | Codex | Filled the organizer's required Concept and Team sections from the team's agreed direction and added team copyright | `SUBMISSION.md` and `LICENSE` updated locally |
 | 2026-10-22 | Codex | Built the React/Three.js production image and locked frontend dependencies | `docker build -t ademix/mine-ui:test ademix/frontend` passed; Vite produced the production bundle |
+| 2026-10-22 | Codex | Corrected crusher mass flow, added ROM inventory and visible baseline/scenario projections, and added deterministic tests | Eight `unittest` checks pass; Python compilation and JSON parsing pass |
+| 2026-10-22 | Codex | Replaced the organizer placeholder README and completed the current submission narrative | Local frontend `npm ci && npm run build` passed; README instructions and SUBMISSION claims reviewed against implemented code |
+| 2026-10-22 | Codex | Attempted the first full OpenEgiz + Ademix startup and recovered Docker after its WSL2 backend timed out | Compose configuration passed; pull could not finish because C: reached zero free space, so no end-to-end success is claimed |
 
 ## Decisions
 
@@ -223,12 +228,14 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
 - The initial frontend JavaScript bundle is about 990 kB before gzip (274 kB gzip); it builds successfully but should be split or reduced after the full data path works.
 - The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
+- The development computer's C: drive has effectively no free space. The full OpenEgiz image set cannot be downloaded and Docker cleanup cannot complete reliably at that capacity. A clean end-to-end run requires freeing several gigabytes on C: or moving Docker's disk image to a larger drive; this is a local validation blocker, not a judge-environment dependency.
+- Local ports 1883 and 8090 were already occupied during preflight. After storage is resolved, identify the owners or use non-default development ports in the ignored `.env`; keep judge defaults unchanged.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 
 ## Next Recommended Action
 
-Download only the selected CC0 plant models, record exact provenance/checksums, optimize them for software WebGL, then complete the Docker image builds and run the full MQTT → Ditto → UI smoke test.
+Free substantial C: storage or move Docker Desktop's data disk to a larger drive, then complete the full MQTT → Ditto → UI smoke test. Meanwhile, continue source-level UI, simulation, documentation, and static validation without adding large assets.
 
 ## Handoff Template
 

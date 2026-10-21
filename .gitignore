@@ -19,6 +19,12 @@ examples/ar-lamp/https_server.log
 deploy/compose/.env
 # Set by `make example-mine`: compose commands then include the mine overlay
 deploy/compose/.example-mine
+deploy/compose/.ademix
+
+# Ademix frontend build output and local dependencies
+ademix/frontend/node_modules/
+ademix/frontend/dist/
+ademix/frontend/*.tsbuildinfo
 
 __pycache__/
 *.pyc

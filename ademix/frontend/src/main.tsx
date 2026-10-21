@@ -57,6 +57,7 @@ function App() {
   React.useEffect(() => { refresh(); const timer = window.setInterval(refresh, 2000); return () => window.clearInterval(timer) }, [refresh])
   const mine = data.twins.find(t => t.attributes?.kind === 'mine')
   const selected = data.twins.find(t => t.thingId === selectedId)
+  const scenarioTwin = data.twins.find(t => t.attributes?.kind === 'scenario')
   const scenario = String(value(mine, 'active_scenario', 'baseline'))
   const setScenario = async (next: string) => { await fetch('/api/scenario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scenario: next }) }); await refresh() }
 
@@ -72,6 +73,7 @@ function App() {
       <aside><h2>What-if control</h2><p>Change an operating condition and observe the effect across connected twins.</p>{[
         ['baseline','Normal operations'], ['truck_breakdown','Truck HT-01 breakdown'], ['road_closure','Main road restriction'], ['crusher_slowdown','Crusher capacity −45%']
       ].map(([id,label]) => <button key={id} className={scenario === id ? 'active' : ''} onClick={() => setScenario(id)}>{label}<span>→</span></button>)}
+      <div className="comparison"><span>Projected throughput</span><b>{Number(value(scenarioTwin, 'projected_throughput_tph', 900)).toFixed(0)} <small>t/h</small></b><em>{Number(value(scenarioTwin, 'impact_pct', 0)).toFixed(0)}% vs 900 t/h baseline</em><div><i style={{width: `${Math.max(12, Number(value(scenarioTwin, 'projected_throughput_tph', 900)) / 9)}%`}}/></div></div>
       <div className="source"><b>Trusted state</b><span>Simulator → MQTT → Ditto → 3D</span></div></aside>
       <div className="viewport"><Canvas camera={{ position: [52, 44, 58], fov: 43 }} dpr={[0.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}><MineScene twins={data.twins} selectedId={selectedId} setSelectedId={setSelectedId}/></Canvas><div className="view-label">INTERACTIVE 3D MINE · DRAG TO ORBIT · SCROLL TO ZOOM</div>{error && <div className="error">Waiting for OpenEgiz state…</div>}</div>
       <aside className="detail"><h2>{selected?.attributes?.name || 'Select equipment'}</h2>{selected ? Object.entries(selected.features || {}).slice(0, 7).map(([key,feature]) => <div className="reading" key={key}><span>{key.replace(/_/g,' ')}</span><b>{String(feature.properties?.value ?? '—')} <small>{feature.properties?.unit}</small></b></div>) : <p>Click a truck in the 3D scene to inspect its live twin state.</p>}</aside>

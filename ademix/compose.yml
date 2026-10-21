@@ -26,6 +26,12 @@ services:
       SIM_SPEEDUP: ${SIM_SPEEDUP:-20}
     ports:
       - "${OPENEGIZ_BIND:-127.0.0.1}:${ADEMIX_API_PORT:-8088}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on:
       ademix-setup:
         condition: service_completed_successfully
@@ -37,6 +43,13 @@ services:
     mem_limit: 96m
     ports:
       - "${OPENEGIZ_BIND:-127.0.0.1}:${ADEMIX_UI_PORT:-4173}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
     depends_on:
-      - ademix-simulator
+      ademix-simulator:
+        condition: service_healthy
 
