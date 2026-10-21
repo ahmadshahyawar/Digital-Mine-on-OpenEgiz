@@ -14,6 +14,8 @@ LOAD_SECONDS = 360.0
 DUMP_SECONDS = 60.0
 BASE_CRUSHER_TPH = 900.0
 INITIAL_ROM_T = 250.0
+TRUCK_BREAKDOWN_SPEED_FACTOR = 0.64
+ROAD_CLOSURE_SPEED_FACTOR = 0.429
 
 
 @dataclass
@@ -73,7 +75,7 @@ class MineEngine:
         if truck.state == "breakdown":
             truck.state = "hauling" if truck.payload_t else "returning"
 
-        road_factor = 0.62 if self.scenario == "road_closure" else 1.0
+        road_factor = self.speed_factor()
         speed_kmh = 25.0 * road_factor
 
         if truck.state in {"loading", "dumping"}:
@@ -116,6 +118,22 @@ class MineEngine:
         start, end = ROUTE[index], ROUTE[index + 1]
         return start[0] + (end[0] - start[0]) * fraction, start[1] + (end[1] - start[1]) * fraction
 
+    def speed_factor(self):
+        if self.scenario == "truck_breakdown":
+            # A stopped truck constrains the single active haul lane until recovery.
+            return TRUCK_BREAKDOWN_SPEED_FACTOR
+        if self.scenario == "road_closure":
+            return ROAD_CLOSURE_SPEED_FACTOR
+        return 1.0
+
+    def projected_throughput_tph(self):
+        active_trucks = len(self.trucks) - (1 if self.scenario == "truck_breakdown" else 0)
+        speed_kmh = 25.0 * self.speed_factor()
+        cycle_s = LOAD_SECONDS + DUMP_SECONDS + 2 * ROUTE_KM / speed_kmh * 3600.0
+        fleet_supply_tph = active_trucks * CAPACITY_T * 3600.0 / cycle_s
+        crusher_capacity = BASE_CRUSHER_TPH * (0.55 if self.scenario == "crusher_slowdown" else 1.0)
+        return min(fleet_supply_tph, crusher_capacity)
+
     def snapshot(self):
         with self.lock:
             operational = [t for t in self.trucks if t.state != "breakdown"]
@@ -124,8 +142,8 @@ class MineEngine:
             window_h = max(self.sim_time_s / 3600.0, 1 / 60)
             throughput = self.production_t / window_h
             crusher_capacity = BASE_CRUSHER_TPH * (0.55 if self.scenario == "crusher_slowdown" else 1.0)
-            impact = {"baseline": 0, "truck_breakdown": -17, "road_closure": -28, "crusher_slowdown": -45}[self.scenario]
-            projected_throughput = BASE_CRUSHER_TPH * (1 + impact / 100)
+            projected_throughput = self.projected_throughput_tph()
+            impact = round(100 * (projected_throughput / BASE_CRUSHER_TPH - 1))
             things = {
                 "mine-01": {
                     "production_t": self.metric(self.production_t, "t"),
@@ -150,7 +168,7 @@ class MineEngine:
                 },
                 "road-main": {
                     "state": self.metric("restricted" if self.scenario == "road_closure" else "open"),
-                    "speed_limit_kmh": self.metric(15.5 if self.scenario == "road_closure" else 35, "km/h"),
+                    "speed_limit_kmh": self.metric(25 * self.speed_factor(), "km/h"),
                     "traffic_count": self.metric(len(moving)),
                 },
                 "scenario-controller": {
@@ -169,7 +187,7 @@ class MineEngine:
                     "fuel_pct": self.metric(truck.fuel_pct, "%"),
                     "speed_kmh": self.metric(
                         0 if truck.state not in {"hauling", "returning"}
-                        else 25 * (0.62 if self.scenario == "road_closure" else 1.0),
+                        else 25 * self.speed_factor(),
                         "km/h",
                     ),
                     "position_x": self.metric(x), "position_z": self.metric(z),

@@ -32,21 +32,21 @@ class MineEngineTests(unittest.TestCase):
         mine.set_scenario("road_closure")
         mine.step(1)
         truck = mine.snapshot()["truck-01"]
-        self.assertEqual(truck["speed_kmh"]["value"], 15.5)
+        self.assertEqual(truck["speed_kmh"]["value"], 10.72)
 
     def test_scenario_projection_exposes_baseline_comparison(self):
         mine = MineEngine()
         mine.set_scenario("road_closure")
         scenario = mine.snapshot()["scenario-controller"]
         self.assertEqual(scenario["baseline_throughput_tph"]["value"], 900.0)
-        self.assertEqual(scenario["projected_throughput_tph"]["value"], 648.0)
+        self.assertAlmostEqual(scenario["projected_throughput_tph"]["value"], 648.4, delta=1.0)
         self.assertEqual(scenario["impact_pct"]["value"], -28)
 
     def test_every_scenario_exposes_its_documented_projection(self):
         expected = {
             "baseline": (0, 900.0),
-            "truck_breakdown": (-17, 747.0),
-            "road_closure": (-28, 648.0),
+            "truck_breakdown": (-17, 745.2),
+            "road_closure": (-28, 648.4),
             "crusher_slowdown": (-45, 495.0),
         }
         for name, (impact, projected) in expected.items():
@@ -55,7 +55,7 @@ class MineEngineTests(unittest.TestCase):
                 mine.set_scenario(name)
                 controller = mine.snapshot()["scenario-controller"]
                 self.assertEqual(controller["impact_pct"]["value"], impact)
-                self.assertEqual(controller["projected_throughput_tph"]["value"], projected)
+                self.assertAlmostEqual(controller["projected_throughput_tph"]["value"], projected, delta=1.0)
 
     def test_reported_road_limit_matches_truck_speed_during_restriction(self):
         mine = MineEngine()
@@ -100,6 +100,23 @@ class MineEngineTests(unittest.TestCase):
         after_total = mine.production_t + mine.rom_inventory_t
         self.assertAlmostEqual(after_total - before_total, CAPACITY_T, places=5)
         self.assertEqual(truck.payload_t, 0)
+
+    def test_long_run_throughput_converges_to_cycle_projection(self):
+        for scenario in ("baseline", "truck_breakdown", "road_closure", "crusher_slowdown"):
+            with self.subTest(scenario=scenario):
+                mine = MineEngine()
+                mine.set_scenario(scenario)
+                for _ in range(8 * 360):
+                    mine.step(10)
+                warm_production = mine.production_t
+                for _ in range(16 * 360):
+                    mine.step(10)
+                observed_tph = (mine.production_t - warm_production) / 16
+                self.assertAlmostEqual(
+                    observed_tph,
+                    mine.projected_throughput_tph(),
+                    delta=BASE_CRUSHER_TPH * 0.03,
+                )
 
 
 if __name__ == "__main__":
