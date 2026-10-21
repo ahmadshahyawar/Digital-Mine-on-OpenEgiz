@@ -2,7 +2,7 @@
 
 services:
   ademix-setup:
-    build: ./ademix/simulator
+    build: ../../ademix/simulator
     image: ademix/mine-simulator:local
     restart: "no"
     command: ["python", "setup_twins.py"]
@@ -37,7 +37,7 @@ services:
         condition: service_completed_successfully
 
   ademix-ui:
-    build: ./ademix/frontend
+    build: ../../ademix/frontend
     image: ademix/mine-ui:local
     restart: unless-stopped
     mem_limit: 96m

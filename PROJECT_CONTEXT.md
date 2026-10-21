@@ -129,8 +129,11 @@ A strong submission should ideally provide:
 - The initial React/Python foundation, OpenMines calibration file, and Docker Compose overlay are present on local branch `codex/ademix`.
 - `REUSE_CATALOG.md` records the license-checked reuse strategy. The first selected visual source is the CC0 Ore Processing and Haulage Plant pack; exact models are not yet committed.
 - The simulator and frontend Docker images both build successfully. The frontend now has a dependency lock file and uses `npm ci` for reproducible builds.
-- The deterministic model now conserves ore through a ROM inventory, processes it at scenario-dependent crusher capacity, and has eight passing unit tests.
+- The deterministic model conserves ore through a ROM inventory, processes it at scenario-dependent crusher capacity, and has eleven passing unit tests.
 - The root `README.md` now contains literal judge startup, verification, reset, Windows, architecture, and repository instructions. `SUBMISSION.md` documents every current module/scenario, data assumptions, verification status, and limitations.
+- The complete OpenEgiz + Ademix Compose deployment now starts successfully on Windows. Eleven twins flow through MQTT into Eclipse Ditto, the API reports `source: eclipse-ditto`, and the 3D UI is healthy at `http://localhost:4173`.
+- All four live scenario controls were exercised end to end. Ditto reported the expected breakdown, restricted-road, reduced-crusher, and reset states with projected throughput of 745.16, 647.6, 495, and 900 t/h respectively.
+- Chrome rendered the live 3D command center successfully in software/headless mode. The first runtime review confirms functionality but also shows that terrain detail, route separation, and equipment legibility need visual refinement.
 
 ## Immediate Decisions and Tasks
 
@@ -187,7 +190,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 | Owner | Task | Branch | Status | Notes |
 | --- | --- | --- | --- | --- |
-| Codex | Integrate and validate the Ademix foundation on the official template | `codex/ademix` | In progress | Source and local tests progressing; complete OpenEgiz pull is blocked until the Windows C: drive has substantially more free space |
+| Codex | Refine the live 3D command center and complete release evidence | `codex/ademix` | In progress | End-to-end OpenEgiz integration passes; improve visual quality, performance evidence, and final documentation next |
 
 ## Completed Work Log
 
@@ -208,6 +211,9 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Created the required nine-slide judge presentation plus an editable source deck | PPTX passed package, layout, font-policy, chart, and first-party import validation; the nine-page PDF was rendered with Poppler and every page was visually inspected |
 | 2026-10-22 | Codex | Tightened scenario consistency and interface failure handling | Ten deterministic simulator tests pass; road restriction twin state matches truck speed; UI distinguishes connection state and prevents duplicate scenario requests |
 | 2026-10-22 | Codex | Replaced fixed scenario percentages with a transparent steady-state fleet/cycle calculation | Eleven tests pass, including a 24-hour convergence check; projected throughput is approximately 900, 745, 648, and 495 t/h |
+| 2026-10-22 | Codex | Completed the first full OpenEgiz + Ademix integration run and repaired cross-platform Compose paths/script endings | All required services healthy; setup jobs exited successfully; API returned eleven twins from Eclipse Ditto; UI returned HTTP 200 |
+| 2026-10-22 | Codex | Exercised every scenario through the running HTTP control and verified propagated Ditto state | Breakdown stopped HT-01; road restriction changed road state; crusher slowdown reduced capacity; reset restored baseline |
+| 2026-10-22 | Codex | Captured and reviewed the first real Chrome render of the 3D interface | WebGL scene, live KPI state, controls, and Ditto connection badge rendered under headless/software Chrome |
 
 ## Decisions
 
@@ -231,15 +237,15 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
 - The initial frontend JavaScript bundle is about 990 kB before gzip (274 kB gzip); it builds successfully but should be split or reduced after the full data path works.
 - The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
-- The development computer's C: drive has effectively no free space. The full OpenEgiz image set cannot be downloaded and Docker cleanup cannot complete reliably at that capacity. A clean end-to-end run requires freeing several gigabytes on C: or moving Docker's disk image to a larger drive; this is a local validation blocker, not a judge-environment dependency.
 - The current presentation uses a clearly labeled conceptual interface composition. Replace it with a real application screenshot only after the clean end-to-end stack passes; do not present the concept graphic as runtime evidence.
-- Local ports 1883 and 8090 were already occupied during preflight. After storage is resolved, identify the owners or use non-default development ports in the ignored `.env`; keep judge defaults unchanged.
+- Local MQTT port 1883 was unavailable during Windows validation, so the host-only development override `MQTT_PORT=1884` was used. Container-to-container traffic and judge defaults remain unchanged.
+- The first live render is operational but visually sparse: trucks overlap on the single route and the procedural pit lacks enough benches and landmarks for a competition-grade overview.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 
 ## Next Recommended Action
 
-Free substantial C: storage or move Docker Desktop's data disk to a larger drive, then complete the full MQTT → Ditto → UI smoke test and replace the presentation's conceptual interface composition with verified runtime evidence. Meanwhile, continue source-level UI, simulation, documentation, and static validation without adding large assets.
+Improve the live 3D pit, route, equipment separation, selection feedback, and scenario visibility while retaining software-WebGL performance. Then capture scenario evidence, run release checks from the documented commands, and replace the presentation's conceptual interface composition with verified runtime evidence.
 
 ## Handoff Template
 

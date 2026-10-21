@@ -59,11 +59,11 @@ Our current concept: a 3D open-pit haulage and crusher optimization twin for a m
 
 ## OpenEgiz Architecture — Non-Negotiable
 
-- [ ] Mine objects are represented as Eclipse Ditto twins.
-- [ ] Operational data flows through the platform using MQTT to Ditto.
-- [ ] The user interface obtains operational state from the platform.
-- [ ] The 3D scene displays actual twin data rather than an independent mock simulation.
-- [ ] Simulation/application services are included in the Docker Compose deployment.
+- [x] Mine objects are represented as Eclipse Ditto twins.
+- [x] Operational data flows through the platform using MQTT to Ditto.
+- [x] The user interface obtains operational state from the platform.
+- [x] The 3D scene displays actual twin data rather than an independent mock simulation.
+- [x] Simulation/application services are included in the Docker Compose deployment.
 
 Failure to launch from `README.md`, or failure to build genuinely on OpenEgiz, caps the score at 40 and makes the solution ineligible to win.
 
