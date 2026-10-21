@@ -20,6 +20,14 @@ The competition organizer explicitly lists this dataset as a recommended MIT-lic
 
 ## Included Visual Assets
 
+### THREE.Terrain — terrain generation engine
+
+- Source: <https://github.com/IceCreamYou/THREE.Terrain>
+- Package: `three.terrain.js` version `3.1.1`, pinned in `ademix/frontend/package-lock.json`.
+- License: MIT; preserved at `ademix/frontend/third_party/three-terrain-LICENSE.txt`.
+- Use: deterministic Perlin/Diamond-Square surrounding terrain. Ademix applies its own documented bench-and-wall height function to form the engineered open pit.
+- Runtime: bundled locally by Vite; no CDN or external service is required.
+
 ### SELENE-ISRU — optimized equipment models
 
 - Source repository: <https://github.com/dogum/selene-isru>
