@@ -6,15 +6,15 @@
 
 <!-- Written by the Team before the code: your own choice, a few sentences per answer. Everything else in the Submission follows from it. -->
 
-**Enterprise:** <!-- Which mining enterprise, or which part of it, the twin represents. -->
+**Enterprise:** A 3D digital twin of an open-pit mine's loading, haulage, road and primary-crusher system.
 
-**Users:** <!-- Who uses the twin. -->
+**Users:** The mine dispatcher and shift supervisor.
 
-**Decision:** <!-- Which decision the twin helps them make. -->
+**Decision:** It helps them decide how to keep ore moving safely and steadily when a truck breaks down, a haul road closes, or crusher capacity falls. The operator compares throughput, queue, cycle-time and utilization effects before choosing a response.
 
-**Why this choice:** <!-- Why this enterprise, these users and this decision. -->
+**Why this choice:** Haulage connects several mine facilities, so its problems and consequences are understandable in a live 3D view. Moving equipment, queues, rerouting and crusher flow also make a strong demonstration of connected twins rather than a decorative dashboard.
 
-**Real or fictional:** <!-- A real object: name it and give the sources of its numbers. A fictional one: which real objects it resembles and where its numbers come from. A real object with sourced numbers scores higher. -->
+**Real or fictional:** The displayed mine is a fictional, reduced demonstration layout calibrated from the anonymized North Pit Mine configuration published by the MIT-licensed OpenMines project. Synthetic live telemetry is clearly distinguished from the sourced reference parameters.
 
 ## Team
 
@@ -22,7 +22,8 @@
 
 | GitHub |
 |---|
-|  |
+| `ahmadshahyawar` |
+| `TurkenGulzat` |
 
 ## Mine
 

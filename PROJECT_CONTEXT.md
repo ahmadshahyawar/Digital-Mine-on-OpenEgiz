@@ -112,6 +112,8 @@ A strong submission should ideally provide:
 
 - The team has registered for the competition.
 - The submitted registration records team name **Ademix** with GitHub users `ahmadshahyawar` and `TurkenGulzat`.
+- The organizer invitation was received and the official Team Repository is <https://github.com/openegiz-contest/team-111>.
+- The local work now uses the organizer's OpenEgiz v1.0.4 template as its base; the previous personal repository remains configured only as the `personal` backup remote.
 - The local project workspace has been created.
 - The team has agreed to pursue a polished 3D solution.
 - The working concept is an open-pit haulage and crusher optimization twin.
@@ -122,8 +124,11 @@ A strong submission should ideally provide:
 - The human team does not need to install or manually operate every development tool; the final repository must nevertheless include everything required to run reliably in the judge's Ubuntu/Docker environment.
 - The technology direction is React + TypeScript + React Three Fiber for 3D and Python for simulation, integrated with the OpenEgiz stack.
 - Docker Desktop is installed and verified with Linux containers on the development computer: x86-64, 8 CPUs, and approximately 8 GB assigned memory.
-- Competition repository: <https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz>
-- Repository inspection on 2026-10-21 found no remote branches or commits; it is currently empty.
+- Official competition repository: <https://github.com/openegiz-contest/team-111>
+- Personal backup repository: <https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz>
+- The initial React/Python foundation, OpenMines calibration file, and Docker Compose overlay are present on local branch `codex/ademix`.
+- `REUSE_CATALOG.md` records the license-checked reuse strategy. The first selected visual source is the CC0 Ore Processing and Haulage Plant pack; exact models are not yet committed.
+- The simulator and frontend Docker images both build successfully. The frontend now has a dependency lock file and uses `npm ci` for reproducible builds.
 
 ## Immediate Decisions and Tasks
 
@@ -180,7 +185,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 | Owner | Task | Branch | Status | Notes |
 | --- | --- | --- | --- | --- |
-| Codex | Create the initial project foundation in the empty competition repository | Not set | Ready | Awaiting approval of the first implementation plan |
+| Codex | Integrate and validate the Ademix foundation on the official template | `codex/ademix` | In progress | Next: select/download minimal CC0 models, finish image builds, then run the complete OpenEgiz data path |
 
 ## Completed Work Log
 
@@ -191,6 +196,10 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-21 | Codex | Connected the workspace to the competition repository and verified its current state | Remote is reachable but contains no branches or commits |
 | 2026-10-21 | Codex | Converted the official rules and judge-environment constraints into a release checklist | `RULES_CHECKLIST.md` created |
 | 2026-10-22 | Codex | Verified Docker Desktop, Compose, Linux-container mode, engine resources, registry download, and container execution | Official `hello-world` container completed successfully |
+| 2026-10-22 | Codex | Rebased the project foundation onto the official `openegiz-contest/team-111` template while retaining the personal repository as a backup remote | Official `origin/main` fetched; local branch `codex/ademix` contains the preserved work |
+| 2026-10-22 | Codex | Created a license-first reuse catalog covering mining simulation, CC0 mining/industrial assets, 3D performance tooling, charts, and rejected sources | Sources classified as Adopt, Shortlist, Reference, or Reject in `REUSE_CATALOG.md` |
+| 2026-10-22 | Codex | Filled the organizer's required Concept and Team sections from the team's agreed direction and added team copyright | `SUBMISSION.md` and `LICENSE` updated locally |
+| 2026-10-22 | Codex | Built the React/Three.js production image and locked frontend dependencies | `docker build -t ademix/mine-ui:test ademix/frontend` passed; Vite produced the production bundle |
 
 ## Decisions
 
@@ -203,20 +212,23 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Use React, TypeScript, React Three Fiber, and Python; avoid Unity | Codex and Claude work most effectively with code-first stacks, enabling faster implementation, review, and repair with lower context overhead | Team |
 | 2026-10-22 | Optimize the collaboration process for token efficiency | The short deadline favors concise interfaces, limited services, reusable components, and minimal duplicated context | Team |
 | 2026-10-22 | Reuse licensed open data and visual assets where practical | Adapting proven components saves time, while license-first review protects submission eligibility | Team |
+| 2026-10-22 | Use the official `team-111` repository as `origin` and retain the personal repository as `personal` | The frozen official repository is the evaluated submission; retaining the old remote preserves a separate backup destination | Team |
+| 2026-10-22 | Use a small subset of the CC0 3DAssets.dev Ore Processing and Haulage Plant pack | It provides coherent mining-specific plant visuals without requiring the team to model the crusher system from scratch | Team |
 
 ## Known Issues and Risks
 
-- The official rules have not yet been converted into a requirements checklist.
 - The remaining competition schedule is short; scope must be chosen quickly.
-- Data sources and the detailed simulation methodology remain undecided until the official competition repository is inspected.
+- The detailed simulation validation method and baseline-versus-scenario evidence still need to be completed.
 - A visually impressive scene that does not receive its operational state through OpenEgiz would fail the core platform requirement.
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
+- The initial frontend JavaScript bundle is about 990 kB before gzip (274 kB gzip); it builds successfully but should be split or reduced after the full data path works.
+- The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 
 ## Next Recommended Action
 
-Create the initial repository foundation from the official OpenEgiz template and convert the selected React/Python architecture into an implementation plan divided between Codex and Claude.
+Download only the selected CC0 plant models, record exact provenance/checksums, optimize them for software WebGL, then complete the Docker image builds and run the full MQTT → Ditto → UI smoke test.
 
 ## Handoff Template
 

@@ -39,6 +39,14 @@ Assets are not yet committed from these sources. Before an asset is added, recor
 - Intended use: one low-resolution local ground/rock material or environment asset if performance testing permits.
 - License: <https://polyhaven.com/license>
 
+### 3DAssets.dev — Ore Processing and Haulage Plant
+
+- Candidate pack: <https://3dassets.dev/packs/ore-processing-and-haulage-plant>
+- License: Creative Commons CC0 1.0 Universal.
+- Pack description: 56 GLB models, 14.3 MB total, built to a shared metre scale and visual palette.
+- Intended use: a small local subset for the truck dump pocket, crusher, conveyor, bin, and stockpile.
+- Status: selected in principle but no model is committed yet. Record every exact asset URL, checksum, size, and optimization step before inclusion.
+
 ## Rejected or Reference-Only Sources
 
 ### 3D Mine Lab by planwithdata
