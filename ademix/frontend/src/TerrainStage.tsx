@@ -1,5 +1,5 @@
 import React from 'react'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import Terrain, { TerrainNS, createSeededRandom } from 'three.terrain.js'
 
@@ -154,7 +154,38 @@ function HaulRoadLayer() {
   </group>
 }
 
-export function TerrainStage({ showRoads = false }: { showRoads?: boolean }) {
+function HaulerOnRoad({ progress, lane }: { progress: number; lane: -1 | 1 }) {
+  const { scene } = useGLTF('/models/hauler.glb')
+  const model = React.useMemo(() => scene.clone(), [scene])
+  const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
+  const point = curve.getPointAt(progress)
+  const tangent = curve.getTangentAt(progress).normalize()
+  const across = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(lane * 1.75)
+  return <group position={point.clone().add(across).add(new THREE.Vector3(0, .38, 0))} rotation={[0, -Math.atan2(tangent.z, tangent.x), 0]}>
+    <primitive object={model} scale={1.22}/>
+    <mesh position={[0, 4.35, 0]}><sphereGeometry args={[.16, 10, 8]}/><meshBasicMaterial color="#38ef9d"/></mesh>
+  </group>
+}
+
+function EquipmentLayer() {
+  const { scene } = useGLTF('/models/excavator.glb')
+  const excavator = React.useMemo(() => scene.clone(), [scene])
+  const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
+  const loadingPoint = curve.getPointAt(1)
+  return <group>
+    <HaulerOnRoad progress={.08} lane={1}/><HaulerOnRoad progress={.22} lane={-1}/>
+    <HaulerOnRoad progress={.38} lane={1}/><HaulerOnRoad progress={.54} lane={-1}/>
+    <HaulerOnRoad progress={.7} lane={1}/><HaulerOnRoad progress={.86} lane={-1}/>
+    <group position={loadingPoint.clone().add(new THREE.Vector3(1.2, .35, -1.5))} rotation={[0, -1.35, 0]}>
+      <primitive object={excavator} scale={1.5}/>
+    </group>
+  </group>
+}
+
+useGLTF.preload('/models/hauler.glb')
+useGLTF.preload('/models/excavator.glb')
+
+export function TerrainStage({ showRoads = false, showEquipment = false }: { showRoads?: boolean; showEquipment?: boolean }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
     const scene = Terrain({
@@ -185,6 +216,7 @@ export function TerrainStage({ showRoads = false }: { showRoads?: boolean }) {
     <directionalLight position={[-45, 70, 35]} intensity={2.25}/>
     <primitive object={terrain} position={[0, 0, 0]}/>
     {showRoads && <HaulRoadLayer/>}
+    {showEquipment && <EquipmentLayer/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
     <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
   </>

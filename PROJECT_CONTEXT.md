@@ -137,6 +137,7 @@ A strong submission should ideally provide:
 - The first placeholder scene was rejected during human review as visually inadequate. It is being replaced with a terraced open pit, curved bench road, richer plant geometry, a populated fleet panel, and optimized CC0 excavator/hauler GLBs from SELENE-ISRU.
 - Visual work now follows explicit approval checkpoints. Stage 1 isolates a deterministic height-field open pit built with the MIT-licensed THREE.Terrain engine: natural surrounding relief, six engineered benches, a 23.5-unit-deep floor, vertex geology colors, and software-WebGL lighting. Roads and equipment are intentionally excluded from the `?stage=terrain` review view.
 - Stage 2 adds a terrain-integrated 7.2-unit-wide spiral haul ramp, blended shoulders, an outer safety berm, center markings, and flattened loading/crusher pads. The first floating-road attempt was rejected before commit; the corrected `?stage=roads` view cuts the ramp into the height field.
+- Stage 3 equipment review at `?stage=equipment` places six optimized CC0 haulers in alternating lanes along the approved spiral route and a CC0 excavator on the pit-floor loading pad. The Stage 1/2 URLs deliberately remain isolated without equipment for comparison.
 
 ## Immediate Decisions and Tasks
 
@@ -219,6 +220,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Captured and reviewed the first real Chrome render of the 3D interface | WebGL scene, live KPI state, controls, and Ditto connection badge rendered under headless/software Chrome |
 | 2026-10-22 | Codex | Built isolated Stage 1 terrain review using a pinned MIT terrain engine | Production build passes; software/headless Chrome rendered `/?stage=terrain` at 1440×1000 |
 | 2026-10-22 | Codex | Built isolated Stage 2 haul-road review and rejected the initial floating-road geometry | Corrected ramp is carved into the height field; production build and 1440×1000 software-Chrome render pass |
+| 2026-10-22 | Codex | Added the first Stage 3 equipment layer to the accepted terrain and road | Six haulers and one excavator render from bundled CC0 GLBs; production build and 1440×1000 software-Chrome render pass |
 
 ## Decisions
 
