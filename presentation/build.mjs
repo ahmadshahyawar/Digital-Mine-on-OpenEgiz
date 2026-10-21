@@ -6,7 +6,7 @@ import { Presentation, PresentationFile } from "@oai/artifact-tool";
 const ROOT = "E:\\Digital Mine on OpenEgiz";
 const SKILL = "C:\\Users\\R C S\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1020.11127\\skills\\presentations";
 const BUILD = path.join(ROOT, ".presentation-build");
-const FINAL = path.join(ROOT, "presentation", "output", "presentation.pptx");
+const FINAL = path.join(ROOT, "presentation", "output", "presentation-v2.pptx");
 const FONT = "Aptos";
 const C = { ink: "#F4F7F8", muted: "#A9B6BC", bg: "#071116", panel: "#101F26", panel2: "#162A32", orange: "#FF8A35", cyan: "#32D6C5", green: "#7DDA8A", red: "#FF6B5F", line: "#31505B", white: "#FFFFFF" };
 
@@ -176,6 +176,7 @@ function connector(slide, x1, y1, x2, y2, color = C.orange) {
   text(s, "Connected twins. Visible material flow. Measurable scenarios.", 84, 207, 940, 50, 26, C.orange, true);
   const stages = [["1","Select an asset"],["2","Trigger a scenario"],["3","Compare throughput"]];
   stages.forEach(([n,l],i)=>{const x=84+i*365;box(s,x,340,320,128,C.panel);text(s,n,x+24,362,52,52,31,C.cyan,true);text(s,l,x+82,360,205,56,19,C.ink,true);});
+  pill(s, "OPEN http://localhost:8090", 84, 515, 300, C.panel2, C.orange);
   text(s, "Team Ademix • Digital Mine on OpenEgiz", 84, 620, 650, 30, 16, C.muted);
   text(s, "github.com/openegiz-contest/team-111", 790, 620, 405, 30, 16, C.muted, false, "right");
 }
@@ -200,6 +201,6 @@ await finalizePresentation({
   layoutValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_layout_geometry.py"),
   layoutArgs: ["--expected-slide-size-emu", "12192000,6858000", "--validate-bullet-geometry", "--validate-heading-fit"],
   requiredNativeTableOwnerSlides: [], fontPolicy, verifyArtifactToolImport: true,
-  receiptPath: path.join(BUILD, "presentation.validation.json"),
+  receiptPath: path.join(BUILD, "presentation-v2.validation.json"),
 });
 await fs.copyFile(FINAL, path.join(ROOT, "presentation.pptx"));

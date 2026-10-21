@@ -40,7 +40,7 @@ At the freeze, write access is removed, the final commit on `main` is recorded, 
 
 - [ ] `README.md` contains complete installation and launch instructions from a clean machine.
 - [ ] `SUBMISSION.md` follows the organizer's template and begins with the team-authored Concept section.
-- [ ] `presentation.pdf` clearly explains the verified solution and how to view it on the running stand.
+- [x] `presentation.pdf` clearly explains the verified solution and how to view it on the running stand.
 - [ ] The repository is licensed under MIT as required by the competition.
 
 The official solution consists of the complete contents and Git history of the team repository's frozen `main` branch. Do not include secrets, private data, credentials, or material that cannot be made public.
