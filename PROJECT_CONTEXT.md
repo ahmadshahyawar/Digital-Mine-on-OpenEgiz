@@ -144,7 +144,7 @@ A strong submission should ideally provide:
 - [x] Define the simulation assumptions, inputs, outputs, and validation method.
 - [x] Select the what-if scenarios.
 - [ ] Create an implementation plan split between the two team members.
-- [ ] Define the final demo, screenshots/video, documentation, and presentation deliverables.
+- [x] Define the final demo, screenshots/video, documentation, and presentation deliverables.
 - [ ] Confirm submission mechanics and deadline timezone.
 
 ## Collaboration Rules
@@ -205,6 +205,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Corrected crusher mass flow, added ROM inventory and visible baseline/scenario projections, and added deterministic tests | Eight `unittest` checks pass; Python compilation and JSON parsing pass |
 | 2026-10-22 | Codex | Replaced the organizer placeholder README and completed the current submission narrative | Local frontend `npm ci && npm run build` passed; README instructions and SUBMISSION claims reviewed against implemented code |
 | 2026-10-22 | Codex | Attempted the first full OpenEgiz + Ademix startup and recovered Docker after its WSL2 backend timed out | Compose configuration passed; pull could not finish because C: reached zero free space, so no end-to-end success is claimed |
+| 2026-10-22 | Codex | Created the required nine-slide judge presentation plus an editable source deck | PPTX passed package, layout, font-policy, chart, and first-party import validation; the nine-page PDF was rendered with Poppler and every page was visually inspected |
 
 ## Decisions
 
@@ -229,13 +230,14 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - The initial frontend JavaScript bundle is about 990 kB before gzip (274 kB gzip); it builds successfully but should be split or reduced after the full data path works.
 - The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
 - The development computer's C: drive has effectively no free space. The full OpenEgiz image set cannot be downloaded and Docker cleanup cannot complete reliably at that capacity. A clean end-to-end run requires freeing several gigabytes on C: or moving Docker's disk image to a larger drive; this is a local validation blocker, not a judge-environment dependency.
+- The current presentation uses a clearly labeled conceptual interface composition. Replace it with a real application screenshot only after the clean end-to-end stack passes; do not present the concept graphic as runtime evidence.
 - Local ports 1883 and 8090 were already occupied during preflight. After storage is resolved, identify the owners or use non-default development ports in the ignored `.env`; keep judge defaults unchanged.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 
 ## Next Recommended Action
 
-Free substantial C: storage or move Docker Desktop's data disk to a larger drive, then complete the full MQTT → Ditto → UI smoke test. Meanwhile, continue source-level UI, simulation, documentation, and static validation without adding large assets.
+Free substantial C: storage or move Docker Desktop's data disk to a larger drive, then complete the full MQTT → Ditto → UI smoke test and replace the presentation's conceptual interface composition with verified runtime evidence. Meanwhile, continue source-level UI, simulation, documentation, and static validation without adding large assets.
 
 ## Handoff Template
 

@@ -26,6 +26,14 @@ ademix/frontend/node_modules/
 ademix/frontend/dist/
 ademix/frontend/*.tsbuildinfo
 
+# Generated presentation intermediates (root deliverables stay tracked)
+.chart-data-*/
+.presentation-build/
+presentation/node_modules/
+presentation/output/
+output/
+tmp/
+
 __pycache__/
 *.pyc
 
