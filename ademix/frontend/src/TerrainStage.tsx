@@ -10,6 +10,7 @@ const SEGMENTS = 128
 function carveEngineeredPit(heights: Float32Array, options: { xSegments: number; ySegments: number; xSize: number; ySize: number }) {
   const columns = options.xSegments + 1
   const rows = options.ySegments + 1
+  const roadPoints = haulRoadPoints()
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
       const index = row * columns + column
@@ -36,6 +37,29 @@ function carveEngineeredPit(heights: Float32Array, options: { xSegments: number;
         const rim = 4.6 + Math.sin(angle * 4) * .55
         heights[index] = THREE.MathUtils.lerp(rim, original, blend)
       }
+
+      let nearestRoadDistance = Infinity
+      let nearestRoadElevation = heights[index]
+      for (const roadPoint of roadPoints) {
+        const distance = Math.hypot(x - roadPoint.x, z - roadPoint.z)
+        if (distance < nearestRoadDistance) {
+          nearestRoadDistance = distance
+          nearestRoadElevation = roadPoint.y
+        }
+      }
+      if (nearestRoadDistance < 3.8) {
+        heights[index] = nearestRoadElevation
+      } else if (nearestRoadDistance < 7.2) {
+        const shoulderBlend = THREE.MathUtils.smoothstep(nearestRoadDistance, 3.8, 7.2)
+        heights[index] = THREE.MathUtils.lerp(nearestRoadElevation, heights[index], shoulderBlend)
+      }
+
+      const loadingPoint = roadPoints[roadPoints.length - 1]
+      const crusherPoint = roadPoints[0]
+      const loadingDistance = Math.hypot(x - loadingPoint.x, z - loadingPoint.z)
+      const crusherDistance = Math.hypot(x - crusherPoint.x, z - crusherPoint.z)
+      if (loadingDistance < 10.5) heights[index] = THREE.MathUtils.lerp(loadingPoint.y, heights[index], THREE.MathUtils.smoothstep(loadingDistance, 7.5, 10.5))
+      if (crusherDistance < 13) heights[index] = THREE.MathUtils.lerp(crusherPoint.y, heights[index], THREE.MathUtils.smoothstep(crusherDistance, 10, 13))
     }
   }
 }
@@ -58,7 +82,79 @@ function terrainColors(geometry: THREE.BufferGeometry) {
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 }
 
-export function TerrainStage() {
+function haulRoadPoints() {
+  return Array.from({ length: 97 }, (_, index) => {
+    const progress = index / 96
+    const radius = THREE.MathUtils.lerp(.94, .16, progress)
+    const angle = .3 + progress * Math.PI * 2.35
+    return new THREE.Vector3(
+      Math.cos(angle) * 59 * radius,
+      THREE.MathUtils.lerp(4.8, -22.8, progress),
+      Math.sin(angle) * 41 * radius
+    )
+  })
+}
+
+function ribbonGeometry(curve: THREE.CatmullRomCurve3, width: number) {
+  const segments = 180
+  const positions: number[] = []
+  const uvs: number[] = []
+  const indices: number[] = []
+  for (let index = 0; index <= segments; index++) {
+    const progress = index / segments
+    const point = curve.getPointAt(progress)
+    const tangent = curve.getTangentAt(progress).normalize()
+    const across = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(width / 2)
+    for (const side of [-1, 1]) {
+      const vertex = point.clone().addScaledVector(across, side)
+      positions.push(vertex.x, vertex.y + .18, vertex.z)
+      uvs.push(progress * 18, side < 0 ? 0 : 1)
+    }
+    if (index < segments) {
+      const base = index * 2
+      indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function HaulRoadLayer() {
+  const { curve, road, outerBerm, markers } = React.useMemo(() => {
+    const points = haulRoadPoints()
+    const path = new THREE.CatmullRomCurve3(points)
+    const offsetCurve = (distance: number) => new THREE.CatmullRomCurve3(points.map(point => {
+      const radial = new THREE.Vector3(point.x / 59, 0, point.z / 41).normalize()
+      return point.clone().addScaledVector(radial, distance).add(new THREE.Vector3(0, .52, 0))
+    }))
+    return {
+      curve: path,
+      road: ribbonGeometry(path, 7.2),
+      outerBerm: offsetCurve(4.2),
+      markers: Array.from({ length: 25 }, (_, index) => {
+        const progress = .025 + index * .039
+        const point = path.getPointAt(progress)
+        const tangent = path.getTangentAt(progress)
+        return { point, rotation: -Math.atan2(tangent.z, tangent.x) }
+      })
+    }
+  }, [])
+  return <group>
+    <mesh geometry={road}><meshStandardMaterial color="#504a40" roughness={.98}/></mesh>
+    <mesh><tubeGeometry args={[outerBerm, 180, .42, 6, false]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>
+    {markers.map(({ point, rotation }, index) => <mesh key={index} position={[point.x, point.y + .27, point.z]} rotation={[0, rotation, 0]}><boxGeometry args={[2.3, .06, .13]}/><meshBasicMaterial color="#e9c94f"/></mesh>)}
+    <mesh position={curve.getPointAt(1).clone().add(new THREE.Vector3(0, .19, 0))} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[8, 40]}/><meshStandardMaterial color="#5a554b" roughness={1}/></mesh>
+    <mesh position={curve.getPointAt(0).clone().add(new THREE.Vector3(0, .19, 0))} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[10.5, 40]}/><meshStandardMaterial color="#5a554b" roughness={1}/></mesh>
+    <mesh position={curve.getPointAt(1).clone().add(new THREE.Vector3(0, .25, 0))} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[7.1, 7.5, 40]}/><meshBasicMaterial color="#d5b54c"/></mesh>
+    <mesh position={curve.getPointAt(0).clone().add(new THREE.Vector3(0, .25, 0))} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[9.4, 9.8, 40]}/><meshBasicMaterial color="#d5b54c"/></mesh>
+  </group>
+}
+
+export function TerrainStage({ showRoads = false }: { showRoads?: boolean }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
     const scene = Terrain({
@@ -88,6 +184,7 @@ export function TerrainStage() {
     <hemisphereLight args={['#dbe8e5', '#49382b', 1.55]}/>
     <directionalLight position={[-45, 70, 35]} intensity={2.25}/>
     <primitive object={terrain} position={[0, 0, 0]}/>
+    {showRoads && <HaulRoadLayer/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
     <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
   </>
