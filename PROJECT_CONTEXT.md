@@ -206,6 +206,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Replaced the organizer placeholder README and completed the current submission narrative | Local frontend `npm ci && npm run build` passed; README instructions and SUBMISSION claims reviewed against implemented code |
 | 2026-10-22 | Codex | Attempted the first full OpenEgiz + Ademix startup and recovered Docker after its WSL2 backend timed out | Compose configuration passed; pull could not finish because C: reached zero free space, so no end-to-end success is claimed |
 | 2026-10-22 | Codex | Created the required nine-slide judge presentation plus an editable source deck | PPTX passed package, layout, font-policy, chart, and first-party import validation; the nine-page PDF was rendered with Poppler and every page was visually inspected |
+| 2026-10-22 | Codex | Tightened scenario consistency and interface failure handling | Ten deterministic simulator tests pass; road restriction twin state now matches truck speed; UI distinguishes connection state and prevents duplicate scenario requests |
 
 ## Decisions
 

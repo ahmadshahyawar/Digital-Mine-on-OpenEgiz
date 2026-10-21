@@ -50,6 +50,7 @@ function App() {
   const [data, setData] = React.useState<StateResponse>({ source: 'connecting', twins: [] })
   const [selectedId, setSelectedId] = React.useState('')
   const [error, setError] = React.useState('')
+  const [scenarioPending, setScenarioPending] = React.useState('')
   const refresh = React.useCallback(async () => {
     try { const response = await fetch('/api/state'); if (!response.ok) throw new Error(await response.text()); setData(await response.json()); setError('') }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'State unavailable') }
@@ -59,10 +60,22 @@ function App() {
   const selected = data.twins.find(t => t.thingId === selectedId)
   const scenarioTwin = data.twins.find(t => t.attributes?.kind === 'scenario')
   const scenario = String(value(mine, 'active_scenario', 'baseline'))
-  const setScenario = async (next: string) => { await fetch('/api/scenario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scenario: next }) }); await refresh() }
+  const connected = data.source === 'eclipse-ditto' && !error
+  const setScenario = async (next: string) => {
+    setScenarioPending(next)
+    try {
+      const response = await fetch('/api/scenario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scenario: next }) })
+      if (!response.ok) throw new Error(await response.text())
+      await refresh()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Scenario update failed')
+    } finally {
+      setScenarioPending('')
+    }
+  }
 
   return <main>
-    <header><div><span className="eyebrow">ADEMIX · DIGITAL OPERATIONS</span><h1>North Pit Command Center</h1></div><div className="live"><i/> LIVE VIA {data.source.toUpperCase()}</div></header>
+    <header><div><span className="eyebrow">ADEMIX · DIGITAL OPERATIONS</span><h1>North Pit Command Center</h1></div><div className={`live ${connected ? '' : 'offline'}`}><i/> {connected ? `LIVE VIA ${data.source.toUpperCase()}` : 'CONNECTING TO OPENGIZ'}</div></header>
     <section className="kpis">
       <Kpi label="Production" value={Number(value(mine, 'production_t')).toLocaleString()} unit="t"/>
       <Kpi label="Throughput" value={Number(value(mine, 'throughput_tph')).toFixed(0)} unit="t/h"/>
@@ -72,7 +85,7 @@ function App() {
     <section className="workspace">
       <aside><h2>What-if control</h2><p>Change an operating condition and observe the effect across connected twins.</p>{[
         ['baseline','Normal operations'], ['truck_breakdown','Truck HT-01 breakdown'], ['road_closure','Main road restriction'], ['crusher_slowdown','Crusher capacity −45%']
-      ].map(([id,label]) => <button key={id} className={scenario === id ? 'active' : ''} onClick={() => setScenario(id)}>{label}<span>→</span></button>)}
+      ].map(([id,label]) => <button key={id} disabled={Boolean(scenarioPending)} className={scenario === id ? 'active' : ''} onClick={() => setScenario(id)}>{scenarioPending === id ? 'Applying…' : label}<span>→</span></button>)}
       <div className="comparison"><span>Projected throughput</span><b>{Number(value(scenarioTwin, 'projected_throughput_tph', 900)).toFixed(0)} <small>t/h</small></b><em>{Number(value(scenarioTwin, 'impact_pct', 0)).toFixed(0)}% vs 900 t/h baseline</em><div><i style={{width: `${Math.max(12, Number(value(scenarioTwin, 'projected_throughput_tph', 900)) / 9)}%`}}/></div></div>
       <div className="source"><b>Trusted state</b><span>Simulator → MQTT → Ditto → 3D</span></div></aside>
       <div className="viewport"><Canvas camera={{ position: [52, 44, 58], fov: 43 }} dpr={[0.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}><MineScene twins={data.twins} selectedId={selectedId} setSelectedId={setSelectedId}/></Canvas><div className="view-label">INTERACTIVE 3D MINE · DRAG TO ORBIT · SCROLL TO ZOOM</div>{error && <div className="error">Waiting for OpenEgiz state…</div>}</div>

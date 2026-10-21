@@ -42,6 +42,30 @@ class MineEngineTests(unittest.TestCase):
         self.assertEqual(scenario["projected_throughput_tph"]["value"], 648.0)
         self.assertEqual(scenario["impact_pct"]["value"], -28)
 
+    def test_every_scenario_exposes_its_documented_projection(self):
+        expected = {
+            "baseline": (0, 900.0),
+            "truck_breakdown": (-17, 747.0),
+            "road_closure": (-28, 648.0),
+            "crusher_slowdown": (-45, 495.0),
+        }
+        for name, (impact, projected) in expected.items():
+            with self.subTest(scenario=name):
+                mine = MineEngine()
+                mine.set_scenario(name)
+                controller = mine.snapshot()["scenario-controller"]
+                self.assertEqual(controller["impact_pct"]["value"], impact)
+                self.assertEqual(controller["projected_throughput_tph"]["value"], projected)
+
+    def test_reported_road_limit_matches_truck_speed_during_restriction(self):
+        mine = MineEngine()
+        mine.set_scenario("road_closure")
+        state = mine.snapshot()
+        self.assertEqual(
+            state["road-main"]["speed_limit_kmh"]["value"],
+            state["truck-01"]["speed_kmh"]["value"],
+        )
+
     def test_crusher_slowdown_processes_less_without_losing_ore(self):
         baseline = MineEngine()
         slowdown = MineEngine()

@@ -150,7 +150,7 @@ class MineEngine:
                 },
                 "road-main": {
                     "state": self.metric("restricted" if self.scenario == "road_closure" else "open"),
-                    "speed_limit_kmh": self.metric(18 if self.scenario == "road_closure" else 35, "km/h"),
+                    "speed_limit_kmh": self.metric(15.5 if self.scenario == "road_closure" else 35, "km/h"),
                     "traffic_count": self.metric(len(moving)),
                 },
                 "scenario-controller": {
