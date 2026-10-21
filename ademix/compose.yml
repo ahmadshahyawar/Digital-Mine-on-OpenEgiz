@@ -1,0 +1,42 @@
+# Ademix Mine: contest solution overlay for the OpenEgiz Compose stack.
+
+services:
+  ademix-setup:
+    build: ./ademix/simulator
+    image: ademix/mine-simulator:local
+    restart: "no"
+    command: ["python", "setup_twins.py"]
+    environment:
+      DITTO_URL: http://ditto-nginx:80
+      DITTO_PASSWORD: ${DITTO_PASSWORD}
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  ademix-simulator:
+    image: ademix/mine-simulator:local
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      DITTO_URL: http://ditto-nginx:80
+      DITTO_PASSWORD: ${DITTO_PASSWORD}
+      SIM_SPEEDUP: ${SIM_SPEEDUP:-20}
+    ports:
+      - "${OPENEGIZ_BIND:-127.0.0.1}:${ADEMIX_API_PORT:-8088}:8000"
+    depends_on:
+      ademix-setup:
+        condition: service_completed_successfully
+
+  ademix-ui:
+    build: ./ademix/frontend
+    image: ademix/mine-ui:local
+    restart: unless-stopped
+    mem_limit: 96m
+    ports:
+      - "${OPENEGIZ_BIND:-127.0.0.1}:${ADEMIX_UI_PORT:-4173}:80"
+    depends_on:
+      - ademix-simulator
+

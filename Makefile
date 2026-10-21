@@ -1,4 +1,4 @@
-.PHONY: up down ps logs smoke clean example-mine example-mine-stop install uninstall status endpoints upgrade upload-build generate-data copy-build unity-demo check-secrets check-public-host
+.PHONY: up down ps logs smoke clean ademix ademix-stop example-mine example-mine-stop install uninstall status endpoints upgrade upload-build generate-data copy-build unity-demo check-secrets check-public-host
 
 # ---------------------------------------------------------------------------
 # Docker Compose deployment (laptops, CI, contest judges): deploy/compose/
@@ -9,7 +9,9 @@ COMPOSE_BASE := docker compose -f deploy/compose/docker-compose.yml
 # `make clean` forgets it.
 MINE_MARKER  := deploy/compose/.example-mine
 MINE_COMPOSE := examples/mine/compose.yml
-COMPOSE := $(COMPOSE_BASE)$(if $(wildcard $(MINE_MARKER)), -f $(MINE_COMPOSE))
+ADEMIX_MARKER := deploy/compose/.ademix
+ADEMIX_COMPOSE := ademix/compose.yml
+COMPOSE := $(COMPOSE_BASE)$(if $(wildcard $(MINE_MARKER)), -f $(MINE_COMPOSE))$(if $(wildcard $(ADEMIX_MARKER)), -f $(ADEMIX_COMPOSE))
 
 ## Start the whole platform with Docker Compose (first run: generates credentials)
 up:
@@ -39,6 +41,16 @@ logs:
 smoke:
 	@bash scripts/compose-smoke.sh
 
+## Run the Ademix contest mine (twins + simulation API + 3D command center)
+ademix: up
+	$(COMPOSE_BASE) -f $(ADEMIX_COMPOSE) up -d --build --wait --wait-timeout 300
+	@touch $(ADEMIX_MARKER)
+	@echo "Ademix 3D command center: http://localhost:$${ADEMIX_UI_PORT:-4173}"
+
+## Stop Ademix services (twins and data stay)
+ademix-stop:
+	$(COMPOSE_BASE) -f $(ADEMIX_COMPOSE) stop ademix-simulator ademix-ui
+
 ## Run the Example Mine (twins + haul-cycle simulator + Grafana dashboard) on the compose stack
 example-mine: up
 	$(COMPOSE_BASE) -f $(MINE_COMPOSE) up -d --build --wait --wait-timeout 300
@@ -52,7 +64,7 @@ example-mine-stop:
 ## Stop the platform and DELETE all its data and credentials
 clean:
 	$(COMPOSE) down -v --remove-orphans
-	rm -f deploy/compose/.env $(MINE_MARKER)
+	rm -f deploy/compose/.env $(MINE_MARKER) $(ADEMIX_MARKER)
 
 # ---------------------------------------------------------------------------
 # Helm deployment (servers): the chart at the repository root
