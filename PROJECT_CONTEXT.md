@@ -129,10 +129,10 @@ A strong submission should ideally provide:
 - The initial React/Python foundation, OpenMines calibration file, and Docker Compose overlay are present on local branch `codex/ademix`.
 - `REUSE_CATALOG.md` records the license-checked reuse strategy. The first selected visual source is the CC0 Ore Processing and Haulage Plant pack; exact models are not yet committed.
 - The simulator and frontend Docker images both build successfully. The frontend now has a dependency lock file and uses `npm ci` for reproducible builds.
-- The deterministic model conserves ore through a ROM inventory, processes it at scenario-dependent crusher capacity, and has eleven passing unit tests.
+- The deterministic model conserves ore through a ROM inventory, processes it at scenario-dependent crusher capacity, and has eleven passing unit tests. *(Superseded on 2026-10-22 by the discrete-event engine described below.)*
 - The root `README.md` now contains literal judge startup, verification, reset, Windows, architecture, and repository instructions. `SUBMISSION.md` documents every current module/scenario, data assumptions, verification status, and limitations.
 - The complete OpenEgiz + Ademix Compose deployment now starts successfully on Windows. Eleven twins flow through MQTT into Eclipse Ditto, the API reports `source: eclipse-ditto`, and the 3D UI is healthy at `http://localhost:4173`.
-- All four live scenario controls were exercised end to end. Ditto reported the expected breakdown, restricted-road, reduced-crusher, and reset states with projected throughput of 745.16, 647.6, 495, and 900 t/h respectively.
+- All four live scenario controls were exercised end to end. Ditto reported the expected breakdown, restricted-road, reduced-crusher, and reset states with projected throughput of 745.16, 647.6, 495, and 900 t/h respectively. *(Those figures came from the previous engine. The new engine projects 770, 770, 647.3 and 495 t/h and has not yet been run end to end through Ditto.)*
 - Chrome rendered the live 3D command center successfully in software/headless mode. The first runtime review confirms functionality but also shows that terrain detail, route separation, and equipment legibility need visual refinement.
 - The first placeholder scene was rejected during human review as visually inadequate. It is being replaced with a terraced open pit, curved bench road, richer plant geometry, a populated fleet panel, and optimized CC0 excavator/hauler GLBs from SELENE-ISRU.
 - Visual work now follows explicit approval checkpoints. Stage 1 isolates a deterministic height-field open pit built with the MIT-licensed THREE.Terrain engine: natural surrounding relief, six engineered benches, a 23.5-unit-deep floor, vertex geology colors, and software-WebGL lighting. Roads and equipment are intentionally excluded from the `?stage=terrain` review view.
@@ -140,6 +140,7 @@ A strong submission should ideally provide:
 - Stage 3 equipment review at `?stage=equipment` places six optimized CC0 haulers in alternating lanes along the approved spiral route and a CC0 excavator on the pit-floor loading pad. The Stage 1/2 URLs deliberately remain isolated without equipment for comparison.
 - Stage 4 processing-plant review at `?stage=plant` adds a compact truck dump, primary-crusher module, transfer conveyors, access stairs, and coarse-ore stockpile assembled from five pinned CC0 Kenney Factory Kit GLBs. A first SELENE-based composition was visually rejected before commit because it read as lunar equipment and extended outside the camera frame.
 - Stage 5 live-motion review at `?stage=motion` animates the six haulers along the approved spiral, oscillates the excavator only while its OpenEgiz twin reports loading, and moves ore markers through the plant at a rate controlled by crusher state. Truck state, reported speed, direction, and breakdown status drive movement and status markers.
+- **Core Simulation Engine rewrite (branch `claude/core-simulation-engine`, based on `codex/ademix`):** `ademix/simulator/engine.py` is now an event-driven DES. It models one single-server excavator (FIFO), one crusher dump bay (FIFO), a 600 t ROM bin that can block dumping, and a single-lane road with a shared speed limit and breakdown blockage. It reports full cycle time, queue waits, utilization, rolling-hour throughput, trips and a mass balance. With the team's OpenMines parameters, the baseline is **excavator-limited at 770 t/h** (match factor 1.61), not 900 t/h. Road restriction gives 647 t/h (haulage-limited) and crusher slowdown 495 t/h (crusher-limited). A single breakdown costs about 190 t/h during the 20-minute lane blockage and nothing in steady state. 21 deterministic tests pass. Formulas, assumptions, results and limitations are in `ademix/simulator/MODEL.md`.
 
 ## Immediate Decisions and Tasks
 
@@ -197,6 +198,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | Owner | Task | Branch | Status | Notes |
 | --- | --- | --- | --- | --- |
 | Codex | Refine the live 3D command center and complete release evidence | `codex/ademix` | In progress | End-to-end OpenEgiz integration passes; improve visual quality, performance evidence, and final documentation next |
+| Claude (for TurkenGulzat) | Core Simulation Engine review and improvement | `claude/core-simulation-engine` | Ready for review | Engine, tests, MODEL.md, comparison script and SUBMISSION/README figures are done. Still needed: merge into `codex/ademix`, a Docker/Ditto end-to-end rerun, and the one-line UI label fix (see Known Issues) |
 
 ## Completed Work Log
 
@@ -225,6 +227,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Added the first Stage 3 equipment layer to the accepted terrain and road | Six haulers and one excavator render from bundled CC0 GLBs; production build and 1440×1000 software-Chrome render pass |
 | 2026-10-22 | Codex | Added the Stage 4 processing-plant checkpoint and rejected an unsuitable first asset composition | Production build passes; 1440×1000 software-Edge render shows the full dump-to-crusher-to-stockpile flow inside frame |
 | 2026-10-22 | Codex | Added Stage 5 purposeful motion linked to OpenEgiz truck, excavator, and crusher twin properties | Production build passes; 1440×1000 software-Edge capture confirms the moving fleet remains separated and the full scene stays in frame |
+| 2026-10-22 | Claude | Rewrote the simulator as a deterministic discrete-event model with excavator/dump-bay queues, a limited ROM bin, breakdown lane blockage, full cycle time, utilization and a mass-balance ledger; added `MODEL.md` and `compare_scenarios.py`; corrected the SUBMISSION/README scenario figures | `python -m unittest test_engine`: 21 tests pass; `compare_scenarios.py` reproduces the MODEL.md table; `py_compile` passes for app.py, engine.py and compare_scenarios.py. Docker/Ditto end-to-end was **not** rerun (Docker unavailable on this machine) |
 
 ## Decisions
 
@@ -242,6 +245,8 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Require visual checkpoint approval before adding the next scene layer | Prevents weak terrain, roads, equipment, motion, and UI from being combined into an incoherent final scene | Team |
 | 2026-10-22 | Use a five-model CC0 Kenney Factory Kit subset for the plant checkpoint | The preferred mining pack CDN was unavailable; Kenney's pinned local GLBs are small, consistent, license-safe, and render reliably in software WebGL | Team |
 | 2026-10-22 | Drive motion from existing twin properties rather than a disconnected animation timeline | Truck state/speed/direction, excavator state, and crusher state now visibly affect the 3D review scene while interpolation keeps movement smooth between two-second API updates | Team |
+| 2026-10-22 | Use an event-driven simulation with an explicit single-server excavator and dump bay, and report the binding bottleneck | The time-stepped model let several trucks load from one excavator at once, which overstated baseline throughput (900 t/h against a physical limit of 770 t/h). Event scheduling also makes results independent of the publishing tick | Claude (for TurkenGulzat) |
+| 2026-10-22 | Model the breakdown as a 20-minute single-lane blockage followed by a 5-truck fleet, replacing the unexplained 0.64 fleet-wide speed factor | The effect now follows from a stated mechanism and can be observed on the road and truck twins | Claude (for TurkenGulzat) |
 
 ## Known Issues and Risks
 
@@ -256,8 +261,14 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - The first live render is operational but visually sparse: trucks overlap on the single route and the procedural pit lacks enough benches and landmarks for a competition-grade overview.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
+- `ademix/frontend/src/main.tsx` (line 57) hard-codes the label "vs 900 t/h baseline". The engine now publishes `baseline_throughput_tph` = 770 t/h, so the label should read that value from the scenario-controller twin. It was not changed on the engine branch because the frontend is Codex's active work.
+- `presentation.pdf` and `presentation.pptx` still quote the old 900/745/648/495 t/h projections and the 16 km/h breakdown behaviour; update them before release.
+- The new truck states (`queued_at_excavator`, `queued_at_crusher`, `blocked`) have no dedicated colour in `fleet.css` or `MineScene.tsx`, so they render in the default green. These trucks report speed 0, so the motion review stops them correctly.
+- Fuel is synthetic and has no refuelling. It reaches 0 % after roughly 13 simulated hours (about 40 real minutes at 20× speed).
 
 ## Next Recommended Action
+
+Engine branch: review `claude/core-simulation-engine` and merge it into `codex/ademix`. Then replace the hard-coded 900 t/h UI label, rerun the Docker/Ditto end-to-end scenario check, and update the presentation figures.
 
 After human review of `?stage=motion`, promote the accepted staged scene into the default live command center, add selection feedback and scenario-specific road visualization, then capture scenario evidence and run the documented release checks.
 
@@ -277,3 +288,16 @@ Known issues:
 Next action:
 ```
 
+### Handoff — 2026-10-22 — Core Simulation Engine
+
+```text
+Date: 2026-10-22
+Contributor: Claude (for TurkenGulzat)
+Goal: Review and improve the Core Simulation Engine (DES, resources, KPIs, scenarios, determinism, mass conservation, documentation).
+Completed: Event-driven engine with a single-server excavator and dump bay (FIFO); a 600 t ROM bin with dump admission; breakdown lane blockage and recovery; speed changes applied from each truck's current position; full cycle time, queue waits, utilization, rolling-hour throughput, trips and a mass-balance ledger; analytical bottleneck projection and match factor; 21 tests; MODEL.md; compare_scenarios.py; SUBMISSION/README figures corrected.
+Files changed: ademix/simulator/engine.py, ademix/simulator/test_engine.py, ademix/simulator/MODEL.md (new), ademix/simulator/compare_scenarios.py (new), SUBMISSION.md, README.md, PROJECT_CONTEXT.md. Not touched: app.py, twins.json, data/openmines, frontend, models, licences, asset documentation.
+Checks/tests run: python -m unittest test_engine (21 pass, Python 3.13); python compare_scenarios.py; py_compile app.py/engine.py/compare_scenarios.py.
+Decisions made: excavator-limited 770 t/h baseline derived from the team's own OpenMines parameters; breakdown modelled as a 20-minute lane blockage; KPI windows restart at each scenario change.
+Known issues: Docker/Ditto end-to-end not rerun; UI label hard-codes 900 t/h; presentation figures are stale; no colours yet for the new queue/blocked truck states.
+Next action: merge into codex/ademix, fix the UI label, rerun the stand scenarios, refresh the presentation figures.
+```

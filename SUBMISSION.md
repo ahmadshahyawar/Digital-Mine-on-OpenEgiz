@@ -36,7 +36,7 @@ The submission represents the production chain from an open-pit loading face, al
 - one primary crusher; and
 - one scenario controller.
 
-Equipment and infrastructure twins refer to the mine as their parent. Their initial definitions are in `ademix/simulator/twins.json`. `ademix/simulator/engine.py` advances the deterministic operating model. `ademix/simulator/app.py` publishes Ditto Protocol updates to `telemetry/<thing>` over MQTT and reads every displayed state back through Ditto's HTTP API.
+Equipment and infrastructure twins refer to the mine as their parent. Their initial definitions are in `ademix/simulator/twins.json`. `ademix/simulator/engine.py` advances a deterministic discrete-event model with a single-server excavator, a single dump bay, a 600 t ROM bin and a shared single-lane road; its formulas, assumptions and verification are in `ademix/simulator/MODEL.md`. `ademix/simulator/app.py` publishes Ditto Protocol updates to `telemetry/<thing>` over MQTT and reads every displayed state back through Ditto's HTTP API.
 
 ## Modules and What-if Scenarios
 
@@ -45,17 +45,17 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 | Module or What-if Scenario | What it does | How to see it on the Stand | How to undo it (scenarios) |
 |---|---|---|---|
 | Live fleet supervision | Displays truck position, activity, payload, fuel, speed, completed trips, and cycle time from Ditto twins. | Select any moving truck in the 3D command center. | Not applicable |
-| Production-flow monitor | Shows processed tonnes, crusher throughput, fleet utilization, cycle time, crusher capacity, queues, and ROM inventory. | Open the command center and observe the KPI row and facility/twin details. | Not applicable |
-| Scenario comparison | Shows projected scenario throughput against the 900 t/h planning baseline and the current observed metrics. | Activate a scenario in the left panel and inspect the comparison card and KPI row. | Select **Normal operations**. |
-| Truck breakdown | Stops HT-01, marks it red, and constrains the remaining fleet to 16 km/h while the blocked single haul lane is cleared. | Select **Truck HT-01 breakdown**, then inspect HT-01 and another truck. | Select **Normal operations**. |
-| Road restriction | Restricts the main haul road and reduces moving-truck speed from 25 to 10.72 km/h. | Select **Main road restriction**; the road changes color and truck twins report lower speed. | Select **Normal operations**. |
-| Crusher slowdown | Reduces crusher capacity from 900 to 495 t/h while trucks continue delivering ore, causing ROM inventory to accumulate. | Select **Crusher capacity −45%** and inspect the crusher twin and comparison card. | Select **Normal operations**. |
+| Production-flow monitor | Shows processed tonnes, rolling-hour crusher throughput, fleet utilization, full cycle time including queueing, crusher capacity, excavator and crusher queues, waiting times, and ROM inventory. | Open the command center and observe the KPI row and facility/twin details. | Not applicable |
+| Scenario comparison | Shows projected steady-state scenario throughput, the binding bottleneck and the match factor against the 770 t/h modelled baseline, next to the current observed metrics. | Activate a scenario in the left panel and inspect the comparison card and KPI row. | Select **Normal operations**. |
+| Truck breakdown | Stops HT-01 with its payload. If it is on the road, it blocks the single lane for 20 simulated minutes: trucks behind it stop (`blocked`), the road twin reports the blockage, and deliveries to the crusher pause. After the tow, the five remaining trucks continue. | Select **Truck HT-01 breakdown**, then inspect HT-01 and another truck. | Select **Normal operations**. |
+| Road restriction | Restricts the main haul road and reduces moving-truck speed from 25 to 10.72 km/h; haulage becomes the bottleneck and the excavator starts waiting for trucks. | Select **Main road restriction**; the road changes color and truck twins report lower speed. | Select **Normal operations**. |
+| Crusher slowdown | Reduces crusher capacity from 900 to 495 t/h; the 600 t ROM bin fills and trucks then queue at the crusher dump bay. | Select **Crusher capacity −45%** and inspect the crusher twin and comparison card. | Select **Normal operations**. |
 
 ## What works and what does not
 
 Verified locally:
 
-- all eleven deterministic engine tests pass, including 24-hour convergence of observed and projected throughput;
+- all 21 deterministic engine tests pass, covering mass conservation, resource limits, FIFO queues, tick-size independence, every scenario and reset, and 24-hour convergence of simulated to projected throughput (verification of the stated model, not validation against mine data);
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and
@@ -69,7 +69,7 @@ Live telemetry is synthetic and deterministic. It is not presented as measuremen
 
 The main calibration source is OpenMines' anonymized `north_pit_mine.json`, included at `ademix/data/openmines/north_pit_mine.json` with its MIT license. The submitted reduced model uses its 77 t truck capacity, 25 km/h travel speed, approximately 20.32 t shovel pass, 1.5 minute shovel cycle, one minute dump duration, and route-distance scale. Four shovel passes give a rounded six-minute loading duration for the 77 t truck. Team Ademix deliberately uses six trucks instead of the full source fleet so the state is understandable and the 3D scene remains usable under software rendering.
 
-The displayed route geometry and terraced pit are fictional and simplified. The planning baseline crusher capacity is an explicit 900 t/h assumption, not an equipment-manufacturer claim. Projected steady-state throughput is calculated from active trucks, payload, loading and dumping time, round-trip distance, scenario speed, and crusher capacity. This produces approximately 745 t/h for a breakdown that blocks the single active haul lane, 648 t/h for restricted-road operation, and 495 t/h for crusher slowdown. Actual processed ore remains mass-conserving: unprocessed deliveries accumulate in the ROM inventory, so observed cumulative throughput takes time to converge after a scenario change.
+The displayed route geometry and terraced pit are fictional and simplified. The 900 t/h crusher capacity, 600 t ROM bin, 250 t opening inventory, 10.72 km/h restriction, 45 % crusher slowdown and 20 minute breakdown lane blockage are explicit team assumptions or scenario inputs, not manufacturer or site figures. Projected steady-state throughput is the minimum of the fleet supply (active trucks × payload ÷ free cycle time), the excavator capacity (77 t per 6 min = 770 t/h), the dump-bay capacity and the crusher capacity. The planning baseline is therefore excavator-limited at 770 t/h: six trucks over-supply one excavator (match factor 1.61). The road restriction gives 647 t/h (haulage-limited) and the crusher slowdown 495 t/h (crusher-limited). A single truck breakdown reduces throughput while the lane is blocked, but not in steady state, because five trucks still exceed the excavator's capacity. The simulated results converge to these projections, and processed ore is mass-conserving: opening stock plus excavated ore always equals ore in trucks, plus ROM inventory, plus processed ore. Baseline-versus-scenario results, formulas and units are in `ademix/simulator/MODEL.md` and can be regenerated with `python ademix/simulator/compare_scenarios.py`.
 
 Exact provenance, checksum, license, modifications, and rejected asset sources are recorded in `DATA_LICENSES.md` and `REUSE_CATALOG.md`. No confidential or personal operational data is used.
 
@@ -81,9 +81,11 @@ Open <http://localhost:4173> after following `README.md`. The command center sho
 
 - This is a decision-demonstration model, not an engineering design, safety system, or production forecast.
 - Route traffic is simplified; trucks do not yet model passing, intersections, grade-dependent rimpull, or dispatch to multiple faces.
+- Durations are deterministic: there is no stochastic variability in loading, travel or dumping, and no random failures. A breakdown occurs only when the scenario is triggered.
+- The road restriction is modelled as a speed limit; rerouting onto an alternative road is not modelled.
 - Only one operating condition is active at a time, allowing a clear controlled comparison and reliable reset.
 - Fuel percentage is a synthetic visualization signal and is not calibrated to a specific engine or duty cycle.
-- Scenario projections use a simplified steady-state cycle calculation; observed cumulative throughput takes simulated time to converge after a scenario change.
+- Scenario projections are steady-state bounds. The live rolling-hour throughput moves in truckload-sized steps and takes simulated time to settle after a scenario change.
 - The current procedural low-poly mine prioritizes reliable software rendering. Any third-party visual asset will be included only after exact license and performance verification.
 
 ## Presentation

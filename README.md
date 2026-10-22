@@ -39,9 +39,9 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
 2. Orbit the pit with drag and zoom with the wheel.
 3. Select a truck to inspect payload, fuel, speed, position, trips, and cycle time from its Ditto twin.
-4. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls.
-5. Choose **Main road restriction**. The road turns orange and moving truck speed falls from 25 to 15.5 km/h.
-6. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
+4. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops. If it is on the road, trucks behind it stop and the road reports a blockage until HT-01 is towed aside after 20 simulated minutes.
+5. Choose **Main road restriction**. The road turns orange, moving truck speed falls from 25 to 10.72 km/h, and the projected throughput falls from 770 to 647 t/h.
+6. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, run-of-mine inventory rises toward the 600 t bin limit, and trucks then queue at the crusher.
 7. Choose **Normal operations** to reset the active operating condition.
 
 Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
