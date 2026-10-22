@@ -182,10 +182,45 @@ function EquipmentLayer() {
   </group>
 }
 
+function ProcessingPlantLayer() {
+  const hopper = useGLTF('/models/plant-hopper.glb').scene
+  const crusher = useGLTF('/models/plant-crusher.glb').scene
+  const conveyor = useGLTF('/models/plant-conveyor.glb').scene
+  const conveyorSlope = useGLTF('/models/plant-conveyor-slope.glb').scene
+  const stairs = useGLTF('/models/plant-stairs.glb').scene
+  const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
+  const crusherPoint = curve.getPointAt(0)
+
+  return <group position={crusherPoint.clone().add(new THREE.Vector3(-1.2, .3, -.8))} rotation={[0, 2.76, 0]}>
+    <group position={[-2.6, 0, 0]} rotation={[0, Math.PI / 2, 0]}><primitive object={hopper.clone()} scale={2.45}/></group>
+    <group position={[1.1, 0, 0]} rotation={[0, Math.PI / 2, 0]}><primitive object={crusher.clone()} scale={2.45}/></group>
+    <group position={[4.6, .2, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyorSlope.clone()} scale={2.45}/></group>
+    {[8.2, 13.4, 18.6].map((x, index) => <group key={x} position={[x, 2.05 + index * .02, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyor.clone()} scale={2.45}/></group>)}
+    <group position={[1.8, 0, -3.3]}><primitive object={stairs.clone()} scale={2.45}/></group>
+    <mesh position={[24.6, 1.05, .1]}>
+      <coneGeometry args={[5.7, 5.2, 28]}/>
+      <meshStandardMaterial color="#8b6747" roughness={1}/>
+    </mesh>
+    <mesh position={[24.6, .08, .1]} rotation={[-Math.PI / 2, 0, 0]}>
+      <circleGeometry args={[6.8, 32]}/>
+      <meshStandardMaterial color="#61584b" roughness={1}/>
+    </mesh>
+    <mesh position={[-5.8, .2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[4.4, 4.8, 32]}/>
+      <meshBasicMaterial color="#e2c14f"/>
+    </mesh>
+  </group>
+}
+
 useGLTF.preload('/models/hauler.glb')
 useGLTF.preload('/models/excavator.glb')
+useGLTF.preload('/models/plant-hopper.glb')
+useGLTF.preload('/models/plant-crusher.glb')
+useGLTF.preload('/models/plant-conveyor.glb')
+useGLTF.preload('/models/plant-conveyor-slope.glb')
+useGLTF.preload('/models/plant-stairs.glb')
 
-export function TerrainStage({ showRoads = false, showEquipment = false }: { showRoads?: boolean; showEquipment?: boolean }) {
+export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
     const scene = Terrain({
@@ -217,6 +252,7 @@ export function TerrainStage({ showRoads = false, showEquipment = false }: { sho
     <primitive object={terrain} position={[0, 0, 0]}/>
     {showRoads && <HaulRoadLayer/>}
     {showEquipment && <EquipmentLayer/>}
+    {showPlant && <ProcessingPlantLayer/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
     <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
   </>

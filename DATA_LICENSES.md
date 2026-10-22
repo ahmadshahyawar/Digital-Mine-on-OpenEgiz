@@ -40,6 +40,21 @@ The competition organizer explicitly lists this dataset as a recommended MIT-lic
 - Optimization evidence: upstream reports 13,132 triangles / 240,868 bytes for the excavator and 11,284 triangles / 206,784 bytes for the hauler.
 - Use: the excavator represents the loading unit; six cloned hauler scenes represent the live Ditto truck twins. Colors/status markers remain driven by runtime twin state.
 
+### Kenney Factory Kit — processing plant modules
+
+- Source repository: <https://github.com/shorepine/kenney> (mirror of Kenney's CC0 asset library); original pack: <https://kenney.nl/assets/factory-kit>.
+- Pinned source commit: `3694c6879e487c108f55677be7dd2ca75b07cc3b`.
+- License: Creative Commons CC0 1.0 Universal.
+- Upstream files: `3d/factory/hopper-high-square.glb`, `machine-fortified.glb`, `conveyor-long-stripe-sides.glb`, `conveyor-bars-stripe-high-slope.glb`, and `catwalk-stairs.glb`.
+- Local files and SHA-256:
+  - `plant-hopper.glb` — `EBB427E3AB2BC1FABCA3A0DEADCA1F65164943630C073F61D1A01029EDB37F01` (11,308 bytes)
+  - `plant-crusher.glb` — `0907F6616F49BBDAA20241AC4B568B780F30352F204851C53568B8E7DF59B528` (29,828 bytes)
+  - `plant-conveyor.glb` — `727A56DFAE9A04D12437123B7B051EF76327887F02C837090178B9781FA56534` (26,632 bytes)
+  - `plant-conveyor-slope.glb` — `EF043AC520572CEA0AB570873EF891D9BD8F0C748A1CAA4FEEA82F560CDC8C6F` (36,556 bytes)
+  - `plant-stairs.glb` — `0356A040EBBF632CD20DFE384A13108270DF26426AD1DD51A2C767C8F6A6960C` (66,256 bytes)
+- Use: assembled into the truck dump pocket, guarded primary-crusher module, inclined/transfer conveyors, and access stairs. A lightweight locally generated cone represents the coarse-ore stockpile.
+- Modifications: only scene placement, scaling, and repetition; source GLBs are preserved unchanged and bundled locally.
+
 ## Approved Visual Asset Sources
 
 Before another asset is added, record its exact name, creator, source URL, downloaded variant, local path, size, and checksum here.
@@ -67,7 +82,7 @@ Before another asset is added, record its exact name, creator, source URL, downl
 - License: Creative Commons CC0 1.0 Universal.
 - Pack description: 56 GLB models, 14.3 MB total, built to a shared metre scale and visual palette.
 - Intended use: a small local subset for the truck dump pocket, crusher, conveyor, bin, and stockpile.
-- Status: selected in principle but no model is committed yet. Record every exact asset URL, checksum, size, and optimization step before inclusion.
+- Status: evaluated but not included because the asset CDN was unavailable during implementation. The committed plant checkpoint uses the locally bundled Kenney Factory Kit subset above.
 
 ## Rejected or Reference-Only Sources
 

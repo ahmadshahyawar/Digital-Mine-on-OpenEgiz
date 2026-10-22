@@ -138,6 +138,7 @@ A strong submission should ideally provide:
 - Visual work now follows explicit approval checkpoints. Stage 1 isolates a deterministic height-field open pit built with the MIT-licensed THREE.Terrain engine: natural surrounding relief, six engineered benches, a 23.5-unit-deep floor, vertex geology colors, and software-WebGL lighting. Roads and equipment are intentionally excluded from the `?stage=terrain` review view.
 - Stage 2 adds a terrain-integrated 7.2-unit-wide spiral haul ramp, blended shoulders, an outer safety berm, center markings, and flattened loading/crusher pads. The first floating-road attempt was rejected before commit; the corrected `?stage=roads` view cuts the ramp into the height field.
 - Stage 3 equipment review at `?stage=equipment` places six optimized CC0 haulers in alternating lanes along the approved spiral route and a CC0 excavator on the pit-floor loading pad. The Stage 1/2 URLs deliberately remain isolated without equipment for comparison.
+- Stage 4 processing-plant review at `?stage=plant` adds a compact truck dump, primary-crusher module, transfer conveyors, access stairs, and coarse-ore stockpile assembled from five pinned CC0 Kenney Factory Kit GLBs. A first SELENE-based composition was visually rejected before commit because it read as lunar equipment and extended outside the camera frame.
 
 ## Immediate Decisions and Tasks
 
@@ -221,6 +222,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Built isolated Stage 1 terrain review using a pinned MIT terrain engine | Production build passes; software/headless Chrome rendered `/?stage=terrain` at 1440×1000 |
 | 2026-10-22 | Codex | Built isolated Stage 2 haul-road review and rejected the initial floating-road geometry | Corrected ramp is carved into the height field; production build and 1440×1000 software-Chrome render pass |
 | 2026-10-22 | Codex | Added the first Stage 3 equipment layer to the accepted terrain and road | Six haulers and one excavator render from bundled CC0 GLBs; production build and 1440×1000 software-Chrome render pass |
+| 2026-10-22 | Codex | Added the Stage 4 processing-plant checkpoint and rejected an unsuitable first asset composition | Production build passes; 1440×1000 software-Edge render shows the full dump-to-crusher-to-stockpile flow inside frame |
 
 ## Decisions
 
@@ -236,6 +238,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Use the official `team-111` repository as `origin` and retain the personal repository as `personal` | The frozen official repository is the evaluated submission; retaining the old remote preserves a separate backup destination | Team |
 | 2026-10-22 | Use a small subset of the CC0 3DAssets.dev Ore Processing and Haulage Plant pack | It provides coherent mining-specific plant visuals without requiring the team to model the crusher system from scratch | Team |
 | 2026-10-22 | Require visual checkpoint approval before adding the next scene layer | Prevents weak terrain, roads, equipment, motion, and UI from being combined into an incoherent final scene | Team |
+| 2026-10-22 | Use a five-model CC0 Kenney Factory Kit subset for the plant checkpoint | The preferred mining pack CDN was unavailable; Kenney's pinned local GLBs are small, consistent, license-safe, and render reliably in software WebGL | Team |
 
 ## Known Issues and Risks
 
@@ -243,7 +246,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - The detailed simulation validation method and baseline-versus-scenario evidence still need to be completed.
 - A visually impressive scene that does not receive its operational state through OpenEgiz would fail the core platform requirement.
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
-- The initial frontend JavaScript bundle is about 990 kB before gzip (274 kB gzip); it builds successfully but should be split or reduced after the full data path works.
+- The frontend JavaScript bundle is about 1.12 MB before gzip (317 kB gzip); it builds successfully but should be split or reduced after the staged scene is integrated into the live view.
 - The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
 - The current presentation uses a clearly labeled conceptual interface composition. Replace it with a real application screenshot only after the clean end-to-end stack passes; do not present the concept graphic as runtime evidence.
 - Local MQTT port 1883 was unavailable during Windows validation, so the host-only development override `MQTT_PORT=1884` was used. Container-to-container traffic and judge defaults remain unchanged.
@@ -253,7 +256,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Next Recommended Action
 
-Improve the live 3D pit, route, equipment separation, selection feedback, and scenario visibility while retaining software-WebGL performance. Then capture scenario evidence, run release checks from the documented commands, and replace the presentation's conceptual interface composition with verified runtime evidence.
+After human review of `?stage=plant`, add Stage 5 purposeful motion and connect truck/plant visual states to the existing OpenEgiz twins. Then capture scenario evidence, run release checks from the documented commands, and replace the presentation's conceptual interface composition with verified runtime evidence.
 
 ## Handoff Template
 
