@@ -1,11 +1,14 @@
 import React from 'react'
 import { OrbitControls, useGLTF } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import Terrain, { TerrainNS, createSeededRandom } from 'three.terrain.js'
+import type { Twin } from './MineScene'
 
 const WIDTH = 150
 const DEPTH = 112
 const SEGMENTS = 128
+const twinValue = (twin: Twin | undefined, key: string, fallback: string | number = 0) => twin?.features?.[key]?.properties?.value ?? fallback
 
 function carveEngineeredPit(heights: Float32Array, options: { xSegments: number; ySegments: number; xSize: number; ySize: number }) {
   const columns = options.xSegments + 1
@@ -154,35 +157,72 @@ function HaulRoadLayer() {
   </group>
 }
 
-function HaulerOnRoad({ progress, lane }: { progress: number; lane: -1 | 1 }) {
+function HaulerOnRoad({ progress, lane, twin, moving }: { progress: number; lane: -1 | 1; twin?: Twin; moving?: boolean }) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
   const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
-  const point = curve.getPointAt(progress)
-  const tangent = curve.getTangentAt(progress).normalize()
-  const across = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(lane * 1.75)
-  return <group position={point.clone().add(across).add(new THREE.Vector3(0, .38, 0))} rotation={[0, -Math.atan2(tangent.z, tangent.x), 0]}>
+  const group = React.useRef<THREE.Group>(null)
+  const animatedProgress = React.useRef(progress)
+  const state = String(twinValue(twin, 'state', 'hauling'))
+  const direction = Number(twinValue(twin, 'heading', lane)) >= 0 ? 1 : -1
+  const speed = Number(twinValue(twin, 'speed_kmh', moving ? 25 : 0))
+  const updateTransform = React.useCallback((nextProgress: number) => {
+    if (!group.current) return
+    const point = curve.getPointAt(nextProgress)
+    const tangent = curve.getTangentAt(nextProgress).normalize().multiplyScalar(direction)
+    const across = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(lane * 1.75)
+    group.current.position.copy(point).add(across).add(new THREE.Vector3(0, .38, 0))
+    group.current.rotation.y = -Math.atan2(tangent.z, tangent.x)
+  }, [curve, direction, lane])
+  useFrame((_, delta) => {
+    if (moving && speed > 0 && !['loading', 'dumping', 'breakdown'].includes(state)) {
+      animatedProgress.current = (animatedProgress.current + direction * delta * speed / 1250 + 1) % 1
+    }
+    updateTransform(animatedProgress.current)
+  })
+  React.useLayoutEffect(() => updateTransform(animatedProgress.current), [updateTransform])
+  const status = state === 'breakdown' ? '#ff5149' : state === 'loading' || state === 'dumping' ? '#ffc246' : '#38ef9d'
+  return <group ref={group}>
     <primitive object={model} scale={1.22}/>
-    <mesh position={[0, 4.35, 0]}><sphereGeometry args={[.16, 10, 8]}/><meshBasicMaterial color="#38ef9d"/></mesh>
+    <mesh position={[0, 4.35, 0]}><sphereGeometry args={[.16, 10, 8]}/><meshBasicMaterial color={status}/></mesh>
+    {state === 'breakdown' && <mesh position={[0, 3.35, 0]}><octahedronGeometry args={[.42]}/><meshBasicMaterial color="#ff5149"/></mesh>}
   </group>
 }
 
-function EquipmentLayer() {
+function EquipmentLayer({ twins = [], moving = false }: { twins?: Twin[]; moving?: boolean }) {
   const { scene } = useGLTF('/models/excavator.glb')
   const excavator = React.useMemo(() => scene.clone(), [scene])
+  const excavatorGroup = React.useRef<THREE.Group>(null)
   const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
   const loadingPoint = curve.getPointAt(1)
+  const trucks = twins.filter(twin => twin.attributes?.kind === 'haul-truck')
+  const excavatorState = String(twinValue(twins.find(twin => twin.attributes?.kind === 'excavator'), 'state', 'ready'))
+  useFrame(({ clock }) => {
+    if (excavatorGroup.current) excavatorGroup.current.rotation.y = -1.35 + (moving && excavatorState === 'loading' ? Math.sin(clock.elapsedTime * 1.8) * .2 : 0)
+  })
   return <group>
-    <HaulerOnRoad progress={.08} lane={1}/><HaulerOnRoad progress={.22} lane={-1}/>
-    <HaulerOnRoad progress={.38} lane={1}/><HaulerOnRoad progress={.54} lane={-1}/>
-    <HaulerOnRoad progress={.7} lane={1}/><HaulerOnRoad progress={.86} lane={-1}/>
-    <group position={loadingPoint.clone().add(new THREE.Vector3(1.2, .35, -1.5))} rotation={[0, -1.35, 0]}>
+    {[.08, .22, .38, .54, .7, .86].map((progress, index) => <HaulerOnRoad key={index} progress={progress} lane={index % 2 ? -1 : 1} twin={trucks[index]} moving={moving}/>)}
+    <group ref={excavatorGroup} position={loadingPoint.clone().add(new THREE.Vector3(1.2, .35, -1.5))} rotation={[0, -1.35, 0]}>
       <primitive object={excavator} scale={1.5}/>
     </group>
   </group>
 }
 
-function ProcessingPlantLayer() {
+function MaterialFlow({ constrained }: { constrained: boolean }) {
+  const particles = React.useRef<THREE.Group>(null)
+  useFrame((_, delta) => {
+    if (!particles.current) return
+    const speed = constrained ? .65 : 1.7
+    for (const child of particles.current.children) child.position.x = (child.position.x + delta * speed + 14) % 14
+  })
+  return <group ref={particles} position={[5.6, 2.95, .1]}>
+    {[0, 2.8, 5.6, 8.4, 11.2].map(offset => <mesh key={offset} position={[offset, 0, 0]}>
+      <dodecahedronGeometry args={[.35, 0]}/><meshStandardMaterial color={constrained ? '#e28b35' : '#b47b49'} roughness={1}/>
+    </mesh>)}
+  </group>
+}
+
+function ProcessingPlantLayer({ twins = [], moving = false }: { twins?: Twin[]; moving?: boolean }) {
   const hopper = useGLTF('/models/plant-hopper.glb').scene
   const crusher = useGLTF('/models/plant-crusher.glb').scene
   const conveyor = useGLTF('/models/plant-conveyor.glb').scene
@@ -190,6 +230,8 @@ function ProcessingPlantLayer() {
   const stairs = useGLTF('/models/plant-stairs.glb').scene
   const curve = React.useMemo(() => new THREE.CatmullRomCurve3(haulRoadPoints()), [])
   const crusherPoint = curve.getPointAt(0)
+  const crusherState = String(twinValue(twins.find(twin => twin.attributes?.kind === 'crusher'), 'state', 'operating'))
+  const constrained = crusherState === 'constrained'
 
   return <group position={crusherPoint.clone().add(new THREE.Vector3(-1.2, .3, -.8))} rotation={[0, 2.76, 0]}>
     <group position={[-2.6, 0, 0]} rotation={[0, Math.PI / 2, 0]}><primitive object={hopper.clone()} scale={2.45}/></group>
@@ -197,6 +239,7 @@ function ProcessingPlantLayer() {
     <group position={[4.6, .2, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyorSlope.clone()} scale={2.45}/></group>
     {[8.2, 13.4, 18.6].map((x, index) => <group key={x} position={[x, 2.05 + index * .02, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyor.clone()} scale={2.45}/></group>)}
     <group position={[1.8, 0, -3.3]}><primitive object={stairs.clone()} scale={2.45}/></group>
+    {moving && <MaterialFlow constrained={constrained}/>}
     <mesh position={[24.6, 1.05, .1]}>
       <coneGeometry args={[5.7, 5.2, 28]}/>
       <meshStandardMaterial color="#8b6747" roughness={1}/>
@@ -220,7 +263,7 @@ useGLTF.preload('/models/plant-conveyor.glb')
 useGLTF.preload('/models/plant-conveyor-slope.glb')
 useGLTF.preload('/models/plant-stairs.glb')
 
-export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean }) {
+export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [] }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[] }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
     const scene = Terrain({
@@ -251,8 +294,8 @@ export function TerrainStage({ showRoads = false, showEquipment = false, showPla
     <directionalLight position={[-45, 70, 35]} intensity={2.25}/>
     <primitive object={terrain} position={[0, 0, 0]}/>
     {showRoads && <HaulRoadLayer/>}
-    {showEquipment && <EquipmentLayer/>}
-    {showPlant && <ProcessingPlantLayer/>}
+    {showEquipment && <EquipmentLayer twins={twins} moving={moving}/>}
+    {showPlant && <ProcessingPlantLayer twins={twins} moving={moving}/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
     <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
   </>

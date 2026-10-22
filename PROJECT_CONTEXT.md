@@ -139,6 +139,7 @@ A strong submission should ideally provide:
 - Stage 2 adds a terrain-integrated 7.2-unit-wide spiral haul ramp, blended shoulders, an outer safety berm, center markings, and flattened loading/crusher pads. The first floating-road attempt was rejected before commit; the corrected `?stage=roads` view cuts the ramp into the height field.
 - Stage 3 equipment review at `?stage=equipment` places six optimized CC0 haulers in alternating lanes along the approved spiral route and a CC0 excavator on the pit-floor loading pad. The Stage 1/2 URLs deliberately remain isolated without equipment for comparison.
 - Stage 4 processing-plant review at `?stage=plant` adds a compact truck dump, primary-crusher module, transfer conveyors, access stairs, and coarse-ore stockpile assembled from five pinned CC0 Kenney Factory Kit GLBs. A first SELENE-based composition was visually rejected before commit because it read as lunar equipment and extended outside the camera frame.
+- Stage 5 live-motion review at `?stage=motion` animates the six haulers along the approved spiral, oscillates the excavator only while its OpenEgiz twin reports loading, and moves ore markers through the plant at a rate controlled by crusher state. Truck state, reported speed, direction, and breakdown status drive movement and status markers.
 
 ## Immediate Decisions and Tasks
 
@@ -223,6 +224,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Built isolated Stage 2 haul-road review and rejected the initial floating-road geometry | Corrected ramp is carved into the height field; production build and 1440×1000 software-Chrome render pass |
 | 2026-10-22 | Codex | Added the first Stage 3 equipment layer to the accepted terrain and road | Six haulers and one excavator render from bundled CC0 GLBs; production build and 1440×1000 software-Chrome render pass |
 | 2026-10-22 | Codex | Added the Stage 4 processing-plant checkpoint and rejected an unsuitable first asset composition | Production build passes; 1440×1000 software-Edge render shows the full dump-to-crusher-to-stockpile flow inside frame |
+| 2026-10-22 | Codex | Added Stage 5 purposeful motion linked to OpenEgiz truck, excavator, and crusher twin properties | Production build passes; 1440×1000 software-Edge capture confirms the moving fleet remains separated and the full scene stays in frame |
 
 ## Decisions
 
@@ -239,6 +241,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Use a small subset of the CC0 3DAssets.dev Ore Processing and Haulage Plant pack | It provides coherent mining-specific plant visuals without requiring the team to model the crusher system from scratch | Team |
 | 2026-10-22 | Require visual checkpoint approval before adding the next scene layer | Prevents weak terrain, roads, equipment, motion, and UI from being combined into an incoherent final scene | Team |
 | 2026-10-22 | Use a five-model CC0 Kenney Factory Kit subset for the plant checkpoint | The preferred mining pack CDN was unavailable; Kenney's pinned local GLBs are small, consistent, license-safe, and render reliably in software WebGL | Team |
+| 2026-10-22 | Drive motion from existing twin properties rather than a disconnected animation timeline | Truck state/speed/direction, excavator state, and crusher state now visibly affect the 3D review scene while interpolation keeps movement smooth between two-second API updates | Team |
 
 ## Known Issues and Risks
 
@@ -256,7 +259,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Next Recommended Action
 
-After human review of `?stage=plant`, add Stage 5 purposeful motion and connect truck/plant visual states to the existing OpenEgiz twins. Then capture scenario evidence, run release checks from the documented commands, and replace the presentation's conceptual interface composition with verified runtime evidence.
+After human review of `?stage=motion`, promote the accepted staged scene into the default live command center, add selection feedback and scenario-specific road visualization, then capture scenario evidence and run the documented release checks.
 
 ## Handoff Template
 
