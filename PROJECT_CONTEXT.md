@@ -233,6 +233,27 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat). The simulator is Codex-owned; TurkenGulzat explicitly approved Claude
+  building Smart Dispatch in the simulator on its own branch and informing Codex (2026-10-23).
+Branch: claude/smart-dispatch (from origin/codex/ademix 8d8a30e)
+Task: add a dispatch policy (fixed | smart) orthogonal to the four operating scenarios. Smart dispatch
+  right-sizes the active fleet from the steady-state model, parks surplus empty trucks on a ready line at the
+  crusher, and releases them when the need rises (breakdown, road restriction, policy switch). Add twin
+  fields, an API endpoint, tests, a policy comparison in compare_scenarios.py and SCENARIOS.md, and a
+  What-If panel (Scenario A/B/C + bottleneck) in Layer 1.
+Exact files: ademix/simulator/engine.py, ademix/simulator/app.py, ademix/simulator/test_engine.py,
+  ademix/simulator/compare_scenarios.py, ademix/simulator/SCENARIOS.md, ademix/frontend/src/IngestionLayer.tsx,
+  ademix/frontend/src/ingestion.css
+Interfaces changed (additive): truck state `standby`; scenario-controller fields dispatch_policy,
+  dispatch_description, trucks_required, trucks_in_cycle, trucks_standby, dispatch_reason; mine-01 fields
+  truck_operating_h_per_kt, operating_fleet_utilization; POST /api/dispatch {"policy": "fixed"|"smart"}.
+  twins.json, verify_scenarios.py and Compose are not edited.
+Expected handoff: commit SHAs, tests, comparison table, Codex request (verify_scenarios.py + docs).
+```
+
 ### Lock — Claude — truck-breakdown visualization — 2026-10-23
 
 ```text
