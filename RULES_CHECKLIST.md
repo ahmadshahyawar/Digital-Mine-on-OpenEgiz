@@ -86,6 +86,12 @@ For every claimed what-if scenario:
 
 Planned scenarios: truck breakdown, road closure with rerouting, and reduced crusher capacity.
 
+HT-01 breakdown gate verified on 2026-10-23: the running stand changed Ditto
+twin state, stopped only HT-01 at zero speed, preserved FIFO/resource progress,
+reduced first-hour throughput from 770.0 to 581.6 t/h, and reset without stale
+breakdown or blocked state. Keep the shared checkboxes open until the same final
+release evidence is reconfirmed for all three claimed scenarios.
+
 ## Data and Assumptions
 
 - [ ] `SUBMISSION.md` contains a `Data and Assumptions` section.

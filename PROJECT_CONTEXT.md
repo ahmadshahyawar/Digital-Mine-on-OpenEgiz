@@ -322,6 +322,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Corrected bench widths and excessive wall heights without changing the mine layout | Live integrated render shows five distinguishable actual bench surfaces and shorter planar faces; production build, 3 data-layer checks, and 3 route/FIFO tests pass |
 | 2026-10-22 | Codex | Expanded the mine into a ten-turn large-scale excavation and converted roads to unpaved haul roads | Live review caught and rejected point-sampled road-carving spokes; segment-based carving removed them. Final production build, 3 data checks, and 3 route/FIFO tests pass |
 | 2026-10-22 | Codex | Deepened the large pit and corrected unrealistic truck speed | Live render confirms ten deep stepped levels and a connected bottom road; truck interpolation now uses physical route length. Production build, 3 data checks, and 3 route/FIFO tests pass |
+| 2026-10-23 | Codex | Completed the HT-01 breakdown release gate, including service interruption, FIFO continuity, throughput impact, recovery, and stale-event cleanup | 37 simulator and 32 data tests pass; live API → MQTT → Eclipse Ditto → API smoke test reports HT-01 stopped, first-hour throughput 770.0→581.6 t/h, and a clean baseline reset |
 
 ## Decisions
 
@@ -358,6 +359,13 @@ Include changed paths, tests or checks performed, and anything the next contribu
 ## Next Recommended Action
 
 Obtain the Team's visual approval of the rebuilt terraced pit at `?stage=world`; then continue the loading-realism checklist one approved item at a time without changing the accepted terrain or haul-road centerline.
+
+### Breakdown verification handoff — 2026-10-23
+
+- `ademix/simulator/verify_breakdown.py` is the repeatable release check. It rejects demo data, exercises the public scenario endpoint, observes all 11 twins through Eclipse Ditto, and always restores baseline.
+- The deterministic first-hour comparison is 770.0 t/h baseline versus 581.6 t/h after HT-01 fails (−24.5%). The analytical steady-state projection remains 770 t/h because five healthy trucks can still saturate the single excavator; this is expected, not a missing impact.
+- Added edge tests cover breakdown while dumping, removal from the excavator FIFO without reordering, preserved ore/mass balance, and reset invalidation of stale service/recovery events.
+- Windows validation used host MQTT port 1884 because the machine's Mosquitto service owns 1883. No committed Compose default changed.
 
 ## Handoff Template
 

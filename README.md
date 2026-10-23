@@ -60,6 +60,16 @@ sleep 3
 curl --fail http://localhost:8088/api/state
 ```
 
+Verify the complete HT-01 breakdown path through the scenario API, MQTT,
+Eclipse Ditto, and the read API, including a clean reset back to baseline:
+
+```bash
+python ademix/simulator/verify_breakdown.py
+```
+
+The check fails unless `/api/state` reports `source: eclipse-ditto`; local demo
+mode therefore cannot be mistaken for an end-to-end OpenEgiz verification.
+
 The state response must report `"source":"eclipse-ditto"` and include 11 twins in namespace `org.openegiz.ademix`.
 
 Run the deterministic simulation checks in the already-built simulator image:

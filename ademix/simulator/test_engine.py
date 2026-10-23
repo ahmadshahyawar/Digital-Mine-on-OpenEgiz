@@ -206,6 +206,53 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(broken.payload_t, 0)
         self.assertGreater(mine.window["loads"], 0)
 
+    def test_breakdown_at_dump_releases_bay_and_preserves_ore(self):
+        mine = MineEngine()
+        broken = mine.trucks[0]
+        while broken.state != "dumping":
+            mine.step(10)
+        payload_before = broken.payload_t
+        delivered_before = mine.delivered_t
+        mine.set_scenario("truck_breakdown")
+        self.assertIsNone(mine.dump_truck)
+        self.assertEqual(broken.state, "breakdown")
+        self.assertEqual(broken.payload_t, payload_before)
+        self.assertEqual(mine.delivered_t, delivered_before)
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+        mine.set_scenario("baseline")
+        placements = [broken in mine.dump_queue, broken is mine.dump_truck]
+        self.assertEqual(sum(placements), 1)
+        self.assertIn(broken.state, {"queued_at_crusher", "dumping"})
+        self.assertEqual(len({truck.name for truck in mine.dump_queue}), len(mine.dump_queue))
+
+    def test_breakdown_removes_waiting_truck_without_reordering_fifo(self):
+        mine = MineEngine()
+        broken = mine.trucks[0]
+        while broken.state != "queued_at_excavator":
+            mine.step(10)
+        before = [truck.name for truck in mine.excavator_queue]
+        self.assertIn(broken.name, before)
+        mine.set_scenario("truck_breakdown")
+        after = [truck.name for truck in mine.excavator_queue]
+        self.assertNotIn(broken.name, after)
+        self.assertEqual(after, [name for name in before if name != broken.name])
+        self.assertEqual(len(set(after)), len(after))
+
+    def test_reset_invalidates_breakdown_and_old_service_events(self):
+        mine = MineEngine()
+        broken = mine.trucks[0]
+        while broken.state != "loading":
+            mine.step(10)
+        mine.set_scenario("truck_breakdown")
+        mine.set_scenario("baseline")
+        run(mine, 2)
+        self.assertFalse([truck for truck in mine.trucks if truck.state in ("breakdown", "blocked")])
+        self.assertIsNone(mine.blockage)
+        self.assertEqual(mine.breakdown_location, "none")
+        self.assertEqual(len({truck.name for truck in mine.excavator_queue}), len(mine.excavator_queue))
+        self.assertEqual(len({truck.name for truck in mine.dump_queue}), len(mine.dump_queue))
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+
     def test_road_restriction_slows_trucks_and_matches_road_twin(self):
         mine = MineEngine()
         mine.set_scenario("road_closure")
