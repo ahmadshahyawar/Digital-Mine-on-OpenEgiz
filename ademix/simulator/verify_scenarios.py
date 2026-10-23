@@ -139,7 +139,22 @@ def verify(base_url: str, timeout_s: float) -> None:
             ), timeout_s,
         )
         verify_contract(twins)
-        results.append("truck_breakdown: only HT-01 stopped at 0 km/h")
+        lane = value(twins, "road-main", "blockage_lane")
+        heading = int(value(twins, "road-main", "blockage_heading"))
+        crusher_bound = int(value(twins, "road-main", "blocked_crusher_bound_trucks"))
+        face_bound = int(value(twins, "road-main", "blocked_face_bound_trucks"))
+        blocked_total = int(value(twins, "road-main", "blocked_trucks"))
+        if value(twins, "road-main", "traffic_model") != "two_way_separated_lanes":
+            raise AssertionError("road-main traffic model is not the A4 separated-lane contract")
+        if lane == "none":
+            if heading != 0 or blocked_total != 0:
+                raise AssertionError(f"off-road breakdown retained lane state: lane={lane}, heading={heading}")
+        elif lane not in {"crusher_bound", "face_bound"} or heading != (1 if lane == "crusher_bound" else -1):
+            raise AssertionError(f"invalid active blockage direction: lane={lane}, heading={heading}")
+        if crusher_bound + face_bound != blocked_total or (crusher_bound and face_bound):
+            raise AssertionError("directional blocked-truck counts do not reconcile")
+        consequence = f"{lane} lane affected, opposing lane open" if lane != "none" else "off-road failure, lanes remain open"
+        results.append(f"truck_breakdown: HT-01 stopped at 0 km/h; {consequence}")
 
         activate(base_url, "baseline")
         wait_for(base_url, "baseline", lambda t: all(value(t, truck, "state") not in {"breakdown", "blocked"} for truck in TRUCKS), timeout_s)

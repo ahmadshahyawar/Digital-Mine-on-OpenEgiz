@@ -237,7 +237,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ```text
 Owner: Ahmad + Codex
-Status: ready for integration; A4 work lock released
+Status: integrated and verified on codex/ademix; A4 work lock released
 Branch: codex/a4-road-direction
 Implementation commit: ee35325
 Exact files: simulator engine/tests/twins/verification and ROAD_BREAKDOWN_CONTRACT.md; MODEL.md and
@@ -254,13 +254,17 @@ Evidence: common returning-lane first hour is now 770.0 → 691.0 t/h (-10.3%), 
   fixtures and telemetry were regenerated from the changed model.
 Tests actually run: 72 simulator/API tests pass; 35 data tests pass; frontend tsc + Vite build passes
   (existing >500 kB bundle warning only). Direction, progress, speed, counters, tow, reset, FIFO continuity
-  and zero mass-balance error are asserted.
+  and zero mass-balance error are asserted. After fast-forward integration, a clean Docker rebuild/start
+  from empty project volumes reached healthy status. The judge smoke command passed 11 twins and all 141
+  required fields/units; all 72 tests passed again inside the built image. The live scenario verifier passed
+  baseline, Smart Dispatch, breakdown, road restriction, crusher slowdown and reset through MQTT/Ditto/API.
+  A separate live travelling failure reported crusher_bound, heading 1, opposing lane open, then reset cleanly.
 Frontend request: use blockage_lane and directional counters; do not show the opposing lane as closed and
   do not infer direction from screen position. Safe labels and reset rules are in ROAD_BREAKDOWN_CONTRACT.md.
 Limitations: separated lanes share one speed limit; no passing, reroute or lane-change logic is modelled;
   breakdown/tow behavior and timing are synthetic team assumptions, not a site traffic-management plan.
-Integration instruction: merge into codex/ademix, run combined tests/build and clean Docker/OpenEgiz gates,
-  then push codex/ademix only. Do not merge to main.
+Integration: fast-forwarded into codex/ademix and passed every combined release gate. Push codex/ademix
+  only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A3 production and recovery history — 2026-10-23
