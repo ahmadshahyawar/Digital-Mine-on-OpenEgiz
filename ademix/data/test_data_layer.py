@@ -55,6 +55,7 @@ SOURCE = json.loads((DATA / "openmines" / "north_pit_mine.json").read_text(encod
 DICTIONARY = read_csv(DATA / "telemetry" / "telemetry_dictionary.csv")
 ASSETS = json.loads((DATA / "assets" / "asset_types.json").read_text(encoding="utf-8"))
 TWINS = json.loads((DATA.parent / "simulator" / "twins.json").read_text(encoding="utf-8"))
+RELATIONSHIPS = json.loads((DATA / "topology" / "twin_relationships.json").read_text(encoding="utf-8"))
 MANIFEST = json.loads((DATA / "telemetry" / "manifest.json").read_text(encoding="utf-8"))
 
 
@@ -179,6 +180,46 @@ class AssetDefinitionTests(unittest.TestCase):
                 with self.subTest(twin=thing_id, feature=feature):
                     self.assertIn((kind, feature), rules)
                     check_value(self, rules[(kind, feature)], body["properties"]["value"])
+
+    def test_relationship_contract_contains_each_real_twin_once(self):
+        self.assertEqual(RELATIONSHIPS["schema_version"], "ademix.twin-relationships.v1")
+        nodes = RELATIONSHIPS["nodes"]
+        thing_ids = [node["thing_id"] for node in nodes]
+        self.assertEqual(len(nodes), 11)
+        self.assertEqual(len(thing_ids), len(set(thing_ids)))
+        self.assertEqual(set(thing_ids), set(TWINS))
+        self.assertEqual(RELATIONSHIPS["node_count"], len(nodes))
+
+    def test_relationship_parents_and_targets_resolve(self):
+        nodes = {node["id"]: node for node in RELATIONSHIPS["nodes"]}
+        thing_ids = {node["thing_id"] for node in nodes.values()}
+        for node in nodes.values():
+            seeded_parent = TWINS[node["thing_id"]]["attributes"].get("_parents")
+            self.assertEqual(node["parent_thing_id"], seeded_parent)
+            if node["parent_thing_id"] is not None:
+                self.assertIn(node["parent_thing_id"], thing_ids)
+        relationship_ids = set()
+        for relationship in RELATIONSHIPS["relationships"]:
+            self.assertNotIn(relationship["id"], relationship_ids)
+            relationship_ids.add(relationship["id"])
+            self.assertIn(relationship["source"], nodes)
+            self.assertIn(relationship["target"], nodes)
+            self.assertIn(relationship["category"], RELATIONSHIPS["relationship_categories"])
+
+    def test_relationship_contract_has_material_movement_and_control_paths(self):
+        edges = {(edge["type"], edge["source"], edge["target"], edge["category"])
+                 for edge in RELATIONSHIPS["relationships"]}
+        for index in range(1, 7):
+            truck = f"truck-{index:02d}"
+            self.assertIn(("loads", "excavator-01", truck, "material"), edges)
+            self.assertIn(("travels_on", truck, "road-main", "movement"), edges)
+            self.assertIn(("delivers_to", truck, "crusher-01", "material"), edges)
+            self.assertIn(("sets_dispatch_policy_for", "scenario-controller", truck, "control"), edges)
+        self.assertIn(("processes_ore_for", "crusher-01", "mine-01", "material"), edges)
+        controlled = {target for edge_type, source, target, category in edges
+                      if edge_type == "changes_operating_condition_of"
+                      and source == "scenario-controller" and category == "control"}
+        self.assertEqual(controlled, {"excavator-01", "road-main", "crusher-01"})
 
 
 def check_value(test, rule, raw):
@@ -394,6 +435,7 @@ class SensorTopologyBundleTests(unittest.TestCase):
         self.assertEqual((DATA / build.BUNDLE_PATH).read_bytes(), bundle_text.encode("utf-8"))
         self.assertNotIn("NaN", bundle_text)
         bundle = json.loads(bundle_text)
+        self.assertEqual(bundle["twinRelationships"], RELATIONSHIPS)
         for equipment in bundle["equipment"]:
             for spec in equipment["specs"]:
                 self.assertEqual(spec["status"], REGISTER[spec["parameter_id"]]["status"])

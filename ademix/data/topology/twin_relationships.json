@@ -1,0 +1,452 @@
+{
+  "schema_version": "ademix.twin-relationships.v1",
+  "namespace": "org.openegiz.ademix",
+  "description": "Static relationship contract for the eleven existing Ademix Eclipse Ditto twins. Join each node to current /api/state data by thing_id; relationships do not create additional twins.",
+  "node_count": 11,
+  "relationship_categories": {
+    "hierarchy": "OpenEgiz _parents containment.",
+    "material": "Ore loading, delivery and processing flow.",
+    "movement": "Truck use of the modelled haul road.",
+    "control": "Scenario condition and Smart Dispatch policy control; not material flow."
+  },
+  "selection": {
+    "join_key": "thing_id",
+    "live_state_path": "features.<state_feature>.properties.value",
+    "missing_state_behavior": "Show state unavailable; do not infer or fabricate a value."
+  },
+  "nodes": [
+    {
+      "id": "mine-01",
+      "thing_id": "org.openegiz.ademix:mine-01",
+      "label": "Ademix North Pit",
+      "kind": "mine",
+      "parent_thing_id": null,
+      "state_feature": "bottleneck_live"
+    },
+    {
+      "id": "excavator-01",
+      "thing_id": "org.openegiz.ademix:excavator-01",
+      "label": "Excavator EX-01",
+      "kind": "excavator",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "road-main",
+      "thing_id": "org.openegiz.ademix:road-main",
+      "label": "Main Haul Road",
+      "kind": "road",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "crusher-01",
+      "thing_id": "org.openegiz.ademix:crusher-01",
+      "label": "Primary Crusher CR-01",
+      "kind": "crusher",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "scenario-controller",
+      "thing_id": "org.openegiz.ademix:scenario-controller",
+      "label": "Scenario Controller",
+      "kind": "scenario",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "active"
+    },
+    {
+      "id": "truck-01",
+      "thing_id": "org.openegiz.ademix:truck-01",
+      "label": "Haul Truck HT-01",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "truck-02",
+      "thing_id": "org.openegiz.ademix:truck-02",
+      "label": "Haul Truck HT-02",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "truck-03",
+      "thing_id": "org.openegiz.ademix:truck-03",
+      "label": "Haul Truck HT-03",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "truck-04",
+      "thing_id": "org.openegiz.ademix:truck-04",
+      "label": "Haul Truck HT-04",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "truck-05",
+      "thing_id": "org.openegiz.ademix:truck-05",
+      "label": "Haul Truck HT-05",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    },
+    {
+      "id": "truck-06",
+      "thing_id": "org.openegiz.ademix:truck-06",
+      "label": "Haul Truck HT-06",
+      "kind": "haul-truck",
+      "parent_thing_id": "org.openegiz.ademix:mine-01",
+      "state_feature": "state"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "contains:excavator-01",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "excavator-01",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:road-main",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:crusher-01",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:scenario-controller",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "scenario-controller",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-01",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-01",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-02",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-02",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-03",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-03",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-04",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-04",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-05",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-05",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "contains:truck-06",
+      "type": "contains",
+      "category": "hierarchy",
+      "source": "mine-01",
+      "target": "truck-06",
+      "direction": "source_to_target",
+      "label": "contains"
+    },
+    {
+      "id": "loads:truck-01",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-01",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-01",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-01",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-01",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-01",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-01",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-01",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "loads:truck-02",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-02",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-02",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-02",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-02",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-02",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-02",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-02",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "loads:truck-03",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-03",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-03",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-03",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-03",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-03",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-03",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-03",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "loads:truck-04",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-04",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-04",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-04",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-04",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-04",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-04",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-04",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "loads:truck-05",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-05",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-05",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-05",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-05",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-05",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-05",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-05",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "loads:truck-06",
+      "type": "loads",
+      "category": "material",
+      "source": "excavator-01",
+      "target": "truck-06",
+      "direction": "source_to_target",
+      "label": "loads ore"
+    },
+    {
+      "id": "travels-on:truck-06",
+      "type": "travels_on",
+      "category": "movement",
+      "source": "truck-06",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "travels on"
+    },
+    {
+      "id": "delivers-to:truck-06",
+      "type": "delivers_to",
+      "category": "material",
+      "source": "truck-06",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "delivers ore"
+    },
+    {
+      "id": "dispatches:truck-06",
+      "type": "sets_dispatch_policy_for",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "truck-06",
+      "direction": "source_to_target",
+      "label": "sets dispatch policy"
+    },
+    {
+      "id": "processes:mine-ore",
+      "type": "processes_ore_for",
+      "category": "material",
+      "source": "crusher-01",
+      "target": "mine-01",
+      "direction": "source_to_target",
+      "label": "processes mine ore"
+    },
+    {
+      "id": "controls:excavator-01",
+      "type": "changes_operating_condition_of",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "excavator-01",
+      "direction": "source_to_target",
+      "label": "changes condition"
+    },
+    {
+      "id": "controls:road-main",
+      "type": "changes_operating_condition_of",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "road-main",
+      "direction": "source_to_target",
+      "label": "changes condition"
+    },
+    {
+      "id": "controls:crusher-01",
+      "type": "changes_operating_condition_of",
+      "category": "control",
+      "source": "scenario-controller",
+      "target": "crusher-01",
+      "direction": "source_to_target",
+      "label": "changes condition"
+    }
+  ]
+}
+
