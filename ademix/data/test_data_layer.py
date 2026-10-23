@@ -374,7 +374,7 @@ class SensorTopologyBundleTests(unittest.TestCase):
         for token in (
             "benchHeightM: 10", "benchFaceAngleDeg: 70", "workingBenchWidthM: 20",
             "overallSlopeDeg: 45", "workingBenches: 2", "-23.5",
-            "ribbonGeometry(path, 7.2)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35",
+            "ribbonGeometry(path, 13.6)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35",
         ):
             self.assertIn(token, scene)
         self.assertAlmostEqual(geometry["ramp_turns"], 2.35 / 2)
@@ -384,6 +384,7 @@ class SensorTopologyBundleTests(unittest.TestCase):
         self.assertEqual(geometry["working_bench_width_m"], 20)
         self.assertEqual(geometry["working_benches"], 2)
         self.assertEqual(geometry["overall_slope_deg"], 45)
+        self.assertEqual(geometry["ramp_width"], 13.6)
         self.assertAlmostEqual(geometry["catch_berm_m"], 6.36, places=2)
         self.assertIn("not approved Kazakhstan design values", geometry["design_status"])
 

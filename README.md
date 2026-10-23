@@ -12,7 +12,7 @@ Requirements match the competition judge environment:
 - Docker Engine 29 or compatible; and
 - Docker Compose v2 (`docker compose`).
 
-No API key, paid service, GPU, Node.js, Python, `make`, or external dataset download is required. The first run downloads the declared container images and builds two small Ademix images.
+No API key, paid service, GPU, Node.js, Python, `make`, or external dataset download is required. The first run downloads the declared container images and builds the Ademix simulator, UI, and commit-pinned OpenEgiz extended-API images.
 
 From the repository root, run exactly:
 
@@ -43,10 +43,11 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
 2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Keep **Balanced** graphics for software rendering.
 3. Select a truck to inspect payload, fuel, speed, position, trips, and cycle time from its Ditto twin.
-4. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls.
-5. Choose **Main road restriction**. The road turns orange and moving truck speed falls from 25 to approximately 10.72 km/h.
-6. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
-7. Choose **Normal operations** to reset the active operating condition.
+4. In the **What-If Scenario Engine**, choose **C — Smart dispatch**. The policy keeps four trucks cycling and parks two empty trucks on the ready line under normal operations.
+5. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls. Smart Dispatch can remain enabled so the reserve response is visible.
+6. Choose **Main road restriction**. The road turns orange and moving-truck speed falls from 25 to approximately 10.72 km/h.
+7. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
+8. Choose **A — Normal operations** to reset both the operating condition and dispatch policy.
 
 Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
 

@@ -107,6 +107,7 @@ Before another asset is added, record its exact name, creator, source URL, downl
 - Source: https://polyhaven.com/a/dirt — Charlotte Baglioni.
 - License: CC0, https://polyhaven.com/license . Redistribution permitted.
 - Bundled in `ademix/frontend/public/textures/dirt/`: 1K JPEG Diffuse, rough, and nor_gl maps; originals unchanged. Download metadata from https://api.polyhaven.com/files/dirt ; each downloaded file matched its published MD5.
+- Local SHA-256: `Diffuse.jpg` `6CE6CA7E28ED046F7F93FA60DCB29F8CF42CD5A539ADC5676675ACCCFA34EFD3`; `nor_gl.jpg` `5A5F97D920FDCDF352B350B95558BF48BB306BE1FE61A47418AADC60B7DEB0CE`; `rough.jpg` `EFF62D5AE7BF0C46B84173BC46F07528DD164AA39F5D550C93A805B36F54B704`.
 - Used for visual soil detail, not measured mine data. Color projection blends two scales; geometry is not displaced. No runtime CDN or new dependency.
 
 

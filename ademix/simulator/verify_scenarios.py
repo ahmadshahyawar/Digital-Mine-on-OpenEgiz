@@ -17,11 +17,11 @@ import urllib.request
 
 TRUCKS = [f"truck-{i:02d}" for i in range(1, 7)]
 FRONTEND_FIELDS = {
-    "mine-01": {"active_scenario", "bottleneck_live", "production_t", "sim_time_s", "throughput_tph"},
+    "mine-01": {"active_scenario", "bottleneck_live", "operating_fleet_utilization", "production_t", "sim_time_s", "throughput_tph", "truck_operating_h_per_kt"},
     "excavator-01": {"average_wait_min", "queue_length", "state"},
     "crusher-01": {"average_wait_min", "rom_inventory_t", "state"},
     "road-main": {"blockage", "blocked_trucks", "speed_limit_kmh", "state"},
-    "scenario-controller": {"active", "bottleneck", "breakdown_location", "match_factor", "projected_throughput_tph"},
+    "scenario-controller": {"active", "bottleneck", "breakdown_location", "dispatch_description", "dispatch_policy", "dispatch_reason", "match_factor", "projected_throughput_tph", "trucks_in_cycle", "trucks_required", "trucks_standby"},
 }
 TRUCK_FIELDS = {"fuel_pct", "heading", "payload_t", "route_progress_pct", "speed_kmh", "state"}
 
@@ -79,10 +79,17 @@ def activate(base_url: str, scenario: str) -> None:
         raise AssertionError(f"unexpected activation response for {scenario}: {response}")
 
 
+def set_dispatch(base_url: str, policy: str) -> None:
+    response = request_json(f"{base_url}/api/dispatch", {"policy": policy})
+    if response != {"dispatch": policy, "status": "activated"}:
+        raise AssertionError(f"unexpected dispatch response for {policy}: {response}")
+
+
 def verify(base_url: str, timeout_s: float) -> None:
     base_url = base_url.rstrip("/")
     results: list[str] = []
     try:
+        set_dispatch(base_url, "fixed")
         activate(base_url, "baseline")
         state, twins = wait_for(
             base_url, "baseline",
@@ -95,6 +102,29 @@ def verify(base_url: str, timeout_s: float) -> None:
         )
         verify_contract(twins)
         results.append("baseline: road open, 25 km/h, crusher 900 t/h")
+
+        set_dispatch(base_url, "smart")
+        _, twins = wait_for(
+            base_url, "baseline",
+            lambda t: (
+                value(t, "scenario-controller", "dispatch_policy") == "smart"
+                and int(value(t, "scenario-controller", "trucks_required")) == 4
+                and int(value(t, "scenario-controller", "trucks_in_cycle")) == 4
+                and int(value(t, "scenario-controller", "trucks_standby")) == 2
+                and sum(value(t, truck, "state") == "standby" for truck in TRUCKS) == 2
+            ), timeout_s,
+        )
+        verify_contract(twins)
+        results.append("smart dispatch: 4 trucks cycling, 2 parked on standby")
+        set_dispatch(base_url, "fixed")
+        wait_for(
+            base_url, "baseline",
+            lambda t: (
+                value(t, "scenario-controller", "dispatch_policy") == "fixed"
+                and int(value(t, "scenario-controller", "trucks_standby")) == 0
+                and all(value(t, truck, "state") != "standby" for truck in TRUCKS)
+            ), timeout_s,
+        )
 
         activate(base_url, "truck_breakdown")
         _, twins = wait_for(
@@ -139,6 +169,7 @@ def verify(base_url: str, timeout_s: float) -> None:
         verify_contract(twins)
         results.append("crusher_slowdown: constrained at 495 t/h")
     finally:
+        set_dispatch(base_url, "fixed")
         activate(base_url, "baseline")
 
     _, twins = wait_for(
@@ -146,7 +177,8 @@ def verify(base_url: str, timeout_s: float) -> None:
         lambda t: (
             value(t, "road-main", "state") == "open"
             and value(t, "scenario-controller", "breakdown_location") == "none"
-            and all(value(t, truck, "state") not in {"breakdown", "blocked"} for truck in TRUCKS)
+            and value(t, "scenario-controller", "dispatch_policy") == "fixed"
+            and all(value(t, truck, "state") not in {"breakdown", "blocked", "standby"} for truck in TRUCKS)
         ), timeout_s,
     )
     verify_contract(twins)

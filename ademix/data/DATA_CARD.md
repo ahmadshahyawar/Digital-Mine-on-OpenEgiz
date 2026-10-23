@@ -28,11 +28,11 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `fleet/route_distances.csv` | Source load-to-dump and dump-to-load distance matrices, long format | Derived from source | 50 rows |
 | `fleet/route_distance_summary.csv` | Distribution statistics of those distances, and the model route's position in them | Derived from source | 2 rows |
 | `assets/asset_types.json` | Twin kinds, required attributes with types and units, parent relationships, instance counts | Curated schema | 6 kinds |
-| `telemetry/telemetry_dictionary.csv` | Every published twin feature with type, unit, bounds, allowed values, origin and meaning | Curated dictionary | 65 features |
+| `telemetry/telemetry_dictionary.csv` | Every published twin feature with type, unit, bounds, allowed values, origin and meaning | Curated dictionary | 73 features |
 | `telemetry/sensor_catalogue.csv` | IoT sensor catalogue: each simulated sensor, its real-world equivalent, the features it produces and its MQTT topic | Curated catalogue | 16 entries (14 sensors, 2 fixed locations) |
 | `topology/mine_topology.json` | Haulage network (nodes, edges, servers, traffic rules), 3D pit geometry and what is not available | Curated topology | 5 nodes, 4 edges |
 | `../frontend/public/data/ingestion.json` | Bundle of the above for the Layer 1 3D view (`?stage=ingestion`) | Generated | 1 file |
-| `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 122 columns |
+| `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 130 columns |
 | `telemetry/manifest.json` | SHA-256 of every input and output, plus generation settings | Provenance record | 1 file |
 | `build_data_layer.py` | Regenerates every derived and synthetic file | Code | — |
 | `test_data_layer.py` | 32 validation tests | Code | — |
