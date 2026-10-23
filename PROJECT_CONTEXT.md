@@ -384,6 +384,7 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 | 2026-10-22 | Codex | Deepened the large pit and corrected unrealistic truck speed | Live render confirms ten deep stepped levels and a connected bottom road; truck interpolation now uses physical route length. Production build, 3 data checks, and 3 route/FIFO tests pass |
 | 2026-10-23 | Codex | Completed the HT-01 breakdown release gate, including service interruption, FIFO continuity, throughput impact, recovery, and stale-event cleanup | 37 simulator and 32 data tests pass; live API → MQTT → Eclipse Ditto → API smoke test reports HT-01 stopped, first-hour throughput 770.0→581.6 t/h, and a clean baseline reset |
 | 2026-10-23 | Codex | Integrated Claude's breakdown presentation and completed the four-scenario release gate from fresh Compose volumes | All services healthy; 69 local tests, 37 container tests, and the frontend production build pass; all four states propagated frontend proxy → API → MQTT → Ditto → API and reset cleanly |
+| 2026-10-23 | Codex | Integrated Claude's illustrative pit geometry and revalidated the final combined images | Updated pit-design evidence is bundled; the production image rebuilt successfully, all services are healthy, 37 in-image simulator tests pass, and all four live scenario checks pass through Eclipse Ditto |
 
 ## Decisions
 
@@ -405,12 +406,11 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 ## Known Issues and Risks
 
 - The remaining competition schedule is short; scope must be chosen quickly.
-- The detailed simulation validation method and baseline-versus-scenario evidence still need to be completed.
 - A visually impressive scene that does not receive its operational state through OpenEgiz would fail the core platform requirement.
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
 - The frontend JavaScript bundle is about 1.12 MB before gzip (317 kB gzip); it builds successfully but should be split or reduced after the staged scene is integrated into the live view.
 - The selected CC0 mining asset service was temporarily unavailable on 2026-10-22; no unverified or incomplete asset was committed.
-- The current presentation uses a clearly labeled conceptual interface composition. Replace it with a real application screenshot only after the clean end-to-end stack passes; do not present the concept graphic as runtime evidence.
+- Presentation work is intentionally deferred until the application and submission evidence are final; do not present any concept graphic as runtime evidence.
 - Local MQTT port 1883 was unavailable during Windows validation, so the host-only development override `MQTT_PORT=1884` was used. Container-to-container traffic and judge defaults remain unchanged.
 - The staged scene is operational and trucks use separated lanes and queues, but the loading interaction still needs checklist items 2–100 and final human visual approval.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
@@ -419,7 +419,7 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 
 ## Next Recommended Action
 
-Obtain the Team's visual approval of the rebuilt terraced pit at `?stage=world`; then continue the loading-realism checklist one approved item at a time without changing the accepted terrain or haul-road centerline.
+Obtain the Team's final visual approval of the combined pit and breakdown interface at `?stage=world`; keep further visual changes on the professor/Claude branch and preserve the validated simulator contract.
 
 ### Breakdown verification handoff — 2026-10-23
 
@@ -433,6 +433,7 @@ Obtain the Team's visual approval of the rebuilt terraced pit at `?stage=world`;
 - Integrated `origin/claude/breakdown-visual` without overwriting the simulator verification work. The frontend now presents the stopped truck, marker, location, road consequence, throughput, and active constraint from twin fields.
 - `ademix/simulator/verify_scenarios.py` exercises baseline, breakdown, road restriction, crusher slowdown, and reset through `http://127.0.0.1:4173/api`, rejecting demo mode and checking the exact fields consumed by `IngestionLayer.tsx`.
 - Clean Windows deployment removed the OpenEgiz Compose volumes, regenerated ignored credentials, rebuilt all images, and reached healthy state. The literal README Compose command was used; only the ignored host MQTT mapping was changed to 1884 because an administrator-owned Windows Mosquitto service occupies 1883. A clean Ubuntu judge-VM run remains unclaimed.
+- After merging `origin/claude/pit-geometry`, the final combined UI and simulator images were rebuilt. All services reached healthy state, all 37 in-image simulator tests passed, and `verify_scenarios.py` passed baseline, truck breakdown, road restriction, crusher slowdown, and clean reset through Eclipse Ditto.
 
 ## Handoff Template
 
