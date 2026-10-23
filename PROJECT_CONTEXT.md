@@ -263,7 +263,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - The first live render is operational but visually sparse: trucks overlap on the single route and the procedural pit lacks enough benches and landmarks for a competition-grade overview.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
-- The scenario comparison label in `ademix/frontend/src/main.tsx` now reads `baseline_throughput_tph` from the scenario-controller twin (commit 3e5d5ad) instead of the hard-coded 900 t/h. The frontend build was **not** run after this change because Node.js is not installed on this machine; run `npm ci && npm run build` before merging.
+- The scenario comparison label in `ademix/frontend/src/main.tsx` now reads `baseline_throughput_tph` from the scenario-controller twin (commit 3e5d5ad) instead of the hard-coded 900 t/h. Verified on 2026-10-23 with Node.js 24.22.1: `npm ci && npm run build` (which runs `tsc -b` then `vite build`) passes. The Docker image uses Node 22, which was not tested locally.
 - Root `presentation.pdf` and `presentation.pptx` remain the original exports. Use the refreshed editable exports in `presentation/output/` for review and submission.
 - The new truck states (`queued_at_excavator`, `queued_at_crusher`, `blocked`) have no dedicated colour in `fleet.css` or `MineScene.tsx`, so they render in the default green. These trucks report speed 0, so the motion review stops them correctly.
 - Fuel is synthetic and has no refuelling. It reaches 0 % after roughly 13 simulated hours (about 40 real minutes at 20× speed).
@@ -300,6 +300,6 @@ Completed: Event-driven engine with a single-server excavator and dump bay (FIFO
 Files changed: ademix/simulator/engine.py, ademix/simulator/test_engine.py, ademix/simulator/MODEL.md (new), ademix/simulator/compare_scenarios.py (new), SUBMISSION.md, README.md, PROJECT_CONTEXT.md. Not touched: app.py, twins.json, data/openmines, frontend, models, licences, asset documentation.
 Checks/tests run: python -m unittest test_engine (21 pass, Python 3.13); python compare_scenarios.py; py_compile app.py/engine.py/compare_scenarios.py.
 Decisions made: excavator-limited 770 t/h baseline derived from the team's own OpenMines parameters; breakdown modelled as a 20-minute lane blockage; KPI windows restart at each scenario change.
-Known issues: Docker/Ditto end-to-end not rerun; frontend build not run after the label fix; presentation figures are stale; no colours yet for the new queue/blocked truck states.
-Next action: merge into codex/ademix, build the frontend, rerun the stand scenarios, refresh the presentation figures.
+Known issues: Docker/Ditto end-to-end not rerun; presentation figures are stale; no colours yet for the new queue/blocked truck states.
+Next action: merge into codex/ademix, rerun the stand scenarios, refresh the presentation figures.
 ```
