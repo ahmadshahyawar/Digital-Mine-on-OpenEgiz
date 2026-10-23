@@ -42,7 +42,7 @@ Do not stack a dependent feature on an old unintegrated branch. Do not push unfi
 6. `TEAM_WORK_PLAN.md`
 7. `01_AHMAD_CODEX_WORK.md` or `02_PROFESSOR_CLAUDE_WORK.md`
 8. `03_HIGH_SCORE_IMPROVEMENTS.md` after A1–A5 and B1–B6 are completed and integrated
-9. `A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` for score-focused optional extensions; A6 is recommended, A7–A11 run only when their release value exceeds their risk
+9. `A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` after required B1–B6 and C1–C5: implement A6, add A8/A9 only if time remains, and skip A7/A10/A11 when C2 already provides their value
 10. `04_AI_JUDGE_READINESS.md` last, after all required improvements are completed and integrated
 
 ## Handoff required after every pushed feature

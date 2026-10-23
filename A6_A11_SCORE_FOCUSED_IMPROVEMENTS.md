@@ -7,11 +7,11 @@ Purpose: add a small number of improvements that can help judges verify a credib
 ## Copy this prompt into Codex
 
 ```text
-Read AGENTS.md and every required shared project file in full, then read A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md. Work on A6–A11 in order, one task and one feature branch at a time, starting from the latest origin/codex/ademix. First inspect the current implementation and reuse existing A1–A5 and C1/C4 contracts instead of duplicating them. Treat the work items as improvements and the pass tests as proof.
+Read AGENTS.md and every required shared project file in full, then read A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md. Follow the score-first order in this document exactly, using one task and one feature branch at a time from the latest origin/codex/ademix. First inspect the current implementation and reuse existing A1–A5 and C1/C4 contracts instead of duplicating them. Treat work items as improvements and pass tests as proof.
 
 Protect the two-person workflow. While Professor + Claude are still completing B1–B6, edit only Ahmad + Codex owned backend, data, contract and test paths. Do not edit their React, CSS, 3D, presentation or visual asset paths. Add any required frontend consumption only after the accepted B6 handoff is integrated and frontend ownership transfers to Ahmad + Codex. Push and integrate each accepted task before starting a dependent task. Update PROJECT_CONTEXT.md with exact files, commit, tests, evidence and limitations.
 
-The goal is contest score and first-place readiness. Do not lengthen the map, add decorative workers, add extra buildings, create another route, or add visual objects without a scored operational purpose. Stop an optional task if it duplicates C1–C5, weakens performance, creates unsupported claims, or threatens the clean Ubuntu release. J1–J8 remain the final phase.
+The required order is: finish and integrate Professor + Claude B1–B6; finish visible C1–C4 and combined C5; implement A6; add A8 and A9 only if sufficient time remains; skip A7, A10 and A11 when they duplicate the Decision workspace; then complete J1–J8. The goal is contest score and first-place readiness. Do not lengthen the map, add decorative workers, add extra buildings, create another route, or add visual objects without a scored operational purpose. Stop optional work if it weakens performance, creates unsupported claims or threatens the clean Ubuntu release.
 ```
 
 ## Score rule
@@ -31,15 +31,14 @@ Professor + Claude should complete B1–B6 and make existing operations easy to 
 
 ## Order and release protection
 
-1. Complete A6 first because it explains the intentionally accelerated simulation and removes a likely judge misunderstanding.
-2. Complete A7 only if it stays a small bounded event record and does not replace the verified A3 history evidence.
-3. Complete A8 as a reproducible offline planning experiment. It must not change the six visible trucks or the live mine topology.
-4. Treat A9 as the implementation of optional C6 sensitivity evidence. Build it once, not twice.
-5. Add A10 inside the C2 Decision workspace; do not build a second dashboard.
-6. Add A11 only after the Decision workspace is stable and all required B/C tests still pass.
-7. Run C5 after the accepted A6–A11 work. Then freeze the candidate and start J1–J8.
+1. Finish and integrate Professor + Claude's B1–B6. Do not begin dependent frontend work from an unintegrated B branch.
+2. Finish visible C1–C4 and run combined C5. These required tasks target the highest-value missing rubric evidence.
+3. Implement A6 so accelerated simulation time is unquestionably clear and driven by returned state.
+4. Add A8 and A9 only if time remains after the required B/C experience is stable. A8 must not change the six visible trucks or live topology. A9 is the optional C6 sensitivity implementation and must be built only once.
+5. Skip A7, A10 and A11 whenever the completed C2 Decision workspace already supplies their judge-visible value. Do not create a second timeline, recommendation surface, dashboard or evidence export merely to complete a task number.
+6. Freeze the combined candidate and complete J1–J8 last, with special priority on clean Ubuntu startup, the claim-to-evidence index, candidate-accurate presentation and software-rendering proof.
 
-A6 is recommended. A7–A11 are optional and must be skipped when their release risk is larger than their provable score value. A skipped optional task is safer than a broken build.
+A6 is recommended after C5. A8 and A9 are conditional. A7, A10 and A11 are default-skipped unless a strict rubric review identifies a distinct, high-value gap that cannot be closed more safely in C2/C5/J2. A skipped optional task is safer than duplicated UI or a broken build.
 
 ## A6 — Make simulation time truthful and obvious
 
@@ -66,6 +65,8 @@ Pass tests:
 
 ## A7 — Record the actual live session event trail
 
+**Default decision:** skip when the completed B4/C2 timeline already makes scenario acknowledgement, consequence, recovery and reset verifiable.
+
 **Improvement:** give the current running session a small, bounded operational event trail.
 
 Why it can raise the score: the judge can see that a scenario request was acknowledged, affected real twin state, recovered and reset. This strengthens behavioral credibility and scenario evidence.
@@ -88,6 +89,8 @@ Pass tests:
 6. Restart, disconnect and demo fallback cannot be presented as an uninterrupted live session.
 
 ## A8 — Prove the right fleet size with a reproducible experiment
+
+**Start condition:** B1–B6 and C1–C5 are integrated and stable, A6 passes, and enough time remains for full integration testing.
 
 **Improvement:** generate a small planning study that shows when additional trucks stop increasing output.
 
@@ -112,6 +115,8 @@ Pass tests:
 6. The UI values equal the fixture within documented display rounding.
 
 ## A9 — Show when the recommendation changes
+
+**Start condition:** A8 passes, required release checks remain green and enough time remains. Otherwise record C6/A9 as intentionally skipped.
 
 **Improvement:** add a small sensitivity study that identifies the planning boundary at which the recommended fleet action changes.
 
@@ -138,6 +143,8 @@ Pass tests:
 
 ## A10 — Give a scenario-specific dispatcher response
 
+**Default decision:** skip when C2 already gives a scenario-specific action, reason, evidence and limitation. Improve C2 directly if a small correction is needed; do not create a duplicate recommendation system.
+
 **Improvement:** turn existing evidence into one clear recommended action for each current operating condition.
 
 Why it can raise the score: judges can see what decision the twin helps the dispatcher make, why that action is recommended and what evidence supports it.
@@ -160,6 +167,8 @@ Pass tests:
 6. A new viewer can state the action and reason in under one minute.
 
 ## A11 — Export a reproducible decision record
+
+**Default decision:** skip unless J2 identifies a real evidence gap that a lightweight export closes without adding runtime or release risk.
 
 **Improvement:** let a reviewer download the exact evidence behind the currently displayed recommendation.
 

@@ -142,4 +142,4 @@ Request to Professor + Claude:
 Integration instruction: merge | cherry-pick | reject
 ```
 
-**Current status:** A1–A5 are completed and integrated on `origin/codex/ademix`. While Professor + Claude complete B1–B6, Ahmad + Codex review and integrate their handoffs rather than starting an unrelated backend feature. `A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` defines the next score-focused extensions: A6 is recommended; A7–A11 are optional and must not displace required B/C integration or release stability. After all B tasks are accepted, continue with Codex-owned C work in `03_HIGH_SCORE_IMPROVEMENTS.md`; J1–J8 remain last.
+**Current status:** A1–A5 are completed and integrated on `origin/codex/ademix`. First finish and integrate Professor + Claude's B1–B6, then complete visible C1–C4 and combined C5. Next implement A6. Add A8/A9 only if sufficient time remains, and skip A7/A10/A11 when C2 already supplies their judge-visible value. `A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` contains the exact score-first order and stop rules. J1–J8 remain last.
