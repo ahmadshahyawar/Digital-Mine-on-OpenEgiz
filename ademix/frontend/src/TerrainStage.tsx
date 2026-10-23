@@ -227,7 +227,7 @@ function MaterialFlow({ constrained }: { constrained: boolean }) {
   </group>
 }
 
-function ProcessingPlantLayer({ twins = [], moving = false }: { twins?: Twin[]; moving?: boolean }) {
+function ProcessingPlantLayer({ twins = [], moving = false, hideStorage = false }: { twins?: Twin[]; moving?: boolean; hideStorage?: boolean }) {
   const hopper = useGLTF('/models/plant-hopper.glb').scene
   const crusher = useGLTF('/models/plant-crusher.glb').scene
   const conveyor = useGLTF('/models/plant-conveyor.glb').scene
@@ -242,17 +242,17 @@ function ProcessingPlantLayer({ twins = [], moving = false }: { twins?: Twin[]; 
     <group position={[-2.6, 0, 0]} rotation={[0, Math.PI / 2, 0]}><primitive object={hopper.clone()} scale={2.45}/></group>
     <group position={[1.1, 0, 0]} rotation={[0, Math.PI / 2, 0]}><primitive object={crusher.clone()} scale={2.45}/></group>
     <group position={[4.6, .2, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyorSlope.clone()} scale={2.45}/></group>
-    {[8.2, 13.4, 18.6].map((x, index) => <group key={x} position={[x, 2.05 + index * .02, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyor.clone()} scale={2.45}/></group>)}
+    {!hideStorage && [8.2, 13.4, 18.6].map((x, index) => <group key={x} position={[x, 2.05 + index * .02, .1]} rotation={[0, Math.PI / 2, 0]}><primitive object={conveyor.clone()} scale={2.45}/></group>)}
     <group position={[1.8, 0, -3.3]}><primitive object={stairs.clone()} scale={2.45}/></group>
-    {moving && <MaterialFlow constrained={constrained}/>}
-    <mesh position={[24.6, 1.05, .1]}>
+    {moving && !hideStorage && <MaterialFlow constrained={constrained}/>}
+    {!hideStorage && <mesh position={[24.6, 1.05, .1]}>
       <coneGeometry args={[5.7, 5.2, 28]}/>
       <meshStandardMaterial color="#8b6747" roughness={1}/>
-    </mesh>
-    <mesh position={[24.6, .08, .1]} rotation={[-Math.PI / 2, 0, 0]}>
+    </mesh>}
+    {!hideStorage && <mesh position={[24.6, .08, .1]} rotation={[-Math.PI / 2, 0, 0]}>
       <circleGeometry args={[6.8, 32]}/>
       <meshStandardMaterial color="#61584b" roughness={1}/>
-    </mesh>
+    </mesh>}
     <mesh position={[-5.8, .2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <ringGeometry args={[4.4, 4.8, 32]}/>
       <meshBasicMaterial color="#e2c14f"/>
@@ -268,7 +268,7 @@ useGLTF.preload('/models/plant-conveyor.glb')
 useGLTF.preload('/models/plant-conveyor-slope.glb')
 useGLTF.preload('/models/plant-stairs.glb')
 
-export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [] }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[] }) {
+export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [], hideStorage = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[]; hideStorage?: boolean }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
     const scene = Terrain({
@@ -300,7 +300,7 @@ export function TerrainStage({ showRoads = false, showEquipment = false, showPla
     <primitive object={terrain} position={[0, 0, 0]}/>
     {showRoads && <HaulRoadLayer/>}
     {showEquipment && <EquipmentLayer twins={twins} moving={moving}/>}
-    {showPlant && <ProcessingPlantLayer twins={twins} moving={moving}/>}
+    {showPlant && <ProcessingPlantLayer twins={twins} moving={moving} hideStorage={hideStorage}/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
     <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
   </>

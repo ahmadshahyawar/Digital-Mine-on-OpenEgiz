@@ -21,6 +21,8 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `openmines/north_pit_mine.json` | OpenMines "North Pit Mine" configuration, unchanged | Third-party source (MIT) | 1 file |
 | `openmines/LICENSE` | Upstream MIT licence | Licence | 1 file |
 | `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 27 parameters |
+| `registry/emission_references.csv` | IPCC 2006 default net calorific value (43.0 TJ/Gg) and CO2 emission factor (74,100 kg/TJ) for gas/diesel oil, with source | External reference | 2 factors |
+| `telemetry/logs/weather_station.csv` | Synthetic weather-station signal on the same 5-minute grid: temperature, wind speed and direction, rain, humidity, PM10 dust | **Synthetic** | 157 rows |
 | `registry/fuel_references.csv` | Caterpillar Performance Handbook fuel rates (low/medium/high) and payloads of the comparable Cat 775G, 777G and 6020B, each with its source URL and page | External reference | 3 models |
 | `fleet/haulage_fleet_specs.csv` | All trucks, shovels and dump points in the source, marking the three the model uses | Derived from source | 28 rows |
 | `fleet/route_distances.csv` | Source load-to-dump and dump-to-load distance matrices, long format | Derived from source | 50 rows |
@@ -33,7 +35,7 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 122 columns |
 | `telemetry/manifest.json` | SHA-256 of every input and output, plus generation settings | Provenance record | 1 file |
 | `build_data_layer.py` | Regenerates every derived and synthetic file | Code | — |
-| `test_data_layer.py` | 28 validation tests | Code | — |
+| `test_data_layer.py` | 32 validation tests | Code | — |
 
 The twin instances themselves remain in `ademix/simulator/twins.json`, because the setup container reads them from there.
 
@@ -75,6 +77,15 @@ The source file states **no units**. Reading them as tonnes, km/h, minutes and k
 
 The 3D view `http://localhost:4173/?stage=ingestion` shows all of this: on the stand, or at `http://localhost:5173/?stage=ingestion` with `npm run dev` in `ademix/frontend`. It includes source cards, clickable topology markers, equipment spec sheets with status labels, the sensor catalogue, a topology diagram with the route-distance histogram, and a replay of the historical logs that drives the 3D fleet.
 
+## 4b. Operations analytics in Layer 1
+
+| Panel | What it computes | Inputs and status |
+|---|---|---|
+| Fleet & traffic advisor | Active constraint, queue waits, match factor, free cycle, trucks needed = ceil(projected t/h × free cycle ÷ 60 ÷ payload), and advice | Simulator output plus registered parameters. Advice only: the model has one haul road, so no automatic rerouting is possible |
+| Energy & ESG | Diesel L/h = running trucks × 49.6 + 83.5 (excavator); L/t, kWh/t (× 10.03 kWh/L) and kg CO2/t (× 2.677 kg/L); shift CO2 | Caterpillar handbook fuel rates; IPCC 2006 diesel defaults with an assumed 0.84 kg/L density. Crusher electricity excluded (`crusher_power_kw` is a required input). Tank-to-wheel CO2 only |
+| Weather | Temperature, wind, rain, humidity, PM10 with advisory alerts (dust > 150 µg/m³, rain > 2 mm/h, wind > 15 m/s) | **Synthetic** signal; thresholds are team assumptions, not regulatory limits |
+| Safety | Closest gap between travelling trucks in the same lane (rule 50 m), trucks in the excavator swing zone, ROM bin headroom, breakdowns and blocked trucks; 3D swing zone, 15 km/h loop signs, dump bund, runaway escape lane | Gap and loop speed are team rules shown for monitoring; the simulation does not enforce them |
+
 ## 5. Reproducibility
 
 ```bash
@@ -91,7 +102,7 @@ If the engine or the register changes, a test fails until the generator is rerun
 
 ## 6. Validation
 
-All 28 tests pass. They check the following:
+All 32 tests pass. They check the following:
 
 - **Source integrity:** the stored source file matches its recorded checksum, and its MIT licence is present.
 - **Register:**

@@ -123,12 +123,42 @@ def telemetry_log(scenario: str) -> str:
     return to_csv(header, rows)
 
 
+def weather_log() -> str:
+    """Synthetic weather-station log on the same 5-minute grid as the telemetry logs.
+
+    Deterministic (seed 7). The shift starts at 06:00. Temperature follows a daily cycle, wind has a
+    gusty spell around 10:00-12:00, a rain shower falls around 12:00-13:30, and PM10 dust rises with
+    wind and haul traffic but is washed out by rain. Not measured data.
+    """
+    import math
+    import random
+    rng = random.Random(7)
+    rows, drift = [], 0.0
+    samples = int((LOG_WARMUP_H + LOG_SCENARIO_H) * 3600 / LOG_SAMPLE_S)
+    for sample in range(samples + 1):
+        hours = sample * LOG_SAMPLE_S / 3600
+        clock = 6 + hours
+        drift = max(-1.5, min(1.5, drift + rng.uniform(-.25, .25)))
+        temperature = 9 + 7 * math.sin(2 * math.pi * (clock - 9) / 24) + drift
+        gust = 6 * math.exp(-((hours - 5) / 1.0) ** 2)
+        wind = max(.4, 4.5 + 2.5 * math.sin(2 * math.pi * hours / 9.3) + gust + rng.uniform(-.8, .8))
+        direction = (250 + 35 * math.sin(2 * math.pi * hours / 13) + rng.uniform(-10, 10)) % 360
+        rain = max(0.0, 3.2 * (1 - abs(hours - 6.75) / .75)) if 6 <= hours <= 7.5 else 0.0
+        humidity = min(100.0, 62 - 1.1 * (temperature - 9) + (28 if rain > 0 else 0) + rng.uniform(-2, 2))
+        pm10 = (40 + 14 * wind + rng.uniform(-8, 8)) * (.3 if rain > 0 else 1)
+        rows.append([sample * LOG_SAMPLE_S, round(temperature, 1), round(wind, 1), round(direction), round(rain, 2),
+                     round(humidity), round(pm10)])
+    return to_csv(["time_s", "temperature_c", "wind_speed_ms", "wind_direction_deg", "precipitation_mm_h",
+                   "humidity_pct", "pm10_ugm3"], rows)
+
+
 def build(write: bool = True) -> dict:
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
     outputs = {"fleet/haulage_fleet_specs.csv": fleet_specs(source)}
     outputs["fleet/route_distances.csv"], outputs["fleet/route_distance_summary.csv"] = route_tables(source)
     for scenario in SCENARIOS:
         outputs[f"telemetry/logs/{scenario}.csv"] = telemetry_log(scenario)
+    outputs["telemetry/logs/weather_station.csv"] = weather_log()
     manifest = {
         "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
         "generator": "ademix/data/build_data_layer.py",
@@ -174,9 +204,10 @@ EQUIPMENT = [
     ("Main haul road", "road", ["route_length_km", "truck_speed_kmh", "road_restriction_speed_kmh", "breakdown_blockage_min"]),
 ]
 LOG_THINGS = {
-    "mine-01": ["throughput_tph", "production_t", "bottleneck_live"],
-    "excavator-01": ["state", "queue_length"],
-    "crusher-01": ["state", "rom_inventory_t", "queue_length"],
+    "mine-01": ["throughput_tph", "production_t", "bottleneck_live", "average_cycle_min", "truck_queue_pct", "fleet_utilization"],
+    "excavator-01": ["state", "queue_length", "average_wait_min", "utilization_pct"],
+    "crusher-01": ["state", "rom_inventory_t", "queue_length", "average_wait_min"],
+    "scenario-controller": ["projected_throughput_tph", "bottleneck", "match_factor"],
     "road-main": ["state", "speed_limit_kmh", "blocked_trucks"],
 }
 LOG_TRUCK_FEATURES = ["state", "speed_kmh", "payload_t", "fuel_pct", "route_progress_pct", "heading"]
@@ -240,6 +271,12 @@ def ingestion_bundle(outputs: dict, manifest: dict) -> str:
         "route_distances": [number(r["distance"]) for r in read_rows(outputs["fleet/route_distances.csv"])
                             if r["matrix"] == "l2d_road_matrix"],
         "logs": logs,
+        "weather": {
+            "note": "Synthetic weather-station signal for demonstration; not measured at any mine.",
+            "rows": [[number(v) for v in row.values()] for row in read_rows(outputs["telemetry/logs/weather_station.csv"])],
+            "columns": next(csv.reader([outputs["telemetry/logs/weather_station.csv"].splitlines()[0]])),
+        },
+        "emission_references": read_rows((DATA / "registry" / "emission_references.csv").read_text(encoding="utf-8")),
         "provenance": manifest,
     }
     return json.dumps(bundle, ensure_ascii=False, separators=(",", ":")) + "\n"

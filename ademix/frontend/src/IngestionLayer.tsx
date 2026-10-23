@@ -11,12 +11,19 @@ import './ingestion.css'
 
 type Spec = { parameter_id: string; value: number | null; unit: string; status: string }
 type Log = { label: string; columns: string[]; rows: (string | number | null)[][] }
-type Bundle = { equipment: { asset: string; specs: Spec[] }[]; logs: Record<string, Log> }
-type Layer = 'specs' | 'sensors' | 'topology' | 'flow'
+type RegisterRow = { parameter_id: string; value: number | null; unit: string; status: string }
+type Bundle = {
+  equipment: { asset: string; specs: Spec[] }[]
+  logs: Record<string, Log>
+  register: RegisterRow[]
+  weather: { note: string; columns: string[]; rows: number[][] }
+}
+type Weather = Record<string, number>
+type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
 type Frame = { at: (key: string) => string | number | null; atMix: (key: string) => number; circuit: (truck: number) => number }
 type Getter = (key: string) => unknown
 
-const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow']]
+const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
 const STATUS_COLOR: Record<string, string> = {
   sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
   synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b', external_reference: '#5ec8f2',
@@ -257,9 +264,12 @@ const ROM_BIN = (() => {
   return DUMP_POSE.position.clone().addScaledVector(inward, 4.3).setY(centre.y + .3)
 })()
 const HOPPER = plantToWorld(-2.6, 2.4, 0)
-const BELT_START = plantToWorld(4.6, 3.05, .1)
-const BELT_END = plantToWorld(20.6, 3.1, .1)
-const STOCKPILE = plantToWorld(24.6, 0, .1)
+// Crushed-ore storage sits on its own raised pad outside the pit (beyond the rim, away from the
+// mining area), fed by an elevated overland conveyor that crosses over the dump loop.
+const PAD_TOP = haulRoadPoint(0).y + .3
+const STOCKPILE = new THREE.Vector3(66, PAD_TOP, 36)
+const BELT_START = plantToWorld(1.1, 4.2, 0)
+const BELT_END = STOCKPILE.clone().add(new THREE.Vector3(0, 9.5, 0))
 
 /** A straight belt between two points: a thin slab plus the moving ore on it. */
 function Belt({ from, to, flow, color = '#3d4a4a' }: { from: THREE.Vector3; to: THREE.Vector3; flow: number; color?: string }) {
@@ -317,28 +327,243 @@ function OreHandling({ frame, dumping }: { frame: Frame; dumping: boolean }) {
     {/* Feeder from the bin into the crusher hopper, then the main conveyor to the stockpile */}
     <Belt from={ROM_BIN.clone().add(new THREE.Vector3(0, 1.2, 0))} to={HOPPER} flow={rom > 1 && throughput > 0 ? Math.min(1, throughput / 900) : 0}/>
     <Belt from={BELT_START} to={BELT_END} flow={Math.min(1, throughput / 900)} color="#2f3a3a"/>
+    <ConveyorTrestles from={BELT_START} to={BELT_END}/>
+    {/* Raised storage pad with a containment bund, outside the pit */}
+    <mesh position={STOCKPILE.clone().add(new THREE.Vector3(0, -4, 0))}><cylinderGeometry args={[13, 14.5, 8, 40]}/><meshStandardMaterial color="#6f6455" roughness={1}/></mesh>
+    <mesh position={STOCKPILE.clone().add(new THREE.Vector3(0, .35, 0))} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[12.2, 13, 48]}/><meshStandardMaterial color="#8a7d6a" roughness={1}/></mesh>
     <mesh ref={pile} position={STOCKPILE.clone().add(new THREE.Vector3(0, 2.6, 0))}><coneGeometry args={[6.2, 5.6, 32]}/><meshStandardMaterial color="#7d5b3f" roughness={1}/></mesh>
   </group>
 }
 
-/** Mast light towers along the outer edge of the haul road, as on a night-shift mine. */
-function LightTowers() {
-  const towers = React.useMemo(() => [14, 30, 46, 62, 78].map(pct => lanePose(pct, 1, 5.6)), [])
-  return <group>{towers.map((t, i) => <group key={i} position={t.position} rotation={[0, t.yaw, 0]}>
-    <mesh position={[0, 3.6, 0]}><cylinderGeometry args={[.12, .18, 7.2, 6]}/><meshStandardMaterial color="#c9cfcc"/></mesh>
-    <mesh position={[0, 7.4, 0]}><boxGeometry args={[1.6, .5, .3]}/><meshStandardMaterial color="#2d3436" emissive="#fff6c8" emissiveIntensity={.8}/></mesh>
-    <mesh position={[0, .4, 0]}><boxGeometry args={[1.4, .8, 1]}/><meshStandardMaterial color="#e2c14f"/></mesh>
-  </group>)}</group>
+/** Steel trestles holding the overland conveyor above the dump loop and the ground. */
+function ConveyorTrestles({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
+  const legs = React.useMemo(() => Array.from({ length: 5 }, (_, i) => from.clone().lerp(to, (i + 1) / 6)), [from, to])
+  return <group>{legs.map((top, i) => {
+    const height = top.y - (PAD_TOP - 6)
+    return <mesh key={i} position={[top.x, top.y - height / 2, top.z]}><boxGeometry args={[.45, height, .45]}/><meshStandardMaterial color="#c58a2b"/></mesh>
+  })}</group>
+}
+
+/**
+ * Road lighting on both sides of the haul road (staggered poles with lamp heads and light pools on
+ * the road surface) plus tall mast towers at the loading and dump loops.
+ */
+function RoadLighting() {
+  const poles = React.useMemo(() => {
+    const list: { position: THREE.Vector3; yaw: number; arm: number }[] = []
+    for (let pct = LOOP_PCT + 1; pct <= 100 - LOOP_PCT - 1; pct += 5) {
+      list.push({ ...lanePose(pct, 1, 4.6), arm: -1 }) // outer edge, arm reaching over the road
+      list.push({ ...lanePose(pct + 2.5, -1, 4.6), arm: -1 }) // inner edge, staggered
+    }
+    return list
+  }, [])
+  const masts = React.useMemo(() => [haulRoadPoint(1), haulRoadPoint(0)].map((centre, i) => {
+    const outward = centre.clone().setY(0).normalize()
+    return centre.clone().addScaledVector(outward, i ? 13 : 10.5)
+  }), [])
+  return <group>
+    {poles.map((p, i) => <group key={i} position={p.position} rotation={[0, p.yaw, 0]}>
+      <mesh position={[0, 2.2, 0]}><cylinderGeometry args={[.08, .11, 4.4, 6]}/><meshStandardMaterial color="#b9c0bd"/></mesh>
+      <mesh position={[0, 4.35, p.arm * .9]}><boxGeometry args={[.12, .12, 1.8]}/><meshStandardMaterial color="#b9c0bd"/></mesh>
+      <mesh position={[0, 4.2, p.arm * 1.7]}><boxGeometry args={[.55, .2, .35]}/><meshStandardMaterial color="#2d3436" emissive="#fff3c4" emissiveIntensity={1.4}/></mesh>
+      <mesh position={[0, .24, p.arm * 2.1]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[2.2, 20]}/>
+        <meshBasicMaterial color="#fff1b8" transparent opacity={.22} depthWrite={false} blending={THREE.AdditiveBlending}/></mesh>
+    </group>)}
+    {masts.map((m, i) => <group key={`mast-${i}`} position={m}>
+      <mesh position={[0, 4.5, 0]}><cylinderGeometry args={[.15, .22, 9, 6]}/><meshStandardMaterial color="#c9cfcc"/></mesh>
+      <mesh position={[0, 9.2, 0]}><boxGeometry args={[2.2, .6, .4]}/><meshStandardMaterial color="#2d3436" emissive="#fff6c8" emissiveIntensity={1.2}/></mesh>
+      <mesh position={[0, .5, 0]}><boxGeometry args={[1.6, 1, 1.1]}/><meshStandardMaterial color="#e2c14f"/></mesh>
+    </group>)}
+  </group>
+}
+
+/** Weather in the scene: a windsock at the crusher pad, dust haze along the road, and rain when it falls. */
+function WeatherScene({ weather }: { weather: Weather }) {
+  const dust = React.useRef<THREE.Group>(null)
+  const rain = React.useRef<THREE.Group>(null)
+  const sockAt = React.useMemo(() => {
+    const centre = haulRoadPoint(0)
+    return centre.clone().addScaledVector(centre.clone().setY(0).normalize(), 15).add(new THREE.Vector3(0, 0, -6))
+  }, [])
+  // Compass: north is -z, east is +x. A windsock points downwind (wind direction + 180°).
+  const bearing = THREE.MathUtils.degToRad((weather.wind_direction_deg + 180) % 360)
+  const downwind = new THREE.Vector3(Math.sin(bearing), 0, -Math.cos(bearing))
+  const sock = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), downwind)
+  const stretch = THREE.MathUtils.clamp(weather.wind_speed_ms / 10, .25, 1)
+  const seeds = React.useMemo(() => Array.from({ length: 60 }, (_, i) => ({ pct: (i * 37) % 100, side: ((i * 13) % 9) - 4, lift: 1 + (i % 5) })), [])
+  const drops = React.useMemo(() => Array.from({ length: 110 }, (_, i) => new THREE.Vector3(((i * 53) % 130) - 65, (i * 17) % 40, ((i * 29) % 96) - 48)), [])
+  const dustOpacity = THREE.MathUtils.clamp(weather.pm10_ugm3 / 400, .05, .5)
+  useFrame(({ clock }) => {
+    dust.current?.children.forEach((child, i) => {
+      const seed = seeds[i]
+      const base = lanePose(seed.pct, 1, seed.side).position
+      const drift = (clock.elapsedTime * weather.wind_speed_ms * .15 + i) % 6
+      child.position.copy(base).addScaledVector(downwind, drift).add(new THREE.Vector3(0, seed.lift, 0))
+    })
+    rain.current?.children.forEach((child, i) => {
+      const start = drops[i]
+      child.position.set(start.x, 32 - ((start.y + clock.elapsedTime * 28) % 55), start.z)
+    })
+  })
+  return <group>
+    <group position={sockAt}>
+      <mesh position={[0, 3, 0]}><cylinderGeometry args={[.08, .1, 6, 6]}/><meshStandardMaterial color="#d8dcda"/></mesh>
+      <mesh position={new THREE.Vector3(0, 5.8, 0).addScaledVector(downwind, 1.2 * stretch)} quaternion={sock} scale={[1, stretch, 1]}>
+        <coneGeometry args={[.45, 2.6, 10, 1, true]}/><meshStandardMaterial color="#ff7a3c" side={THREE.DoubleSide}/></mesh>
+    </group>
+    <group ref={dust}>{seeds.map((_, i) => <mesh key={i}><sphereGeometry args={[1.6, 8, 6]}/>
+      <meshBasicMaterial color="#c9a77d" transparent opacity={dustOpacity} depthWrite={false}/></mesh>)}</group>
+    {weather.precipitation_mm_h > 0 && <group ref={rain}>{drops.map((_, i) => <mesh key={i}><boxGeometry args={[.05, 1.4, .05]}/>
+      <meshBasicMaterial color="#cfe3ff" transparent opacity={.45}/></mesh>)}</group>}
+  </group>
+}
+
+/** Safety furniture: excavator swing exclusion zone, loop speed signs, dump bund and a runaway escape lane. */
+function SafetyScene({ loopSpeed }: { loopSpeed: number }) {
+  const excavator = haulRoadPoint(1).add(new THREE.Vector3(1.2, .45, -1.5))
+  const signs = React.useMemo(() => [lanePose(LOOP_PCT + 2, -1, 4.4), lanePose(100 - LOOP_PCT - 2, 1, 4.4)], [])
+  const bund = React.useMemo(() => {
+    const toTruck = DUMP_POSE.position.clone().sub(ROM_BIN).setY(0).normalize()
+    return { position: ROM_BIN.clone().addScaledVector(toTruck, 3.3), yaw: -Math.atan2(toTruck.z, toTruck.x) }
+  }, [])
+  const escape = React.useMemo(() => lanePose(50, -1, 6.6), [])
+  return <group>
+    <mesh position={excavator.clone().add(new THREE.Vector3(0, -.2, 0))} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[6.1, 6.5, 48]}/><meshBasicMaterial color="#ff4d4d" transparent opacity={.85} side={THREE.DoubleSide}/></mesh>
+    <Html center distanceFactor={90} position={excavator.clone().add(new THREE.Vector3(0, 3.5, 6.3))} zIndexRange={[20, 0]}>
+      <div className="ig-sign-label">Swing exclusion zone</div></Html>
+    {signs.map((sign, i) => <group key={i} position={sign.position}>
+      <mesh position={[0, 1.4, 0]}><cylinderGeometry args={[.06, .06, 2.8, 6]}/><meshStandardMaterial color="#d8dcda"/></mesh>
+      <Html center distanceFactor={80} position={[0, 3.2, 0]} zIndexRange={[20, 0]}><div className="ig-speed">{loopSpeed}</div></Html>
+    </group>)}
+    <group position={bund.position} rotation={[0, bund.yaw, 0]}>
+      <mesh position={[0, .45, 0]}><boxGeometry args={[.6, .9, 5.2]}/><meshStandardMaterial color="#e2c14f"/></mesh>
+      {[-1.8, 0, 1.8].map(z => <mesh key={z} position={[.01, .45, z]}><boxGeometry args={[.62, .92, .5]}/><meshStandardMaterial color="#1d1d1d"/></mesh>)}
+    </group>
+    <group position={escape.position} rotation={[0, escape.yaw + .18, 0]}>
+      <mesh position={[0, .25, 0]}><boxGeometry args={[11, .5, 2.6]}/><meshStandardMaterial color="#d8c08a" roughness={1}/></mesh>
+      <Html center distanceFactor={90} position={[0, 2.4, 0]} zIndexRange={[20, 0]}><div className="ig-sign-label">Runaway escape lane</div></Html>
+    </group>
+  </group>
 }
 
 function SpecsPanel({ specsOf }: { specsOf: (asset: string) => Spec[] }) {
-  return <section className="ig-panel ig-left" aria-label="Fixed specifications">
+  return <section className="ig-panel ig-inline" aria-label="Fixed specifications">
     <h2>Fixed specifications</h2>
     <p>Rated equipment values. They describe the machines and do not change during operation.</p>
     <SpecCard title="Haul trucks HT-01…06" specs={specsOf('Haul truck HT-01…06')}/>
     <SpecCard title="Excavator EX-01" specs={specsOf('Excavator EX-01')}/>
     <SpecCard title="Primary crusher CR-01" specs={specsOf('Primary crusher CR-01')}/>
     <SpecCard title="Main haul road" specs={specsOf('Main haul road')}/>
+  </section>
+}
+
+type Reg = (id: string) => number
+const TRAVELLING = new Set(['hauling', 'returning'])
+
+/** Fleet advisor: what limits output now, how long trucks queue, and how many trucks the cycle needs. */
+function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
+  const states = Array.from({ length: 6 }, (_, i) => String(frame.at(`truck-0${i + 1}.state`)))
+  const active = states.filter(s => s !== 'breakdown').length
+  const speed = num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')
+  const cycleMin = reg('load_time_min') + reg('dump_time_min') + 2 * reg('route_length_km') / speed * 60
+  const target = num(frame.at('scenario-controller.projected_throughput_tph'))
+  const needed = Math.max(1, Math.ceil(target * cycleMin / 60 / reg('truck_payload_t') - 1e-9))
+  const spare = active - needed
+  const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
+  const waitFace = num(frame.at('excavator-01.average_wait_min'))
+  const waitCrusher = num(frame.at('crusher-01.average_wait_min'))
+  const advice = spare > 0
+    ? `${needed} trucks are enough to reach ${target.toFixed(0)} t/h. The other ${spare} mostly wait in queues: park ${spare === 1 ? 'one' : spare} at the face to save fuel, or add a second loading unit to use them.`
+    : spare < 0
+      ? `Haulage is short by ${-spare} truck${spare === -1 ? '' : 's'}: the excavator waits for trucks. Lift the road restriction or bring in a spare truck.`
+      : 'Fleet and loading unit are matched; queues come from cycle variation only.'
+  return <section className="ig-panel ig-inline" aria-label="Fleet advisor">
+    <h2>Fleet &amp; traffic advisor</h2>
+    <div className="ig-gauges">
+      <div><span>Active constraint</span><Flash value={bottleneck}>{bottleneck}</Flash></div>
+      <div><span>Trucks needed / active</span><Flash value={`${needed}/${active}`}>{needed} <small>/ {active}</small></Flash></div>
+      <div><span>Wait at face</span><Flash value={waitFace.toFixed(1)}>{waitFace.toFixed(1)} <small>min</small></Flash></div>
+      <div><span>Wait at crusher</span><Flash value={waitCrusher.toFixed(1)}>{waitCrusher.toFixed(1)} <small>min</small></Flash></div>
+      <div><span>Match factor</span><Flash value={frame.at('scenario-controller.match_factor')}>{num(frame.at('scenario-controller.match_factor')).toFixed(2)}</Flash></div>
+      <div><span>Free cycle</span><Flash value={cycleMin.toFixed(1)}>{cycleMin.toFixed(1)} <small>min</small></Flash></div>
+    </div>
+    <p className="ig-advice">{advice}</p>
+    <p className="ig-foot-note">Advice only. The mine has one haul road, so there is no alternative route to dispatch trucks to.</p>
+  </section>
+}
+
+/** Energy and CO2 per tonne from the sourced fuel rates and IPCC diesel factors. */
+function EsgPanel({ frame, reg, hours }: { frame: Frame; reg: Reg; hours: number }) {
+  const running = Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(s => s !== 'breakdown').length
+  const litresPerHour = running * reg('truck_fuel_consumption_lph') + reg('excavator_fuel_consumption_lph')
+  const tph = num(frame.at('mine-01.throughput_tph'))
+  const perTonne = tph > 0 ? litresPerHour / tph : 0
+  const co2PerHour = litresPerHour * reg('diesel_co2_kg_per_l')
+  const shiftCo2 = co2PerHour * hours / 1000
+  return <section className="ig-panel ig-inline" aria-label="Energy and emissions">
+    <h2>Energy &amp; ESG</h2>
+    <div className="ig-gauges">
+      <div><span>Diesel use</span><Flash value={litresPerHour.toFixed(0)}>{litresPerHour.toFixed(0)} <small>L/h</small></Flash></div>
+      <div><span>Diesel per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? perTonne.toFixed(2) : '—'} <small>L/t</small></Flash></div>
+      <div><span>Energy per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? (perTonne * reg('diesel_energy_kwh_per_l')).toFixed(1) : '—'} <small>kWh/t</small></Flash></div>
+      <div><span>CO₂ per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? (perTonne * reg('diesel_co2_kg_per_l')).toFixed(2) : '—'} <small>kg/t</small></Flash></div>
+      <div><span>CO₂ rate</span><Flash value={co2PerHour.toFixed(0)}>{co2PerHour.toFixed(0)} <small>kg/h</small></Flash></div>
+      <div><span>CO₂ this shift</span><Flash value={shiftCo2.toFixed(1)}>{shiftCo2.toFixed(1)} <small>t</small></Flash></div>
+    </div>
+    <p className="ig-foot-note">Diesel only: {running} trucks × {reg('truck_fuel_consumption_lph')} L/h + excavator {reg('excavator_fuel_consumption_lph')} L/h (Caterpillar handbook, medium load); {reg('diesel_co2_kg_per_l')} kg CO₂/L from IPCC 2006 defaults. Crusher electricity is excluded because its power rating is not available.</p>
+  </section>
+}
+
+/** Synthetic weather station readings with the team's advisory alert thresholds. */
+function WeatherPanel({ weather, reg }: { weather: Weather; reg: Reg }) {
+  const alerts = [
+    weather.pm10_ugm3 > reg('dust_alert_pm10_ugm3') && `Dust ${weather.pm10_ugm3} µg/m³: send the water truck to the haul road`,
+    weather.precipitation_mm_h > reg('rain_alert_mm_per_h') && `Rain ${weather.precipitation_mm_h} mm/h: wet road, reduce speed`,
+    weather.wind_speed_ms > reg('wind_alert_ms') && `Wind ${weather.wind_speed_ms} m/s: high wind`,
+  ].filter(Boolean) as string[]
+  return <section className="ig-panel ig-inline" aria-label="Weather">
+    <h2>Weather station · synthetic</h2>
+    <div className="ig-gauges">
+      <div><span>Temperature</span><Flash value={weather.temperature_c}>{weather.temperature_c} <small>°C</small></Flash></div>
+      <div><span>Wind</span><Flash value={weather.wind_speed_ms}>{weather.wind_speed_ms} <small>m/s · {weather.wind_direction_deg}°</small></Flash></div>
+      <div><span>Dust PM10</span><Flash value={weather.pm10_ugm3}>{weather.pm10_ugm3} <small>µg/m³</small></Flash></div>
+      <div><span>Rain</span><Flash value={weather.precipitation_mm_h}>{weather.precipitation_mm_h} <small>mm/h</small></Flash></div>
+      <div><span>Humidity</span><Flash value={weather.humidity_pct}>{weather.humidity_pct} <small>%</small></Flash></div>
+    </div>
+    {alerts.length ? <ul className="ig-alerts">{alerts.map(a => <li key={a}>{a}</li>)}</ul> : <p className="ig-ok">No weather alerts.</p>}
+    <p className="ig-foot-note">Demonstration signal, not measured weather. Alert levels are team thresholds, not regulatory limits.</p>
+  </section>
+}
+
+/** Safety readings: following distance, swing zone, ROM bin headroom and road condition. */
+function SafetyPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
+  const metresPerUnit = reg('route_length_km') * 1000
+  const lanes: number[][] = [[], []]
+  for (let i = 0; i < 6; i++) {
+    if (!TRAVELLING.has(String(frame.at(`truck-0${i + 1}.state`)))) continue
+    const s = ((frame.circuit(i) % 2) + 2) % 2
+    lanes[s < 1 ? 0 : 1].push(s)
+  }
+  let closest = Infinity
+  for (const lane of lanes) {
+    lane.sort((a, b) => a - b)
+    for (let k = 1; k < lane.length; k++) closest = Math.min(closest, (lane[k] - lane[k - 1]) * metresPerUnit)
+  }
+  const minimum = reg('min_following_gap_m')
+  const headroom = 600 - num(frame.at('crusher-01.rom_inventory_t'))
+  const blocked = num(frame.at('road-main.blocked_trucks'))
+  const broken = Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(s => s === 'breakdown').length
+  return <section className="ig-panel ig-inline" aria-label="Safety">
+    <h2>Safety</h2>
+    <div className="ig-gauges">
+      <div className={closest < minimum ? 'ig-bad' : ''}><span>Closest gap, same lane</span>
+        <Flash value={Math.round(closest / 10)}>{Number.isFinite(closest) ? closest.toFixed(0) : '—'} <small>m (min {minimum})</small></Flash></div>
+      <div><span>In swing zone</span><Flash value={frame.at('excavator-01.state')}>{frame.at('excavator-01.state') === 'loading' ? '1' : '0'} <small>truck being loaded</small></Flash></div>
+      <div className={headroom < reg('truck_payload_t') ? 'ig-warn' : ''}><span>ROM bin headroom</span><Flash value={Math.round(headroom)}>{headroom.toFixed(0)} <small>t</small></Flash></div>
+      <div className={broken ? 'ig-bad' : ''}><span>Breakdowns / blocked</span><Flash value={`${broken}/${blocked}`}>{broken} <small>/ {blocked} trucks</small></Flash></div>
+    </div>
+    <p className="ig-foot-note">Gap rule {minimum} m and loop speed {reg('loop_speed_kmh')} km/h are team rules shown for monitoring; the simulation does not enforce them. Dumping is only allowed when the bin has room for a full {reg('truck_payload_t')} t load.</p>
   </section>
 }
 
@@ -387,7 +612,7 @@ function Topology({ specs }: { specs: Spec[] }) {
     ['Haul road', haulRoadPoint(.5), `${specs.find(s => s.parameter_id === 'route_length_km')?.value ?? 3.2} km · two-way, keep right`],
     ['Dump bay', haulRoadPoint(0), '1 server · 1 min'],
     ['ROM bin → crusher', ROM_BIN.clone(), '600 t buffer · 900 t/h'],
-    ['Crushed-ore stockpile', STOCKPILE.clone().add(new THREE.Vector3(0, 6, 0)), 'conveyor from the crusher'],
+    ['Crushed-ore stockpile', STOCKPILE.clone().add(new THREE.Vector3(0, 9, 0)), 'storage pad outside the pit'],
   ]
   return <group>
     <mesh geometry={tube}><meshBasicMaterial color="#4fd1c5" transparent opacity={.75}/></mesh>
@@ -424,10 +649,14 @@ function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> 
   </group>
 }
 
-function Playhead({ playing, rows, head, onRow }: { playing: boolean; rows: number; head: React.MutableRefObject<number>; onRow: (row: number) => void }) {
+const SAMPLE_SECONDS = 300 // the recorded logs hold one sample every 5 simulated minutes
+const SPEEDS: [number, string][] = [[1, 'Real time'], [10, '10×'], [60, '60×'], [300, '300×']]
+
+function Playhead({ playing, rows, head, speed, onRow }: { playing: boolean; rows: number; head: React.MutableRefObject<number>; speed: number; onRow: (row: number) => void }) {
   useFrame((_, delta) => {
     if (!playing) return
-    head.current = (head.current + delta / 1.1) % (rows - 1)
+    // At 1× one simulated second passes per real second, so trucks move at their real 25 km/h.
+    head.current = (head.current + Math.min(delta, .1) * speed / SAMPLE_SECONDS) % (rows - 1)
     onRow(Math.floor(head.current))
   })
   return null
@@ -439,6 +668,7 @@ export function IngestionLayer() {
   const [scenario, setScenario] = React.useState('truck_breakdown')
   const [row, setRow] = React.useState(46)
   const [playing, setPlaying] = React.useState(true)
+  const [speed, setSpeed] = React.useState(1)
   const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
@@ -478,6 +708,13 @@ export function IngestionLayer() {
     const timer = window.setInterval(poll, 2000)
     return () => { stopped = true; window.clearInterval(timer) }
   }, [])
+
+  // Re-draw the replay clock every second so it counts in real time between samples.
+  React.useEffect(() => {
+    if (!playing || live) return
+    const timer = window.setInterval(() => setTick(t => t + 1), 1000)
+    return () => window.clearInterval(timer)
+  }, [playing, live])
 
   React.useEffect(() => {
     fetch('/data/ingestion.json').then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
@@ -533,25 +770,37 @@ export function IngestionLayer() {
   }
   const toggle = (layer: Layer) => setLayers(prev => { const next = new Set(prev); next.has(layer) ? next.delete(layer) : next.add(layer); return next })
   const seek = (value: number) => { head.current = value; setRow(value) }
-  const hours = (live ? num(frame.at('mine-01.sim_time_s')) : num(current[0])) / 3600
+  const hours = (live ? num(frame.at('mine-01.sim_time_s')) : head.current * SAMPLE_SECONDS) / 3600
+  const reg: Reg = id => num(bundle.register.find(r => r.parameter_id === id)?.value)
+  const weatherIndex = Math.min(bundle.weather.rows.length - 1, Math.max(0, Math.floor(live ? num(frame.at('mine-01.sim_time_s')) / SAMPLE_SECONDS : head.current) % bundle.weather.rows.length))
+  const weather: Weather = Object.fromEntries(bundle.weather.columns.map((c, k) => [c, bundle.weather.rows[weatherIndex][k]]))
+  const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
   return <main className="ig-shell">
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
-        <TerrainStage showRoads showPlant moving twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
-        <Playhead playing={playing && !live} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
+        <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
+        <Playhead playing={playing && !live} rows={log.rows.length} head={head} speed={speed} onRow={r => r !== row && setRow(r)}/>
         <LaneArrows/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
           blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
         <Excavator frame={frame}/>
         <OreHandling frame={frame} dumping={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).includes('dumping')}/>
-        <LightTowers/>
+        <RoadLighting/>
+        {layers.has('weather') && <WeatherScene weather={weather}/>}
+        {layers.has('safety') && <SafetyScene loopSpeed={reg('loop_speed_kmh')}/>}
         {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
     </div>
-    {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
+    {['specs', 'fleet', 'weather', 'safety'].some(l => layers.has(l as Layer)) && <div className="ig-stack">
+      {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
+      {layers.has('fleet') && <EsgPanel frame={frame} reg={reg} hours={hours}/>}
+      {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
+      {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
+      {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
+    </div>}
     {layers.has('sensors') && <SensorPanel frame={frame} live={live}/>}
 
     <header className="ig-title">
@@ -581,8 +830,11 @@ export function IngestionLayer() {
           <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)} aria-label="Telemetry log">
             {Object.entries(bundle.logs).map(([id, l]) => <option key={id} value={id}>{l.label}</option>)}
           </select>
+          <select id="ig-speed" value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Playback speed">
+            {SPEEDS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+          </select>
           <input id="ig-time" type="range" min={0} max={log.rows.length - 1} value={row} onChange={e => seek(Number(e.target.value))} aria-label="Replay time"/>
-          <span className="ig-clock">{hours.toFixed(2)} h · {hours < 4 ? 'normal operations' : log.label}</span>
+          <span className="ig-clock">{clock} · {hours < 4 ? 'normal operations' : log.label}</span>
         </>}
       <span className="ig-read">{num(frame.at('mine-01.throughput_tph')).toFixed(0)} <small>t/h</small></span>
       <span className="ig-read">{num(frame.at('crusher-01.rom_inventory_t')).toFixed(0)} <small>t ROM</small></span>

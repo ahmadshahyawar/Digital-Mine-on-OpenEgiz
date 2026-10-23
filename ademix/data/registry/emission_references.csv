@@ -1,0 +1,3 @@
+factor,value,unit,source
+diesel_net_calorific_value,43.0,TJ/Gg,"IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Ch. 1, Table 1.2 (Gas/Diesel Oil default net calorific value), https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html"
+diesel_co2_emission_factor,74100,kg CO2/TJ,"IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Vol. 2 Energy, Ch. 1, Table 1.4 (Gas/Diesel Oil default CO2 emission factor), https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html"

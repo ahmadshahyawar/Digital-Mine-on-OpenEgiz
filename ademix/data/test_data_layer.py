@@ -240,7 +240,7 @@ class TelemetryLogTests(unittest.TestCase):
         rules = {(r["thing_kind"], r["feature"]): r for r in DICTIONARY}
         kind_of = {thing_id.split(":")[1]: twin["attributes"]["kind"] for thing_id, twin in TWINS.items()}
         for path in MANIFEST["outputs"]:
-            if not path.startswith("telemetry/logs/"):
+            if not path.startswith("telemetry/logs/") or path.endswith("weather_station.csv"):
                 continue
             rows = read_csv(DATA / path)
             for column in rows[0]:
@@ -255,7 +255,7 @@ class TelemetryLogTests(unittest.TestCase):
     def test_logs_conserve_mass_and_switch_at_the_recorded_time(self):
         switch = MANIFEST["telemetry_settings"]["scenario_switch_s"]
         for path in MANIFEST["outputs"]:
-            if path.startswith("telemetry/logs/"):
+            if path.startswith("telemetry/logs/") and not path.endswith("weather_station.csv"):
                 rows = read_csv(DATA / path)
                 scenario = Path(path).stem
                 with self.subTest(log=path):
@@ -300,6 +300,40 @@ class FuelReferenceTests(unittest.TestCase):
         for pid in ("truck_fuel_consumption_lph", "excavator_fuel_consumption_lph"):
             self.assertEqual(REGISTER[pid]["status"], "external_reference")
             self.assertIn("not a measurement", REGISTER[pid]["notes"])
+
+
+class EnvironmentAndEmissionTests(unittest.TestCase):
+    WEATHER = read_csv(DATA / "telemetry" / "logs" / "weather_station.csv")
+    REFS = {r["factor"]: float(r["value"]) for r in read_csv(DATA / "registry" / "emission_references.csv")}
+
+    def test_weather_log_regenerates_identically_and_stays_physical(self):
+        self.assertEqual((DATA / "telemetry" / "logs" / "weather_station.csv").read_bytes(), build.weather_log().encode("utf-8"))
+        bounds = {"temperature_c": (-50, 50), "wind_speed_ms": (0, 40), "wind_direction_deg": (0, 360),
+                  "precipitation_mm_h": (0, 50), "humidity_pct": (0, 100), "pm10_ugm3": (0, 1000)}
+        for row in self.WEATHER:
+            for column, (low, high) in bounds.items():
+                self.assertTrue(low <= float(row[column]) <= high, (column, row[column]))
+        times = [float(r["time_s"]) for r in self.WEATHER]
+        self.assertEqual(times, [float(r["time_s"]) for r in read_csv(DATA / "telemetry" / "logs" / "baseline.csv")])
+
+    def test_rain_washes_out_dust(self):
+        wet = [float(r["pm10_ugm3"]) for r in self.WEATHER if float(r["precipitation_mm_h"]) > 0]
+        dry = [float(r["pm10_ugm3"]) for r in self.WEATHER if float(r["precipitation_mm_h"]) == 0]
+        self.assertTrue(wet)
+        self.assertLess(sum(wet) / len(wet), sum(dry) / len(dry))
+
+    def test_diesel_factors_follow_from_ipcc_defaults(self):
+        density = value("diesel_density_kg_per_l")
+        co2 = self.REFS["diesel_net_calorific_value"] * self.REFS["diesel_co2_emission_factor"] * density / 1e6
+        self.assertAlmostEqual(value("diesel_co2_kg_per_l"), co2, delta=0.001)
+        self.assertAlmostEqual(value("diesel_energy_kwh_per_l"), self.REFS["diesel_net_calorific_value"] * density / 3.6, delta=0.01)
+        self.assertEqual(REGISTER["crusher_power_kw"]["status"], "required_input")
+
+    def test_bundle_carries_weather_and_labels_it_synthetic(self):
+        bundle = json.loads((DATA / build.BUNDLE_PATH).read_text(encoding="utf-8"))
+        self.assertIn("Synthetic", bundle["weather"]["note"])
+        self.assertEqual(len(bundle["weather"]["rows"]), len(self.WEATHER))
+        self.assertIn("scenario-controller.match_factor", bundle["logs"]["baseline"]["columns"])
 
 
 class SensorTopologyBundleTests(unittest.TestCase):
