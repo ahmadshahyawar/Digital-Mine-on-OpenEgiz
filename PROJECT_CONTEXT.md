@@ -269,6 +269,12 @@ Interfaces consumed or changed: consumes truck-0N.state, road-main.state (unchan
 Expected handoff: commit SHA, files, build, browser check.
 ```
 
+Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
+
+- Commit `4be2758` on `claude/road-shoulder`. Files: `ademix/frontend/src/TerrainStage.tsx`, `ademix/frontend/src/IngestionLayer.tsx`.
+- Road ribbon 7.2→13.6 units, terrain shelf flattened to 7.2 (blend to 10.6), outer berm 4.2→7.3, loop half-width 3.35→4.4, loop berms, loop speed signs, ramp lights and escape lane moved out to match. Broken-down truck eases to offset 3.7 (over its lane line) while `road-main.state` is `restricted`, then 5.1 (shoulder) once open.
+- Checks: `tsc -b` passes; overview canvas captured in the browser shows the wider ramp shelf. Not done: a breakdown observed on the wider road, and the crusher-loop junction, where loop berm tubes cross the paved pad (may predate this change; needs a close review).
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
