@@ -237,7 +237,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ```text
 Owner: Ahmad + Codex
-Status: contract implementation complete and tested; ready for Professor + Claude explorer UI
+Status: contract implementation complete and tested; C1 UI waits for accepted B6 integration
 Branch: codex/c1-twin-relationships (from origin/codex/ademix cfb4ec9)
 Implementation commit: d903498
 Exact files: ademix/data/topology/twin_relationships.json; ademix/data/build_data_layer.py;
@@ -257,9 +257,10 @@ Tests actually run: 38 data/schema/regeneration checks pass, including exact twi
 Limitations: static relationship metadata is team-authored conceptual topology, not field validation; one road
   twin represents both separated directions; the crusher twin combines dump bay, ROM bin and crusher; the
   scenario controller is software, not physical equipment. Current state remains authoritative only from Ditto.
-Request to Professor + Claude: consume `twinRelationships` for the optional C1 Mine model explorer, join node
-  selection to returned live twins by exact `thing_id`, keep control links visually distinct, and do not add
-  invented twins or relationships. Build only after the Team accepts the prerequisite B-task state.
+Next C1 step for Ahmad + Codex: after the accepted B6 handoff is integrated, consume `twinRelationships` for
+  the optional Mine model explorer, join node selection to returned live twins by exact `thing_id`, keep
+  control links visually distinct, and do not add invented twins or relationships. Professor + Claude have
+  no C-phase implementation assignment under the Team's 5821550 ownership decision.
 Integration instruction: merge this branch into codex/ademix after review, rerun combined tests/build/smoke,
   then push codex/ademix. Do not merge to main.
 ```
