@@ -4,7 +4,7 @@
   "inputs_sha256": {
     "ademix/data/openmines/north_pit_mine.json": "271134d6bbb46bc00162fad87d0e10510b0bf4d1fec4a2860f9784d663a7bbd8",
     "ademix/data/registry/parameters.csv": "a1935be8a1e980a04e654e1804a6f992e0d2a0b6e20c489e54bab04e9ef7b8f1",
-    "ademix/simulator/engine.py": "6cfc5118723cf26cf8d5a6adc5fc46e2f5c8d42301e9c2e5dc7f1c5f850ffc74",
+    "ademix/simulator/engine.py": "6a358cf2327c951dbf2ecb32eb65ae81cefaf9e3beeed268ea1e8b179c4484b6",
     "ademix/simulator/compare_scenarios.py": "a71e38f77678ad59b33c6d6f6a6b6d1762d5be5bcdd3d902c8b72d48e8ddcb88",
     "ademix/simulator/history_evidence.py": "e35f052a114bc650d8bc83060cdd68ec87370657fba2845ed016a06dbfbe6c33"
   },
@@ -33,24 +33,24 @@
       "columns": 10
     },
     "telemetry/logs/baseline.csv": {
-      "sha256": "dfa82d5916a5c1f92ef115054008312e5c4427358424fdfedba39bd2ff289dbb",
+      "sha256": "749af68a65b454aa95c48a392b0a681f192cdda412f9ad48323299b041c33c5c",
       "rows": 157,
-      "columns": 138
+      "columns": 143
     },
     "telemetry/logs/truck_breakdown.csv": {
-      "sha256": "90e3005d2c4933277914265800ec045bd7eedb4f143c564615d0f4f73b6ec243",
+      "sha256": "05b4d8b93db386b14fc5d648b28c210c474f49efc98823758e3d68c3be48cc2d",
       "rows": 157,
-      "columns": 138
+      "columns": 143
     },
     "telemetry/logs/road_closure.csv": {
-      "sha256": "3923a812d633e5e5eab3efb0ad79f1bbcbf96d00f137c04dc8cc14c44e8a65f6",
+      "sha256": "72897f1f7ff5924c491042767937fda6233ba71f9a084a3b849a9ef99ffcec84",
       "rows": 157,
-      "columns": 138
+      "columns": 143
     },
     "telemetry/logs/crusher_slowdown.csv": {
-      "sha256": "5290bb86e833d446c94ea37671345c9cf6237b3f440558b92aedde74ad73bc62",
+      "sha256": "b1250bafd191c7ff5f8fe781d9abddd91d44ddec179c2acc1421cca586d59622",
       "rows": 157,
-      "columns": 138
+      "columns": 143
     },
     "telemetry/logs/weather_station.csv": {
       "sha256": "caa957da70621506daead4a7223594c1602b84faed5d45f66a682c031dcb1483",
@@ -58,12 +58,12 @@
       "columns": 7
     },
     "evidence/fixed_vs_smart.json": {
-      "sha256": "d8f23e407e2bab28f561243c82019ee8b6b70200c5dd3c69cbecf9cf928b6588",
+      "sha256": "a308cc4a677f32f5d4943b960365a23d26bccb806a39dd35680b0c8e8d926e31",
       "rows": 4,
       "columns": 6
     },
     "evidence/production_recovery.json": {
-      "sha256": "699b1fea1e4ea139bf90392e4a72928a8ea78011a96d3e0a75e7a96f23f85a50",
+      "sha256": "9b69184e616caf116937b274cca7d39494e0087a41f38f94ca95b49d35b2ec84",
       "rows": 5,
       "columns": 8
     }

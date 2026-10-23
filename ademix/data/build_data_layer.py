@@ -222,7 +222,8 @@ LOG_THINGS = {
     "excavator-01": ["state", "queue_length", "average_wait_min", "utilization_pct"],
     "crusher-01": ["state", "rom_inventory_t", "queue_length", "average_wait_min"],
     "scenario-controller": ["projected_throughput_tph", "bottleneck", "match_factor"],
-    "road-main": ["state", "speed_limit_kmh", "blocked_trucks"],
+    "road-main": ["state", "speed_limit_kmh", "blocked_trucks", "traffic_model", "blockage_lane",
+                  "blockage_heading", "blocked_crusher_bound_trucks", "blocked_face_bound_trucks"],
 }
 LOG_TRUCK_FEATURES = ["state", "speed_kmh", "payload_t", "fuel_pct", "route_progress_pct", "heading"]
 

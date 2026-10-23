@@ -24,7 +24,7 @@
   "org.openegiz.ademix:road-main": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Main Haul Road", "team": "Ademix", "kind": "road", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "length_km": 3.2},
-    "features": {"state": {"properties": {"value": "open"}}, "speed_limit_kmh": {"properties": {"value": 25, "unit": "km/h"}}, "traffic_count": {"properties": {"value": 0}}}
+    "features": {"state": {"properties": {"value": "open"}}, "speed_limit_kmh": {"properties": {"value": 25, "unit": "km/h"}}, "traffic_count": {"properties": {"value": 0}}, "blockage": {"properties": {"value": "none"}}, "blocked_trucks": {"properties": {"value": 0}}, "traffic_model": {"properties": {"value": "two_way_separated_lanes"}}, "blockage_lane": {"properties": {"value": "none"}}, "blockage_heading": {"properties": {"value": 0}}, "blocked_crusher_bound_trucks": {"properties": {"value": 0, "unit": "trucks"}}, "blocked_face_bound_trucks": {"properties": {"value": 0, "unit": "trucks"}}}
   },
   "org.openegiz.ademix:scenario-controller": {
     "policyId": "default:basic_policy",

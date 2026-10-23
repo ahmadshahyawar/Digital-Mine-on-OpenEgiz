@@ -11,7 +11,7 @@ A scenario changes an input of the operating model; nothing is overwritten in th
 | Scenario | Model input changed | Mechanism |
 |---|---|---|
 | Normal operations | None: 6 trucks at 25 km/h, crusher 900 t/h | Reference case |
-| Truck HT-01 breakdown | HT-01 is removed from service. If it is on the road, the single lane is blocked for 20 min (`BREAKDOWN_RECOVERY_S`) | HT-01 keeps its payload. Other trucks travelling toward its position stop there (`blocked`). If it was being loaded or dumping, that server is released at once. After the tow, the road reopens and every moving truck is re-planned. |
+| Truck HT-01 breakdown | HT-01 is removed from service. If it is on the road, its direction lane is blocked for 20 min (`BREAKDOWN_RECOVERY_S`) | HT-01 keeps its payload. Same-direction followers approaching its position stop there (`blocked`); opposing traffic continues. If it was being loaded or dumping, that server is released at once. After the tow, the lane reopens and every moving truck is re-planned. |
 | Main road restriction | Road speed limit 25 → 10.72 km/h | Every moving truck is re-planned from its current position at the new speed. New trips use the new speed. |
 | Crusher capacity −45 % | Crusher rate 900 → 495 t/h | The ROM bin drains more slowly. A truck may tip only when the bin has room for its full load (600 t bin), otherwise it waits in the crusher queue. |
 
@@ -65,7 +65,7 @@ The rule picks the most downstream saturated server, because upstream servers ar
 | Scenario | Constraint | Explanation (model output) |
 |---|---|---|
 | Normal operations | Loading resource | Six trucks could supply 1 240 t/h, but one excavator loads at most 770 t/h (match factor 1.61). Trucks queue at the face; the crusher has spare capacity. |
-| HT-01 breakdown | Haul-road travel while the lane is blocked, then briefly available truck fleet, then loading resource | The blockage stops all deliveries. After the tow the trucks arrive bunched, so the excavator is not saturated for a while. In steady state, five trucks (1 033 t/h) still out-supply the excavator, so loading is the constraint again. |
+| HT-01 breakdown | Affected direction lane during towing, then briefly available truck fleet, then loading resource | Same-direction followers stop while opposing traffic continues. After the tow the followers arrive bunched, so the excavator can be temporarily underfed. In steady state, five trucks (1 033 t/h) still out-supply the excavator, so loading is the constraint again. |
 | Main road restriction | Haul-road travel | At 10.72 km/h the round trip takes 35.8 min. Six trucks then supply only 647 t/h, below the excavator's 770 t/h, so the excavator waits for trucks. |
 | Crusher capacity −45 % | Crusher processing capacity | 495 t/h is below the 770 t/h the face can load. The ROM bin fills to its 600 t limit and trucks queue at the dump. |
 
@@ -79,44 +79,44 @@ These come from `python compare_scenarios.py`. Every run uses the same determini
 
 | Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
 |---|---:|---:|---:|---:|
-| Production t | 6,160 | 6,194 (+0.6%) | 5,163 (-16.2%) | 3,960 (-35.7%) |
-| Throughput t/h | 770.0 | 774.3 (+0.6%) | 645.3 (-16.2%) | 495.0 (-35.7%) |
-| Cycle min | 36.0 | 30.2 (-16.1%) | 42.8 (+18.9%) | 51.6 (+43.2%) |
+| Production t | 6,160 | 6,160 (-0.0%) | 5,163 (-16.2%) | 3,960 (-35.7%) |
+| Throughput t/h | 770.0 | 770.0 (-0.0%) | 645.3 (-16.2%) | 495.0 (-35.7%) |
+| Cycle min | 36.0 | 30.1 (-16.4%) | 42.8 (+18.9%) | 51.6 (+43.2%) |
 | Avg queue at face | 2.27 | 1.27 (-44.0%) | 0.00 (-100.0%) | 0.38 (-83.4%) |
 | Avg queue at crusher | 0.00 | 0.00 (—) | 0.00 (—) | 2.99 (new) |
 | Wait at face min | 13.6 | 7.6 (-44.0%) | 0.0 (-100.0%) | 3.4 (-75.0%) |
 | Wait at crusher min | 0.0 | 0.0 (—) | 0.0 (—) | 25.4 (new) |
 | Truck util. % | 62.1 | 62.1 (+0.0%) | 100.0 (+61.0%) | 43.9 (-29.3%) |
 | Excavator util. % | 100.0 | 100.0 (+0.0%) | 84.4 (-15.6%) | 72.1 (-27.9%) |
-| Crusher util. % | 85.6 | 86.0 (+0.6%) | 71.7 (-16.2%) | 100.0 (+16.9%) |
+| Crusher util. % | 85.6 | 85.6 (-0.0%) | 71.7 (-16.2%) | 100.0 (+16.9%) |
 | Trips / h | 10.00 | 10.00 (+0.0%) | 8.38 (-16.2%) | 6.88 (-31.2%) |
-| Avg ROM t | 33 | 33 (+1.4%) | 28 (-16.2%) | 540 (+1539.3%) |
-| ROM at end of period t | 0 | 0 | 28 | 555 |
+| Avg ROM t | 33 | 33 (-0.0%) | 28 (-16.2%) | 540 (+1539.3%) |
+| ROM at end of period t | 0 | 2 | 28 | 555 |
 
 ### Transient: first 1 h after the switch
 
 | Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
 |---|---:|---:|---:|---:|
-| Production t | 770 | 582 (-24.5%) | 584 (-24.1%) | 490 (-36.4%) |
-| Throughput t/h | 770.0 | 581.6 (-24.5%) | 584.4 (-24.1%) | 489.7 (-36.4%) |
-| Cycle min | 36.0 | 39.4 (+9.4%) | 44.2 (+22.7%) | 36.0 (+0.0%) |
-| Avg queue at face | 2.27 | 1.01 (-55.4%) | 0.46 (-79.6%) | 2.27 (+0.0%) |
-| Avg queue at crusher | 0.00 | 0.10 (new) | 0.00 (—) | 0.00 (—) |
-| Wait at face min | 13.6 | 8.8 (-35.3%) | 4.6 (-66.4%) | 13.6 (+0.0%) |
-| Wait at crusher min | 0.0 | 0.8 (new) | 0.0 (—) | 0.0 (—) |
-| Truck util. % | 62.1 | 49.0 (-21.2%) | 92.3 (+48.5%) | 62.1 (+0.0%) |
-| Excavator util. % | 100.0 | 79.9 (-20.1%) | 88.6 (-11.4%) | 100.0 (+0.0%) |
-| Crusher util. % | 85.6 | 64.6 (-24.5%) | 64.9 (-24.1%) | 98.9 (+15.6%) |
-| Trips / h | 10.00 | 8.00 (-20.0%) | 8.00 (-20.0%) | 10.00 (+0.0%) |
-| Avg ROM t | 33 | 78 (+135.6%) | 26 (-21.7%) | 173 (+425.3%) |
-| ROM at end of period t | 0 | 34 | 32 | 280 |
+| Production t | 770 | 691 (-10.3%) | 584 (-24.1%) | 490 (-36.4%) |
+| Throughput t/h | 770.0 | 691.0 (-10.3%) | 584.4 (-24.1%) | 489.7 (-36.4%) |
+| Cycle min | 36.0 | 36.2 (+0.4%) | 44.2 (+22.7%) | 36.0 (+0.0%) |
+| Avg queue at face | 2.27 | 1.31 (-42.4%) | 0.46 (-79.6%) | 2.27 (+0.0%) |
+| Avg queue at crusher | 0.00 | 0.00 (—) | 0.00 (—) | 0.00 (—) |
+| Wait at face min | 13.6 | 9.8 (-27.9%) | 4.6 (-66.4%) | 13.6 (+0.0%) |
+| Wait at crusher min | 0.0 | 0.0 (—) | 0.0 (—) | 0.0 (—) |
+| Truck util. % | 62.1 | 54.9 (-11.7%) | 92.3 (+48.5%) | 62.1 (+0.0%) |
+| Excavator util. % | 100.0 | 89.4 (-10.6%) | 88.6 (-11.4%) | 100.0 (+0.0%) |
+| Crusher util. % | 85.6 | 76.8 (-10.3%) | 64.9 (-24.1%) | 98.9 (+15.6%) |
+| Trips / h | 10.00 | 9.00 (-10.0%) | 8.00 (-20.0%) | 10.00 (+0.0%) |
+| Avg ROM t | 33 | 30 (-10.0%) | 26 (-21.7%) | 173 (+425.3%) |
+| ROM at end of period t | 0 | 2 | 32 | 280 |
 
 ### Bottleneck analysis
 
 | Scenario | Analytical bottleneck | Live, first hour | Live, steady state |
 |---|---|---|---|
 | Normal operations | loading resource (770 t/h) | loading resource | loading resource |
-| Truck HT-01 breakdown | loading resource (770 t/h) | available truck fleet | loading resource |
+| Truck HT-01 breakdown | loading resource (770 t/h) | loading resource | loading resource |
 | Main road restriction | haul-road travel (647 t/h) | haul-road travel | haul-road travel |
 | Crusher capacity −45% | crusher processing capacity (495 t/h) | crusher processing capacity | crusher processing capacity |
 
@@ -126,7 +126,7 @@ The breakdown's effect depends on where HT-01 is when it fails. To show this, th
 
 | Trigger after warm-up | HT-01 location | First-hour production t | vs baseline first hour |
 |---:|---|---:|---:|
-| 0 min | haul road at 0.97 km, returning | 582 | -24.5% |
+| 0 min | haul road at 0.97 km, returning | 691 | -10.3% |
 | 3 min | loading area, queued | 770 | +0.0% |
 | 6 min | loading area, queued | 770 | +0.0% |
 | 9 min | loading area, queued | 770 | +0.0% |
@@ -137,7 +137,7 @@ The breakdown's effect depends on where HT-01 is when it fails. To show this, th
 | 24 min | haul road at 0.85 km, hauling | 577 | -25.0% |
 | 27 min | haul road at 2.10 km, hauling | 587 | -23.8% |
 | 30 min | crusher dump bay | 693 | -10.0% |
-| 33 min | haul road at 2.22 km, returning | 591 | -23.2% |
+| 33 min | haul road at 2.22 km, returning | 688 | -10.7% |
 
 The largest mass-balance error across the four runs is 9.1e-13 t, which is floating-point rounding.
 
@@ -146,7 +146,7 @@ The largest mass-balance error across the four runs is 9.1e-13 t, which is float
 These are model results for the stated assumptions:
 
 - **The fleet is over-trucked for one excavator.** A truck failing in a queue costs nothing; spare trucks absorb it.
-- **What hurts is a failure on the single-lane road.** It loses about a quarter of the first hour's production, because the blockage stops every delivery.
+- **What hurts is a failure in a loaded crusher-bound lane.** It can lose about a quarter of the first hour's production because loaded followers cannot deliver until towing; the separated opposing lane remains open.
 - **The road restriction makes haulage the constraint** (−16 %). Truck utilization reaches 100 % while the excavator becomes idle 16 % of the time.
 - **The crusher slowdown pushes back through the whole cycle** (−36 %). The ROM bin fills, trucks wait about 25 min per cycle at the dump, and the excavator idles 28 % of the time.
 
@@ -155,7 +155,7 @@ These are model results for the stated assumptions:
 | Scenario | Why the metrics change | Dispatcher recommendation |
 |---|---|---|
 | Normal operations | The 6 min single excavator limits throughput to 770 t/h. Extra trucks wait 13.6 min at the face, so fleet utilization is 62.1%; the crusher runs at 85.6% and ten loads are completed per hour. | Keep five trucks productive and treat the sixth as standby, or add loading capacity before adding trucks. |
-| HT-01 breakdown | A road failure blocks deliveries and cuts the first hour to 581.6 t/h, eight trips/h and 49.0% fleet utilization. After towing, five trucks still saturate the excavator, so steady throughput and crusher utilization recover while the face queue becomes shorter. | Tow the truck off the lane first; then continue with five trucks. Do not add another truck unless monitoring shows the excavator becoming starved. |
+| HT-01 breakdown | In the returning-lane fixture, same-direction followers stop but opposing loaded traffic continues; first-hour output is 691.0 t/h, nine trips/h and 54.9% fleet utilization. After towing, five trucks still saturate the excavator. | Tow the truck off the affected lane first while keeping the opposing lane open; then continue with five trucks. |
 | Main road restriction | Lower speed lengthens the free cycle, removes the face queue, raises fleet utilization to 100%, lowers trips to 8.38/h and leaves both excavator and crusher waiting; throughput falls to about 645 t/h. | Restore road speed/availability first. If the restriction must remain, add one suitable truck rather than changing crusher capacity. |
 | Crusher −45% | The crusher is continuously busy at 495 t/h. ROM fills, crusher wait rises to 25.4 min, cycle time reaches 51.6 min, and truck utilization/trips fall because trucks cannot dump. | Restore crusher capacity; meanwhile park surplus trucks or reduce loading to prevent dump congestion and excess idling. |
 
@@ -168,7 +168,7 @@ All of these are team scenario inputs, not site data:
 - **Lane blockage:** 20 minutes.
 - **The broken truck is always HT-01.**
 
-The single haul road is modelled as one lane in both directions, so a stopped truck blocks traffic both ways. A truck broken down at the face or the dump is assumed to be moved aside at once, without blocking the server. The scenario stays in force until reset; no repair time is modelled.
+The haul road is modelled as separated crusher-bound and face-bound lanes. A stopped truck blocks only same-direction followers approaching its position; opposing traffic continues. A truck broken down at the face or the dump is assumed to be moved aside at once, without blocking the server. The scenario stays in force until reset; no repair time is modelled. The full field and presentation contract is in `ROAD_BREAKDOWN_CONTRACT.md`.
 
 ## 5. Verification performed
 
@@ -176,7 +176,7 @@ The single haul road is modelled as one lane in both directions, so a stopped tr
 
 - each scenario changes a model input, and moving trucks adopt the new speed;
 - every propagated effect against an identical baseline (cycle time, queues, utilizations, ROM, production);
-- that a road breakdown starves the crusher and then clears;
+- that a road breakdown reduces crusher feed, affects only same-direction followers, and then clears;
 - reset from 30 trigger times (3 scenarios × 10 offsets across a cycle), checking at every step:
   - mass balance;
   - ROM bounds;
@@ -247,9 +247,9 @@ Every run uses the same 4 h warm-up; the policy and the condition switch at the 
 | Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
 |---|---:|---:|---:|---:|
 | Trucks needed (model) | 4 | 4 | 8 | 3 |
-| Production t | 6,160 → 6,160 (+0.0%) | 6,194 → 6,194 (+0.0%) | 5,163 → 5,163 (+0.0%) | 3,960 → 3,960 (-0.0%) |
-| Throughput t/h | 770.0 → 770.0 (+0.0%) | 774.3 → 774.3 (+0.0%) | 645.3 → 645.3 (+0.0%) | 495.0 → 495.0 (-0.0%) |
-| Truck operating h per kt | 7.79 → 5.19 (-33.3%) | 6.46 → 5.17 (-20.0%) | 9.30 → 9.30 (+0.0%) | 12.12 → 6.06 (-50.0%) |
+| Production t | 6,160 → 6,160 (+0.0%) | 6,160 → 6,160 (+0.0%) | 5,163 → 5,163 (+0.0%) | 3,960 → 3,960 (-0.0%) |
+| Throughput t/h | 770.0 → 770.0 (+0.0%) | 770.0 → 770.0 (+0.0%) | 645.3 → 645.3 (+0.0%) | 495.0 → 495.0 (-0.0%) |
+| Truck operating h per kt | 7.79 → 5.19 (-33.3%) | 6.49 → 5.19 (-20.0%) | 9.30 → 9.30 (+0.0%) | 12.12 → 6.06 (-50.0%) |
 | Truck time parked % | 0.0 → 33.3 (new) | 0.0 → 16.7 (new) | 0.0 → 0.0 (—) | 0.0 → 50.0 (new) |
 | Operating-truck util. % | 62.1 → 93.2 (+50.0%) | 74.5 → 93.2 (+25.0%) | 100.0 → 100.0 (+0.0%) | 43.9 → 87.3 (+98.7%) |
 | Wait at face min | 13.6 → 1.6 (-88.0%) | 7.6 → 1.6 (-78.5%) | 0.0 → 0.0 (—) | 3.4 → 0.0 (-100.0%) |
@@ -261,14 +261,14 @@ Every run uses the same 4 h warm-up; the policy and the condition switch at the 
 | Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
 |---|---:|---:|---:|---:|
 | Trucks needed (model) | 4 | 4 | 8 | 3 |
-| Production t | 770 → 770 (+0.0%) | 582 → 582 (+0.0%) | 584 → 584 (+0.0%) | 490 → 490 (-0.0%) |
-| Throughput t/h | 770.0 → 770.0 (+0.0%) | 581.6 → 581.6 (+0.0%) | 584.4 → 584.4 (+0.0%) | 489.7 → 489.7 (-0.0%) |
-| Truck operating h per kt | 7.79 → 5.43 (-30.4%) | 8.60 → 7.88 (-8.3%) | 10.27 → 10.27 (+0.0%) | 12.25 → 6.98 (-43.1%) |
-| Truck time parked % | 0.0 → 30.4 (new) | 0.0 → 6.9 (new) | 0.0 → 0.0 (—) | 0.0 → 43.1 (new) |
-| Operating-truck util. % | 62.1 → 89.2 (+43.6%) | 58.7 → 64.1 (+9.1%) | 92.3 → 92.3 (+0.0%) | 62.1 → 93.2 (+50.1%) |
-| Wait at face min | 13.6 → 4.0 (-70.4%) | 8.8 → 6.2 (-30.2%) | 4.6 → 4.6 (+0.0%) | 13.6 → 3.4 (-75.0%) |
-| Wait at crusher min | 0.0 → 0.0 (—) | 0.8 → 0.8 (+0.0%) | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) |
-| Excavator util. % | 100.0 → 100.0 (+0.0%) | 79.9 → 79.9 (+0.0%) | 88.6 → 88.6 (+0.0%) | 100.0 → 85.5 (-14.5%) |
+| Production t | 770 → 770 (+0.0%) | 691 → 691 (+0.0%) | 584 → 584 (+0.0%) | 490 → 490 (-0.0%) |
+| Throughput t/h | 770.0 → 770.0 (+0.0%) | 691.0 → 691.0 (+0.0%) | 584.4 → 584.4 (+0.0%) | 489.7 → 489.7 (-0.0%) |
+| Truck operating h per kt | 7.79 → 5.43 (-30.4%) | 7.24 → 6.33 (-12.6%) | 10.27 → 10.27 (+0.0%) | 12.25 → 6.98 (-43.1%) |
+| Truck time parked % | 0.0 → 30.4 (new) | 0.0 → 10.5 (new) | 0.0 → 0.0 (—) | 0.0 → 43.1 (new) |
+| Operating-truck util. % | 62.1 → 89.2 (+43.6%) | 65.8 → 75.3 (+14.4%) | 92.3 → 92.3 (+0.0%) | 62.1 → 93.2 (+50.1%) |
+| Wait at face min | 13.6 → 4.0 (-70.4%) | 9.8 → 6.0 (-38.8%) | 4.6 → 4.6 (+0.0%) | 13.6 → 3.4 (-75.0%) |
+| Wait at crusher min | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) |
+| Excavator util. % | 100.0 → 100.0 (+0.0%) | 89.4 → 89.4 (+0.0%) | 88.6 → 88.6 (+0.0%) | 100.0 → 85.5 (-14.5%) |
 
 With smart dispatch, first-hour production after a breakdown is identical to the fixed fleet at all 12 trigger times in the sensitivity sweep (section 3), including the four road failures.
 

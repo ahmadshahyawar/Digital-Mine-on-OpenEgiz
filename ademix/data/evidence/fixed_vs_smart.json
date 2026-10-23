@@ -9,7 +9,7 @@
     "trigger": "dispatch policy and operating condition are applied at the same simulated instant",
     "transient_window_h": 1,
     "steady_window_h": 8,
-    "common_start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+    "common_start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
     "fuel_basis": "A1 interval-integrated comparable-equipment medium-load rates"
   },
   "metric_definitions": [
@@ -62,7 +62,7 @@
   "scenarios": {
     "baseline": {
       "label": "Normal operations",
-      "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
       "trucks_required": 4,
       "periods": {
         "transient": {
@@ -195,32 +195,32 @@
     },
     "truck_breakdown": {
       "label": "Truck HT-01 breakdown",
-      "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
       "trucks_required": 4,
       "periods": {
         "transient": {
           "window_h": 1,
           "fixed": {
-            "throughput_tph": 581.6,
-            "cycle_time_min": 39.37,
-            "loading_wait_min": 8.83,
-            "crusher_wait_min": 0.75,
+            "throughput_tph": 691.0,
+            "cycle_time_min": 36.16,
+            "loading_wait_min": 9.84,
+            "crusher_wait_min": 0.0,
             "cycling_trucks_avg": 5.0,
             "standby_trucks_avg": 0.0,
-            "truck_operating_h_per_kt": 8.596974,
+            "truck_operating_h_per_kt": 7.23589,
             "estimated_fuel_l": 331.5,
-            "estimated_fuel_l_per_kt": 569.979367
+            "estimated_fuel_l_per_kt": 479.739508
           },
           "smart": {
-            "throughput_tph": 581.6,
-            "cycle_time_min": 42.54,
-            "loading_wait_min": 6.16,
-            "crusher_wait_min": 0.75,
-            "cycling_trucks_avg": 4.584,
-            "standby_trucks_avg": 0.416,
-            "truck_operating_h_per_kt": 7.881706,
-            "estimated_fuel_l": 310.8664,
-            "estimated_fuel_l_per_kt": 534.502063
+            "throughput_tph": 691.0,
+            "cycle_time_min": 35.385,
+            "loading_wait_min": 6.022222,
+            "crusher_wait_min": 0.0,
+            "cycling_trucks_avg": 4.372,
+            "standby_trucks_avg": 0.628,
+            "truck_operating_h_per_kt": 6.327062,
+            "estimated_fuel_l": 300.3512,
+            "estimated_fuel_l_per_kt": 434.66165
           },
           "smart_minus_fixed": {
             "throughput_tph": {
@@ -228,62 +228,62 @@
               "percent": 0.0
             },
             "cycle_time_min": {
-              "absolute": 3.17,
-              "percent": 8.051816
+              "absolute": -0.775,
+              "percent": -2.143252
             },
             "loading_wait_min": {
-              "absolute": -2.67,
-              "percent": -30.237826
+              "absolute": -3.817778,
+              "percent": -38.798557
             },
             "crusher_wait_min": {
               "absolute": 0.0,
-              "percent": 0.0
+              "percent": null
             },
             "cycling_trucks_avg": {
-              "absolute": -0.416,
-              "percent": -8.32
+              "absolute": -0.628,
+              "percent": -12.56
             },
             "standby_trucks_avg": {
-              "absolute": 0.416,
+              "absolute": 0.628,
               "percent": null
             },
             "truck_operating_h_per_kt": {
-              "absolute": -0.715268,
-              "percent": -8.319997
+              "absolute": -0.908828,
+              "percent": -12.560003
             },
             "estimated_fuel_l": {
-              "absolute": -20.6336,
-              "percent": -6.224314
+              "absolute": -31.1488,
+              "percent": -9.39632
             },
             "estimated_fuel_l_per_kt": {
-              "absolute": -35.477304,
-              "percent": -6.224314
+              "absolute": -45.077858,
+              "percent": -9.39632
             }
           }
         },
         "steady": {
           "window_h": 8,
           "fixed": {
-            "throughput_tph": 774.3,
-            "cycle_time_min": 30.193,
+            "throughput_tph": 770.0,
+            "cycle_time_min": 30.0795,
             "loading_wait_min": 7.64,
             "crusher_wait_min": 0.0,
             "cycling_trucks_avg": 5.0,
             "standby_trucks_avg": 0.0,
-            "truck_operating_h_per_kt": 6.457445,
+            "truck_operating_h_per_kt": 6.493506,
             "estimated_fuel_l": 2652.0,
-            "estimated_fuel_l_per_kt": 428.128632
+            "estimated_fuel_l_per_kt": 430.519481
           },
           "smart": {
-            "throughput_tph": 774.3,
-            "cycle_time_min": 24.1635,
+            "throughput_tph": 770.0,
+            "cycle_time_min": 24.0,
             "loading_wait_min": 1.64,
             "crusher_wait_min": 0.0,
             "cycling_trucks_avg": 4.0,
             "standby_trucks_avg": 1.0,
-            "truck_operating_h_per_kt": 5.165956,
+            "truck_operating_h_per_kt": 5.194805,
             "estimated_fuel_l": 2255.2,
-            "estimated_fuel_l_per_kt": 364.070774
+            "estimated_fuel_l_per_kt": 366.103896
           },
           "smart_minus_fixed": {
             "throughput_tph": {
@@ -291,8 +291,8 @@
               "percent": 0.0
             },
             "cycle_time_min": {
-              "absolute": -6.0295,
-              "percent": -19.969861
+              "absolute": -6.0795,
+              "percent": -20.21144
             },
             "loading_wait_min": {
               "absolute": -6.0,
@@ -311,16 +311,16 @@
               "percent": null
             },
             "truck_operating_h_per_kt": {
-              "absolute": -1.291489,
-              "percent": -20.0
+              "absolute": -1.298701,
+              "percent": -19.999997
             },
             "estimated_fuel_l": {
               "absolute": -396.8,
               "percent": -14.962293
             },
             "estimated_fuel_l_per_kt": {
-              "absolute": -64.057858,
-              "percent": -14.962292
+              "absolute": -64.415585,
+              "percent": -14.962293
             }
           }
         }
@@ -328,7 +328,7 @@
     },
     "road_closure": {
       "label": "Main road restriction",
-      "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
       "trucks_required": 8,
       "periods": {
         "transient": {
@@ -461,7 +461,7 @@
     },
     "crusher_slowdown": {
       "label": "Crusher capacity −45%",
-      "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
       "trucks_required": 3,
       "periods": {
         "transient": {

@@ -11,7 +11,7 @@ Limited resources:
 - one excavator that loads one truck at a time (FIFO queue at the face);
 - one crusher dump bay that accepts one truck at a time (FIFO queue at the crusher);
 - a run-of-mine (ROM) bin of limited capacity that the crusher draws from;
-- one single-lane haul road whose speed limit and blockages apply to every truck.
+- one two-way haul road with separated direction lanes and a shared speed limit.
 """
 
 from __future__ import annotations
@@ -230,6 +230,7 @@ class MineEngine:
         self.shift_co2_kg = 0.0
         self.scenario_started_s = 0.0
         self.blockage: tuple[float, float] | None = None
+        self.blockage_direction: int = 0
         self._events: list = []
         self._seq = itertools.count()
         self._crusher_token = 0
@@ -520,7 +521,8 @@ class MineEngine:
     def _start_travel(self, truck: Truck):
         self._set_state(truck, "hauling" if truck.direction == 1 else "returning")
         target, blocked = (1.0 if truck.direction == 1 else 0.0), False
-        if self.blockage and truck.name != BREAKDOWN_TRUCK:
+        if (self.blockage and truck.name != BREAKDOWN_TRUCK
+                and truck.direction == self.blockage_direction):
             point = self.blockage[0]
             if (truck.direction == 1 and truck.progress < point) or (truck.direction == -1 and truck.progress > point):
                 target, blocked = point, True
@@ -561,9 +563,10 @@ class MineEngine:
     def _break_down(self, truck: Truck):
         if truck.state in TRAVEL_STATES:
             self._commit_travel(truck)
-            # A stopped truck blocks the single-lane road until it is towed aside.
+            # A stopped truck blocks only its own direction lane until it is towed aside.
             self._blockage_token += 1
             self.blockage = (truck.progress, self.sim_time_s + BREAKDOWN_RECOVERY_S)
+            self.blockage_direction = truck.direction
             self._schedule(BREAKDOWN_RECOVERY_S, "road_cleared", None, self._blockage_token)
             self.breakdown_location = f"haul road at {truck.progress * ROUTE_KM:.2f} km, {truck.state}"
         elif truck.state == "queued_at_excavator":
@@ -588,6 +591,7 @@ class MineEngine:
 
     def _clear_blockage(self):
         self.blockage = None
+        self.blockage_direction = 0
         # Trucks still driving toward the blockage were scheduled to stop there: re-plan them too.
         self._replan_travel()
         for other in self.trucks:
@@ -743,9 +747,10 @@ class MineEngine:
                                 s["crusher_utilization_pct"] / 100)
             if self.blockage:
                 blocked = sum(t.state == "blocked" for t in self.trucks)
+                lane = "crusher-bound" if self.blockage_direction == 1 else "face-bound"
                 return {"constraint": ROAD, "measured": s,
-                        "reason": f"HT-01 has stopped on the single-lane road; {blocked} truck(s) are held behind it "
-                                  f"and deliveries pause until it is towed aside."}
+                        "reason": f"HT-01 has stopped in the {lane} lane; {blocked} same-direction follower(s) "
+                                  f"are held behind it while opposing traffic continues until it is towed aside."}
             accumulating = delta["delivered_t"] > delta["production_t"] + CAPACITY_T
             if crush >= SATURATED_SHARE and (s["crusher_queue_avg"] > QUEUE_PRESENT_TRUCKS or accumulating
                                              or self.rom_inventory_t > ROM_BIN_CAPACITY_T - CAPACITY_T):
@@ -795,7 +800,11 @@ class MineEngine:
                 crusher_state = "operating"
             blockage = "none"
             if self.blockage:
-                blockage = f"HT-01 stopped at {self.blockage[0] * ROUTE_KM:.2f} km, cleared at {self.blockage[1] / 60:.0f} min"
+                lane = "crusher_bound" if self.blockage_direction == 1 else "face_bound"
+                blockage = (f"HT-01 stopped in {lane} lane at {self.blockage[0] * ROUTE_KM:.2f} km, "
+                            f"cleared at {self.blockage[1] / 60:.0f} min")
+            blocked_crusher_bound = sum(t.state == "blocked" and t.direction == 1 for t in self.trucks)
+            blocked_face_bound = sum(t.state == "blocked" and t.direction == -1 for t in self.trucks)
             things = {
                 "mine-01": {
                     "production_t": self.metric(self.production_t, "t"),
@@ -854,6 +863,14 @@ class MineEngine:
                     "traffic_count": self.metric(len(moving)),
                     "blockage": self.metric(blockage),
                     "blocked_trucks": self.metric(len(blocked)),
+                    "traffic_model": self.metric("two_way_separated_lanes"),
+                    "blockage_lane": self.metric(
+                        "crusher_bound" if self.blockage_direction == 1 else
+                        "face_bound" if self.blockage_direction == -1 else "none"
+                    ),
+                    "blockage_heading": self.metric(self.blockage_direction),
+                    "blocked_crusher_bound_trucks": self.metric(blocked_crusher_bound, "trucks"),
+                    "blocked_face_bound_trucks": self.metric(blocked_face_bound, "trucks"),
                 },
                 "scenario-controller": {
                     "active": self.metric(self.scenario),

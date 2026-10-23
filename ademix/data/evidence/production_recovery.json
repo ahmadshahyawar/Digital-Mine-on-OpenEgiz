@@ -9,7 +9,7 @@
     "warmup_h": 4,
     "breakdown_period_h": 3,
     "reset_period_h": 1,
-    "common_start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+    "common_start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
     "recovery_rule": "first 5-minute sample after road clear with observed rolling throughput >= 95% of projected steady capacity"
   },
   "field_sources": {
@@ -30,7 +30,7 @@
   },
   "baseline": {
     "period_id": 1,
-    "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+    "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
     "samples": [
       {
         "period_id": 1,
@@ -442,7 +442,7 @@
     ]
   },
   "breakdown_recovery": {
-    "start_state_sha256": "067262d78b5c6118ae63079f782dfc4d764cf0f0654d6fe50bf4dd260c3b0d6b",
+    "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
     "events": [
       {
         "period_id": 1,
@@ -464,7 +464,7 @@
       },
       {
         "period_id": 1,
-        "sim_time_s": 19200.0,
+        "sim_time_s": 15600.0,
         "kind": "throughput_recovered",
         "label": "Observed rolling throughput recovered to at least 95% of projection"
       },
@@ -500,37 +500,37 @@
             "production_t": 3549.4,
             "active_scenario": "truck_breakdown",
             "road_state": "restricted",
-            "blocked_trucks": 1
+            "blocked_trucks": 0
           },
           {
             "period_id": 1,
             "sim_time_s": 15000.0,
             "elapsed_s": 600,
-            "observed_rolling_throughput_tph": 719.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3561.0,
+            "production_t": 3611.4,
             "active_scenario": "truck_breakdown",
             "road_state": "restricted",
-            "blocked_trucks": 3
+            "blocked_trucks": 1
           },
           {
             "period_id": 1,
             "sim_time_s": 15300.0,
             "elapsed_s": 900,
-            "observed_rolling_throughput_tph": 657.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3561.0,
+            "production_t": 3673.4,
             "active_scenario": "truck_breakdown",
             "road_state": "restricted",
-            "blocked_trucks": 4
+            "blocked_trucks": 2
           },
           {
             "period_id": 1,
             "sim_time_s": 15600.0,
             "elapsed_s": 1200,
-            "observed_rolling_throughput_tph": 595.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3561.0,
+            "production_t": 3735.4,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -539,9 +539,9 @@
             "period_id": 1,
             "sim_time_s": 15900.0,
             "elapsed_s": 1500,
-            "observed_rolling_throughput_tph": 533.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3561.0,
+            "production_t": 3797.4,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -550,9 +550,9 @@
             "period_id": 1,
             "sim_time_s": 16200.0,
             "elapsed_s": 1800,
-            "observed_rolling_throughput_tph": 516.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3615.6,
+            "production_t": 3869.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -561,9 +561,9 @@
             "period_id": 1,
             "sim_time_s": 16500.0,
             "elapsed_s": 2100,
-            "observed_rolling_throughput_tph": 526.2,
+            "observed_rolling_throughput_tph": 704.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3690.6,
+            "production_t": 3869.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -572,9 +572,9 @@
             "period_id": 1,
             "sim_time_s": 16800.0,
             "elapsed_s": 2400,
-            "observed_rolling_throughput_tph": 539.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3765.6,
+            "production_t": 3914.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -583,9 +583,9 @@
             "period_id": 1,
             "sim_time_s": 17100.0,
             "elapsed_s": 2700,
-            "observed_rolling_throughput_tph": 552.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3840.6,
+            "production_t": 3976.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -594,9 +594,9 @@
             "period_id": 1,
             "sim_time_s": 17400.0,
             "elapsed_s": 3000,
-            "observed_rolling_throughput_tph": 565.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3915.6,
+            "production_t": 4038.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -605,9 +605,9 @@
             "period_id": 1,
             "sim_time_s": 17700.0,
             "elapsed_s": 3300,
-            "observed_rolling_throughput_tph": 578.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 3990.6,
+            "production_t": 4100.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -616,9 +616,9 @@
             "period_id": 1,
             "sim_time_s": 18000.0,
             "elapsed_s": 3600,
-            "observed_rolling_throughput_tph": 581.6,
+            "observed_rolling_throughput_tph": 691.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4065.6,
+            "production_t": 4175.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -627,9 +627,9 @@
             "period_id": 1,
             "sim_time_s": 18300.0,
             "elapsed_s": 3900,
-            "observed_rolling_throughput_tph": 591.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4140.6,
+            "production_t": 4237.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -638,9 +638,9 @@
             "period_id": 1,
             "sim_time_s": 18600.0,
             "elapsed_s": 4200,
-            "observed_rolling_throughput_tph": 654.6,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4215.6,
+            "production_t": 4299.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -649,9 +649,9 @@
             "period_id": 1,
             "sim_time_s": 18900.0,
             "elapsed_s": 4500,
-            "observed_rolling_throughput_tph": 727.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4288.2,
+            "production_t": 4361.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -660,9 +660,9 @@
             "period_id": 1,
             "sim_time_s": 19200.0,
             "elapsed_s": 4800,
-            "observed_rolling_throughput_tph": 789.2,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4350.2,
+            "production_t": 4423.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -671,18 +671,7 @@
             "period_id": 1,
             "sim_time_s": 19500.0,
             "elapsed_s": 5100,
-            "observed_rolling_throughput_tph": 851.2,
-            "projected_steady_capacity_tph": 770.0,
-            "production_t": 4412.2,
-            "active_scenario": "truck_breakdown",
-            "road_state": "open",
-            "blocked_trucks": 0
-          },
-          {
-            "period_id": 1,
-            "sim_time_s": 19800.0,
-            "elapsed_s": 5400,
-            "observed_rolling_throughput_tph": 869.4,
+            "observed_rolling_throughput_tph": 687.6,
             "projected_steady_capacity_tph": 770.0,
             "production_t": 4485.0,
             "active_scenario": "truck_breakdown",
@@ -691,11 +680,22 @@
           },
           {
             "period_id": 1,
+            "sim_time_s": 19800.0,
+            "elapsed_s": 5400,
+            "observed_rolling_throughput_tph": 691.0,
+            "projected_steady_capacity_tph": 770.0,
+            "production_t": 4560.0,
+            "active_scenario": "truck_breakdown",
+            "road_state": "open",
+            "blocked_trucks": 0
+          },
+          {
+            "period_id": 1,
             "sim_time_s": 20100.0,
             "elapsed_s": 5700,
-            "observed_rolling_throughput_tph": 858.6,
+            "observed_rolling_throughput_tph": 753.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4549.2,
+            "production_t": 4622.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -704,9 +704,9 @@
             "period_id": 1,
             "sim_time_s": 20400.0,
             "elapsed_s": 6000,
-            "observed_rolling_throughput_tph": 845.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4611.2,
+            "production_t": 4684.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -715,9 +715,9 @@
             "period_id": 1,
             "sim_time_s": 20700.0,
             "elapsed_s": 6300,
-            "observed_rolling_throughput_tph": 832.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4673.2,
+            "production_t": 4746.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -726,9 +726,9 @@
             "period_id": 1,
             "sim_time_s": 21000.0,
             "elapsed_s": 6600,
-            "observed_rolling_throughput_tph": 819.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4735.2,
+            "production_t": 4808.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -737,18 +737,7 @@
             "period_id": 1,
             "sim_time_s": 21300.0,
             "elapsed_s": 6900,
-            "observed_rolling_throughput_tph": 806.6,
-            "projected_steady_capacity_tph": 770.0,
-            "production_t": 4797.2,
-            "active_scenario": "truck_breakdown",
-            "road_state": "open",
-            "blocked_trucks": 0
-          },
-          {
-            "period_id": 1,
-            "sim_time_s": 21600.0,
-            "elapsed_s": 7200,
-            "observed_rolling_throughput_tph": 804.4,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
             "production_t": 4870.0,
             "active_scenario": "truck_breakdown",
@@ -757,11 +746,22 @@
           },
           {
             "period_id": 1,
+            "sim_time_s": 21600.0,
+            "elapsed_s": 7200,
+            "observed_rolling_throughput_tph": 770.0,
+            "projected_steady_capacity_tph": 770.0,
+            "production_t": 4945.0,
+            "active_scenario": "truck_breakdown",
+            "road_state": "open",
+            "blocked_trucks": 0
+          },
+          {
+            "period_id": 1,
             "sim_time_s": 21900.0,
             "elapsed_s": 7500,
-            "observed_rolling_throughput_tph": 793.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4934.2,
+            "production_t": 5007.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -770,9 +770,9 @@
             "period_id": 1,
             "sim_time_s": 22200.0,
             "elapsed_s": 7800,
-            "observed_rolling_throughput_tph": 780.6,
+            "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 4996.2,
+            "production_t": 5069.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -783,7 +783,7 @@
             "elapsed_s": 8100,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5058.2,
+            "production_t": 5131.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -794,7 +794,7 @@
             "elapsed_s": 8400,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5120.2,
+            "production_t": 5193.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -805,7 +805,7 @@
             "elapsed_s": 8700,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5182.2,
+            "production_t": 5255.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -816,7 +816,7 @@
             "elapsed_s": 9000,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5255.0,
+            "production_t": 5330.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -827,7 +827,7 @@
             "elapsed_s": 9300,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5319.2,
+            "production_t": 5392.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -838,7 +838,7 @@
             "elapsed_s": 9600,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5381.2,
+            "production_t": 5454.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -849,7 +849,7 @@
             "elapsed_s": 9900,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5443.2,
+            "production_t": 5516.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -860,7 +860,7 @@
             "elapsed_s": 10200,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5505.2,
+            "production_t": 5578.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -871,7 +871,7 @@
             "elapsed_s": 10500,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5567.2,
+            "production_t": 5640.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -882,7 +882,7 @@
             "elapsed_s": 10800,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5640.0,
+            "production_t": 5715.0,
             "active_scenario": "truck_breakdown",
             "road_state": "open",
             "blocked_trucks": 0
@@ -899,7 +899,7 @@
             "elapsed_s": 0,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5640.0,
+            "production_t": 5715.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -910,7 +910,7 @@
             "elapsed_s": 300,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5704.2,
+            "production_t": 5777.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -921,7 +921,7 @@
             "elapsed_s": 600,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5766.2,
+            "production_t": 5839.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -932,7 +932,7 @@
             "elapsed_s": 900,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5828.2,
+            "production_t": 5901.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -943,7 +943,7 @@
             "elapsed_s": 1200,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5890.2,
+            "production_t": 5963.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -954,7 +954,7 @@
             "elapsed_s": 1500,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 5952.2,
+            "production_t": 6025.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -965,7 +965,7 @@
             "elapsed_s": 1800,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6025.0,
+            "production_t": 6100.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -976,7 +976,7 @@
             "elapsed_s": 2100,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6089.2,
+            "production_t": 6162.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -987,7 +987,7 @@
             "elapsed_s": 2400,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6151.2,
+            "production_t": 6224.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -998,7 +998,7 @@
             "elapsed_s": 2700,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6213.2,
+            "production_t": 6286.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -1009,7 +1009,7 @@
             "elapsed_s": 3000,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6275.2,
+            "production_t": 6348.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -1020,7 +1020,7 @@
             "elapsed_s": 3300,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6337.2,
+            "production_t": 6410.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0
@@ -1031,7 +1031,7 @@
             "elapsed_s": 3600,
             "observed_rolling_throughput_tph": 770.0,
             "projected_steady_capacity_tph": 770.0,
-            "production_t": 6410.0,
+            "production_t": 6485.0,
             "active_scenario": "baseline",
             "road_state": "open",
             "blocked_trucks": 0

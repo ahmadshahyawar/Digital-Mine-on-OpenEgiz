@@ -1,6 +1,6 @@
 # Ademix Core Simulation Engine — Model Description
 
-`engine.py` is a deterministic **discrete-event simulation** (DES) of one loading face, one single-lane haul road, one crusher dump bay and one run-of-mine (ROM) bin feeding a primary crusher. It produces the live state published to the Eclipse Ditto twins. This file records its structure, formulas, units, assumptions, verification and limitations.
+`engine.py` is a deterministic **discrete-event simulation** (DES) of one loading face, one two-way haul road with separated direction lanes, one crusher dump bay and one run-of-mine (ROM) bin feeding a primary crusher. It produces the live state published to the Eclipse Ditto twins. This file records its structure, formulas, units, assumptions, verification and limitations.
 
 All live values are **synthetic model output**. They are not measurements from an operating mine and the model has **not been validated against site data**.
 
@@ -10,7 +10,7 @@ All live values are **synthetic model output**. They are not measurements from a
 |---|---|---|---|
 | Haul trucks HT-01…HT-06 | `truck-01`…`truck-06` | Entities cycling through the states below | 77 t payload each |
 | Excavator EX-01 | `excavator-01` | Single server, FIFO queue | One truck at a time, 6 min per truck |
-| Main haul road | `road-main` | Shared single lane, one speed limit for all trucks; can be blocked at one point | 3.2 km one way |
+| Main haul road | `road-main` | Separated crusher-bound and face-bound lanes with one shared speed limit; a failed truck blocks same-direction followers | 3.2 km one way |
 | Crusher dump bay | `crusher-01` | Single server, FIFO queue; truck may tip only if the ROM bin has room for the full load | One truck at a time, 1 min |
 | ROM bin + primary crusher | `crusher-01` | Continuous draw from the bin at the crusher rate while the bin is not empty | 600 t bin, 900 t/h crusher |
 | Scenario controller | `scenario-controller` | Current operating condition and analytical projection | — |
@@ -20,7 +20,7 @@ All live values are **synthetic model output**. They are not measurements from a
 
 There are two exception states:
 
-- `blocked`: stopped behind a broken-down truck on the single lane.
+- `blocked`: same-direction follower stopped behind a broken-down truck in its lane.
 - `breakdown`: out of service.
 
 **Events:** `arrive`, `load_done`, `dump_done`, `bin_space` (the crusher has drawn the bin down far enough for the next load) and `road_cleared` (the broken truck has been towed aside). Events sit in a priority queue ordered by time, then by insertion sequence. Equal-time events therefore resolve in a fixed, reproducible order.
@@ -46,7 +46,7 @@ There are two exception states:
 | Initial ROM inventory | 250 | t | **Team assumption** |
 | Road restriction speed | 10.72 | km/h | **Scenario input** chosen by the team |
 | Crusher slowdown | 55 % of 900 = 495 | t/h | **Scenario input** chosen by the team |
-| Breakdown lane blockage | 20 | min | **Scenario input**: time to tow HT-01 off the single lane |
+| Breakdown lane blockage | 20 | min | **Scenario input**: time to tow HT-01 off its direction lane |
 | Fuel burn | 1.4 % loaded / 0.8 % empty per 3.2 km | % | **Synthetic display signal**, not calibrated; no refuelling is modelled |
 | Truck fuel rate | 49.6 | L/h per operating truck | **Comparable-equipment estimate**, Caterpillar handbook interpolation; not measured telemetry |
 | Excavator fuel rate | 83.5 | L/h | **Comparable-equipment estimate**, Caterpillar handbook; modelled continuously during the demonstration shift |
@@ -99,7 +99,7 @@ The minimum rule X = min(·) is the long-run throughput of a closed, determinist
 
 | Scenario | Direct change | Propagated effects in the model |
 |---|---|---|
-| Truck HT-01 breakdown | HT-01 → `breakdown` and keeps its payload. If it was on the road, it blocks the single lane for 20 min. If it was at the face or dump, that server is released. | Trucks reaching HT-01's position become `blocked` with speed 0. The road twin shows `restricted` with a blockage description. Deliveries stop, so the ROM bin draws down and the crusher may become `starved`. After the tow, traffic resumes, the excavator queue is shorter and the match factor falls from 1.61 to 1.34. |
+| Truck HT-01 breakdown | HT-01 → `breakdown` and keeps its payload. If it was on the road, it blocks its direction lane for 20 min. If it was at the face or dump, that server is released. | Same-direction followers reaching HT-01 become `blocked` with speed 0; opposing traffic continues. The road twin reports the affected lane and directional counts. After the tow, stopped followers resume; HT-01 remains down until reset. |
 | Main road restriction | The road speed limit falls from 25 to 10.72 km/h for every truck, from its current position. | Cycle time rises from 22.4 to 42.8 min. The fleet becomes the bottleneck (MF 0.84), so the excavator starts waiting for trucks, and crusher utilization and throughput fall. |
 | Crusher capacity −45 % | The crusher rate falls from 900 to 495 t/h. | The ROM bin fills toward 600 t. Trucks then queue at the dump bay (`queued_at_crusher`), cycle times lengthen and fewer trucks reach the face. Throughput is pinned at 495 t/h. |
 | Normal operations | Restores 25 km/h and 900 t/h. If a lane is still blocked, it is cleared; HT-01 returns to service from where it stopped. | Queues and KPIs re-converge to the baseline. KPI windows restart at every scenario change. |
@@ -111,14 +111,14 @@ Summary of the same runs that `python compare_scenarios.py` produces; the full c
 | Scenario | Bottleneck | Analytical t/h | Transient t/h | Steady t/h | vs baseline | Fleet util. % | Truck queue % | Excavator util. % | Crusher util. % | Wait at excavator min | Wait at crusher min | Cycle min | ROM at end t | Mass error t |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Normal operations | loading resource | 770.0 | 770.0 | 770.0 | +0.0% | 62.1 | 37.9 | 100.0 | 85.6 | 13.6 | 0.0 | 36.0 | 0 | 0.0e+00 |
-| Truck HT-01 breakdown | loading resource | 770.0 | 581.6 | 774.3 | +0.6% | 62.1 | 21.2 | 100.0 | 86.0 | 7.6 | 0.0 | 30.2 | 0 | 0.0e+00 |
+| Truck HT-01 breakdown | loading resource | 770.0 | 691.0 | 770.0 | +0.0% | 62.1 | 21.2 | 100.0 | 85.6 | 7.6 | 0.0 | 30.1 | 2 | 0.0e+00 |
 | Main road restriction | haul-road travel | 647.3 | 584.4 | 645.3 | -16.2% | 100.0 | 0.0 | 84.4 | 71.7 | 0.0 | 0.0 | 42.8 | 28 | 0.0e+00 |
 | Crusher capacity −45% | crusher processing capacity | 495.0 | 489.7 | 495.0 | -35.7% | 43.9 | 56.1 | 72.1 | 100.0 | 3.4 | 25.4 | 51.6 | 555 | -9.1e-13 |
 
 How to read these results:
 
 - **The baseline is excavator-limited at 770 t/h, not crusher-limited.** One 4-pass excavator loads one 77 t truck every 6 min. With six trucks, the match factor is 1.61, so trucks spend about 38 % of their time queueing at the face, and the 900 t/h crusher runs about 86 % of the time.
-- **A single truck breakdown costs throughput only while the lane is blocked.** Throughput falls by about 190 t/h in the first hour. After the tow, five trucks still out-supply the excavator, so steady-state throughput is unchanged. In this model, HT-01 is effectively a spare truck. This is the kind of insight the dispatcher needs; it is a model result, not a field observation.
+- **A single truck breakdown costs throughput only while its lane is blocked.** In the common returning-lane fixture, first-hour throughput falls by 79 t/h while opposing loaded traffic continues. After the tow, five trucks still out-supply the excavator, so steady-state throughput is unchanged. This is a model result, not a field observation.
 - **The road restriction makes haulage the constraint** (−16 %). The excavator now waits for trucks.
 - **The crusher slowdown backs up through the system** (−36 %). The ROM bin fills, trucks wait about 25 min per cycle at the dump bay, and the excavator falls to about 72 % utilization.
 - The rolling-hour throughput on the stand moves in steps of about 77 t, because ore arrives one truckload at a time. Short-window values therefore fluctuate around the projection.

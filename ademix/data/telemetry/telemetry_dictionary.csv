@@ -51,6 +51,11 @@ road,speed_limit_kmh,number,km/h,10.72,25,,configuration,Speed applied to every 
 road,traffic_count,integer,trucks,0,6,,simulated_state,Trucks currently travelling.
 road,blockage,text,,,,,simulated_state,Description of an active lane blockage or none.
 road,blocked_trucks,integer,trucks,0,5,,simulated_state,Trucks held behind a blockage.
+road,traffic_model,string,,,,two_way_separated_lanes,configuration,Separated direction lanes; a failed truck blocks only same-direction followers.
+road,blockage_lane,string,,,,none|crusher_bound|face_bound,simulated_state,Direction lane occupied by the failed truck.
+road,blockage_heading,integer,,-1,1,-1|0|1,simulated_state,1 crusher-bound; -1 face-bound; 0 no active blockage.
+road,blocked_crusher_bound_trucks,integer,trucks,0,5,,simulated_state,Crusher-bound followers held behind the failed truck.
+road,blocked_face_bound_trucks,integer,trucks,0,5,,simulated_state,Face-bound followers held behind the failed truck.
 scenario,active,string,,,,baseline|truck_breakdown|road_closure|crusher_slowdown,configuration,Active what-if condition.
 scenario,description,string,,,,Normal operations|Truck HT-01 breakdown|Main road restriction|Crusher capacity −45%,configuration,Display label of the condition.
 scenario,impact_pct,integer,%,-100,100,,analytical,Projected change against the baseline projection.

@@ -233,6 +233,23 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A4 two-way road and breakdown consistency — 2026-10-23
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a4-road-direction (from origin/codex/ademix 542bf11)
+Task: replace the obsolete shared-single-lane breakdown rule with a documented two-way-road rule:
+  only same-direction followers behind HT-01 stop; opposing traffic continues; towing and reset clear state.
+Exact files: ademix/simulator/{engine.py,test_engine.py,MODEL.md,SCENARIOS.md,
+  ROAD_BREAKDOWN_CONTRACT.md,twins.json}; ademix/data/{build_data_layer.py,test_data_layer.py,
+  telemetry_dictionary.csv,telemetry/telemetry_dictionary.csv,telemetry/sensor_catalogue.csv,
+  telemetry/manifest.json,frontend/public/data/ingestion.json}; PROJECT_CONTEXT.md.
+Contract: extend road-main with traffic_model, blockage_lane, blockage_heading,
+  blocked_crusher_bound_trucks and blocked_face_bound_trucks; preserve existing field meanings and APIs.
+Frontend ownership: no React/3D source will be edited. Professor + Claude consume the frozen contract.
+Expected handoff: contract, hauling/returning fixtures, tests, commit SHA, limitations and integration steps.
+```
+
 ### Handoff — Codex — A3 production and recovery history — 2026-10-23
 
 ```text
@@ -548,7 +565,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-22 | Codex | Corrected bench widths and excessive wall heights without changing the mine layout | Live integrated render shows five distinguishable actual bench surfaces and shorter planar faces; production build, 3 data-layer checks, and 3 route/FIFO tests pass |
 | 2026-10-22 | Codex | Expanded the mine into a ten-turn large-scale excavation and converted roads to unpaved haul roads | Live review caught and rejected point-sampled road-carving spokes; segment-based carving removed them. Final production build, 3 data checks, and 3 route/FIFO tests pass |
 | 2026-10-22 | Codex | Deepened the large pit and corrected unrealistic truck speed | Live render confirms ten deep stepped levels and a connected bottom road; truck interpolation now uses physical route length. Production build, 3 data checks, and 3 route/FIFO tests pass |
-| 2026-10-23 | Codex | Completed the HT-01 breakdown release gate, including service interruption, FIFO continuity, throughput impact, recovery, and stale-event cleanup | 37 simulator and 32 data tests pass; live API → MQTT → Eclipse Ditto → API smoke test reports HT-01 stopped, first-hour throughput 770.0→581.6 t/h, and a clean baseline reset |
+| 2026-10-23 | Codex | Completed the original HT-01 breakdown release gate, later superseded by A4's two-way-lane contract | The original shared-lane fixture was valid then; A4 replaces its 581.6 t/h reference and must be used for current claims |
 | 2026-10-23 | Codex | Integrated Claude's breakdown presentation and completed the four-scenario release gate from fresh Compose volumes | All services healthy; 69 local tests, 37 container tests, and the frontend production build pass; all four states propagated frontend proxy → API → MQTT → Ditto → API and reset cleanly |
 | 2026-10-23 | Codex | Integrated Claude's illustrative pit geometry and revalidated the final combined images | Updated pit-design evidence is bundled; the production image rebuilt successfully, all services are healthy, 37 in-image simulator tests pass, and all four live scenario checks pass through Eclipse Ditto |
 | 2026-10-23 | Codex | Completed the P1 simulation-credibility verification matrix without changing the model | 43 simulator-package and 32 data checks pass; both FIFO resources, exclusive service, stage timing, four-part mass balance, interruption transitions, documented assumptions, and every direct scenario switch are explicitly covered |
@@ -596,7 +613,7 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 ### Breakdown verification handoff — 2026-10-23
 
 - `ademix/simulator/verify_breakdown.py` is the repeatable release check. It rejects demo data, exercises the public scenario endpoint, observes all 11 twins through Eclipse Ditto, and always restores baseline.
-- The deterministic first-hour comparison is 770.0 t/h baseline versus 581.6 t/h after HT-01 fails (−24.5%). The analytical steady-state projection remains 770 t/h because five healthy trucks can still saturate the single excavator; this is expected, not a missing impact.
+- Superseded A4 note: the earlier 581.6 t/h shared-lane fixture is historical. The current two-way returning-lane fixture is 770.0 t/h baseline versus 691.0 t/h after HT-01 fails (−10.3%); the analytical steady-state projection remains 770 t/h because five healthy trucks can still saturate the single excavator.
 - Added edge tests cover breakdown while dumping, removal from the excavator FIFO without reordering, preserved ore/mass balance, and reset invalidation of stale service/recovery events.
 - Windows validation used host MQTT port 1884 because the machine's Mosquitto service owns 1883. No committed Compose default changed.
 

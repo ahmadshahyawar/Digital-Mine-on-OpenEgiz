@@ -434,6 +434,25 @@ class SensorTopologyBundleTests(unittest.TestCase):
         bundle = json.loads(outputs[build.BUNDLE_PATH])
         self.assertEqual(bundle["productionRecovery"], history)
 
+    def test_breakdown_log_uses_directional_two_way_road_contract(self):
+        outputs = build.build(write=False)
+        rows = list(csv.DictReader(io.StringIO(outputs["telemetry/logs/truck_breakdown.csv"])))
+        required = {
+            "road-main.traffic_model", "road-main.blockage_lane", "road-main.blockage_heading",
+            "road-main.blocked_crusher_bound_trucks", "road-main.blocked_face_bound_trucks",
+        }
+        self.assertTrue(required.issubset(rows[0]))
+        blocked = [row for row in rows if int(row["road-main.blocked_trucks"]) > 0]
+        self.assertTrue(blocked)
+        for row in blocked:
+            self.assertEqual(row["road-main.traffic_model"], "two_way_separated_lanes")
+            crusher_bound = int(row["road-main.blocked_crusher_bound_trucks"])
+            face_bound = int(row["road-main.blocked_face_bound_trucks"])
+            self.assertEqual(crusher_bound + face_bound, int(row["road-main.blocked_trucks"]))
+            self.assertFalse(crusher_bound and face_bound)
+            expected = "crusher_bound" if crusher_bound else "face_bound"
+            self.assertEqual(row["road-main.blockage_lane"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

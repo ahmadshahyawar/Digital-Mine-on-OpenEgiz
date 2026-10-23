@@ -25,6 +25,16 @@ haul-truck,route_progress_pct,Authoritative progress between loading face and cr
 haul-truck,position_x,Horizontal scene position,,synthetic_telemetry,Every simulation update
 haul-truck,position_z,Depth-axis scene position,,synthetic_telemetry,Every simulation update
 haul-truck,heading,Route direction indicator,,synthetic_state,Every simulation update
+road,state,Road operating state,,synthetic_state,Every simulation update
+road,speed_limit_kmh,Shared speed limit for both separated direction lanes,km/h,configuration,Every simulation update
+road,traffic_count,Trucks currently travelling,trucks,synthetic_state,Every simulation update
+road,blockage,Description of active same-direction blockage or none,,synthetic_state,Every simulation update
+road,blocked_trucks,Total same-direction followers stopped behind a failed truck,trucks,synthetic_state,Every simulation update
+road,traffic_model,Declared road-direction model,,configuration,Static
+road,blockage_lane,Affected direction lane or none,,synthetic_state,Every simulation update
+road,blockage_heading,Affected direction indicator,heading,synthetic_state,Every simulation update
+road,blocked_crusher_bound_trucks,Stopped followers heading from face to crusher,trucks,synthetic_state,Every simulation update
+road,blocked_face_bound_trucks,Stopped followers heading from crusher to face,trucks,synthetic_state,Every simulation update
 haul-truck,trips_total,Completed dump trips,,synthetic_telemetry,After each dump
 haul-truck,cycle_time_min,Duration of most recently completed cycle,min,synthetic_telemetry,After each dump
 haul-truck,loading_wait_min,Most recent wait before loading,min,synthetic_telemetry,When loading begins

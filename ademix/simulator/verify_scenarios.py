@@ -20,7 +20,9 @@ FRONTEND_FIELDS = {
     "mine-01": {"active_scenario", "bottleneck_live", "operating_fleet_utilization", "production_t", "sim_time_s", "throughput_tph", "truck_operating_h_per_kt"},
     "excavator-01": {"average_wait_min", "queue_length", "state"},
     "crusher-01": {"average_wait_min", "rom_inventory_t", "state"},
-    "road-main": {"blockage", "blocked_trucks", "speed_limit_kmh", "state"},
+    "road-main": {"blockage", "blocked_trucks", "speed_limit_kmh", "state", "traffic_model",
+                  "blockage_lane", "blockage_heading", "blocked_crusher_bound_trucks",
+                  "blocked_face_bound_trucks"},
     "scenario-controller": {"active", "bottleneck", "breakdown_location", "dispatch_description", "dispatch_policy", "dispatch_reason", "match_factor", "projected_throughput_tph", "trucks_in_cycle", "trucks_required", "trucks_standby"},
 }
 TRUCK_FIELDS = {"fuel_pct", "heading", "payload_t", "route_progress_pct", "speed_kmh", "state"}

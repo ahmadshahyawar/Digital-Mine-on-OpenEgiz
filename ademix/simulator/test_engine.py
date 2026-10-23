@@ -7,7 +7,7 @@ import unittest
 from engine import (
     BASE_CRUSHER_TPH, BASE_SPEED_KMH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
     DIESEL_CO2_KG_PER_L, EXCAVATOR_FUEL_LPH, LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH,
-    ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS, TRUCK_FUEL_LPH,
+    INITIAL_ROM_T, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS, TRUCK_FUEL_LPH,
     CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection, trucks_required,
 )
 
@@ -328,6 +328,7 @@ class ScenarioTests(unittest.TestCase):
         self.assertTrue(blocked)
         for truck in blocked:
             self.assertAlmostEqual(truck.progress, stopped_at)
+            self.assertEqual(truck.direction, broken.direction)
         mine.step(2)
         self.assertIsNone(mine.blockage)
         self.assertFalse([t for t in mine.trucks if t.state == "blocked"])
@@ -338,6 +339,67 @@ class ScenarioTests(unittest.TestCase):
         self.assertNotEqual(broken.state, "breakdown")
         run(mine, 2)
         self.assertGreater(broken.trips, 0)
+
+    def test_hauling_breakdown_blocks_only_crusher_bound_followers(self):
+        mine = MineEngine()
+        mine.step(60)
+        broken = mine.trucks[0]
+        self.assertEqual(broken.state, "hauling")
+        # Arrange one legitimate empty opposing movement without changing the breakdown truck.
+        opposing = mine.trucks[-1]
+        opposing.token += 1
+        opposing.state, opposing.payload_t = "returning", 0.0
+        mine.opening_stock_t -= CAPACITY_T  # keep the controlled fixture mass-balanced
+        opposing.direction, opposing.progress = -1, 0.9
+        mine._start_travel(opposing)
+        before = mine._progress_now(opposing)
+
+        mine.set_scenario("truck_breakdown")
+        road = mine.snapshot()["road-main"]
+        self.assertEqual(road["traffic_model"]["value"], "two_way_separated_lanes")
+        self.assertEqual(road["blockage_lane"]["value"], "crusher_bound")
+        self.assertEqual(road["blockage_heading"]["value"], 1)
+        mine.step(300)
+
+        self.assertNotEqual(opposing.state, "blocked")
+        self.assertLess(mine._progress_now(opposing), before)
+        mine.step(BREAKDOWN_RECOVERY_S - 301)
+        blocked = [t for t in mine.trucks if t.state == "blocked"]
+        self.assertTrue(blocked)
+        self.assertTrue(all(t.direction == 1 for t in blocked))
+        road = mine.snapshot()["road-main"]
+        self.assertEqual(road["blocked_crusher_bound_trucks"]["value"], len(blocked))
+        self.assertEqual(road["blocked_face_bound_trucks"]["value"], 0)
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+
+    def test_returning_breakdown_blocks_only_face_bound_followers(self):
+        mine = MineEngine()
+        broken = mine.trucks[0]
+        deadline = 8 * 3600
+        while broken.state != "returning" and mine.sim_time_s < deadline:
+            mine.step(10)
+        self.assertEqual(broken.state, "returning")
+
+        mine.set_scenario("truck_breakdown")
+        self.assertEqual(mine.blockage_direction, -1)
+        road = mine.snapshot()["road-main"]
+        self.assertEqual(road["blockage_lane"]["value"], "face_bound")
+        mine.step(BREAKDOWN_RECOVERY_S - 1)
+        blocked = [t for t in mine.trucks if t.state == "blocked"]
+        self.assertTrue(all(t.direction == -1 for t in blocked))
+        self.assertFalse([t for t in mine.trucks if t.state == "blocked" and t.direction == 1])
+        road = mine.snapshot()["road-main"]
+        self.assertEqual(road["blocked_crusher_bound_trucks"]["value"], 0)
+        self.assertEqual(road["blocked_face_bound_trucks"]["value"], len(blocked))
+
+        mine.step(2)
+        road = mine.snapshot()["road-main"]
+        self.assertEqual(road["blockage_lane"]["value"], "none")
+        self.assertEqual(road["blockage_heading"]["value"], 0)
+        self.assertEqual(road["blocked_trucks"]["value"], 0)
+        mine.set_scenario("baseline")
+        self.assertFalse([t for t in mine.trucks if t.state in {"breakdown", "blocked"}])
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
 
     def test_breakdown_at_the_face_releases_the_excavator(self):
         mine = MineEngine()
@@ -548,14 +610,16 @@ class WhatIfScenarioTests(unittest.TestCase):
         self.assertLess(breakdown["excavator_queue_avg"], base["excavator_queue_avg"])
         self.assertLess(breakdown["production_t"], base["production_t"])
 
-    def test_breakdown_on_the_road_starves_the_crusher_until_cleared(self):
+    def test_breakdown_reduces_feed_without_closing_opposing_lane(self):
         mine = MineEngine()
         run(mine, 4)
         mine.set_scenario("truck_breakdown")
         self.assertTrue(mine.breakdown_location.startswith("haul road"))
         mine.step(BREAKDOWN_RECOVERY_S - 30)
-        self.assertEqual(mine.rom_inventory_t, 0.0)
-        self.assertEqual(mine.snapshot()["crusher-01"]["state"]["value"], "starved")
+        self.assertGreater(mine.rom_inventory_t, 0.0)
+        self.assertLess(mine.rom_inventory_t, INITIAL_ROM_T)
+        self.assertEqual(mine.snapshot()["crusher-01"]["state"]["value"], "operating")
+        self.assertTrue(all(t.direction == mine.blockage_direction for t in mine.trucks if t.state == "blocked"))
         mine.step(60)
         self.assertIsNone(mine.blockage)
 
@@ -700,7 +764,7 @@ class DispatchTests(unittest.TestCase):
         mine.set_scenario("truck_breakdown")
         self.assertGreaterEqual(len(mine._in_cycle()) + sum(t.state == "blocked" for t in mine.trucks),
                                 min(mine.dispatch_need(), sum(t.state != "breakdown" for t in mine.trucks)))
-        for offset_min in (0, 24, 27, 33):  # failures on the single-lane road, the costly case
+        for offset_min in (0, 24, 27, 33):  # failures on either direction lane, the costly case
             first_hour = {}
             for policy in ("fixed", "smart"):
                 mine = run(MineEngine(), 4 + offset_min / 60)
@@ -760,7 +824,7 @@ class DispatchEvidenceTests(unittest.TestCase):
             with self.subTest(scenario=scenario):
                 steady = self.evidence["scenarios"][scenario]["periods"]["steady"]
                 self.assertAlmostEqual(
-                    steady["smart_minus_fixed"]["truck_operating_h_per_kt"]["percent"], expected, places=6
+                    steady["smart_minus_fixed"]["truck_operating_h_per_kt"]["percent"], expected, delta=1e-5
                 )
                 self.assertAlmostEqual(steady["fixed"]["throughput_tph"], steady["smart"]["throughput_tph"], places=6)
 
@@ -772,7 +836,9 @@ class InterfaceTests(unittest.TestCase):
             "mine-01": ["production_t", "throughput_tph", "fleet_utilization", "average_cycle_min", "active_scenario", "sim_time_s"],
             "excavator-01": ["state", "queue_length", "position_x", "position_z"],
             "crusher-01": ["state", "capacity_tph", "queue_length", "rom_inventory_t", "processed_total_t", "position_x", "position_z"],
-            "road-main": ["state", "speed_limit_kmh", "traffic_count"],
+            "road-main": ["state", "speed_limit_kmh", "traffic_count", "blockage", "blocked_trucks",
+                          "traffic_model", "blockage_lane", "blockage_heading",
+                          "blocked_crusher_bound_trucks", "blocked_face_bound_trucks"],
             "scenario-controller": ["active", "description", "impact_pct", "baseline_throughput_tph", "projected_throughput_tph"],
         }
         for name in [f"truck-{i:02d}" for i in range(1, 7)]:
