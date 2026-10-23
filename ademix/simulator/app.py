@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import json
 import logging
 import os
@@ -11,10 +12,13 @@ import time
 
 from fastapi import FastAPI, HTTPException
 import httpx
-import paho.mqtt.client as mqtt
 from pydantic import BaseModel
 
 from engine import MineEngine
+
+DEMO_MODE = os.environ.get("ADEMIX_DEMO_MODE", "0") == "1"
+if not DEMO_MODE:
+    import paho.mqtt.client as mqtt
 
 NAMESPACE = "org.openegiz.ademix"
 MQTT_HOST = os.environ.get("MQTT_HOST", "localhost")
@@ -25,12 +29,13 @@ DITTO_PASSWORD = os.environ.get("DITTO_PASSWORD", "")
 SPEEDUP = float(os.environ.get("SIM_SPEEDUP", "20"))
 INTERVAL = float(os.environ.get("SIM_INTERVAL", "1"))
 THING_NAMES = ["mine-01", "excavator-01", "crusher-01", "road-main", "scenario-controller"] + [f"truck-{i:02d}" for i in range(1, 7)]
+TWINS_PATH = os.path.join(os.path.dirname(__file__), "twins.json")
 
 log = logging.getLogger("ademix")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 engine = MineEngine()
 stop_event = Event()
-mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ademix-simulator")
+mqtt_client = None if DEMO_MODE else mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ademix-simulator")
 app = FastAPI(title="Ademix Mine API", version="0.1.0")
 
 
@@ -66,9 +71,34 @@ def simulation_loop():
     mqtt_client.disconnect()
 
 
+def demo_loop():
+    """Advance the real engine locally without MQTT/Ditto for UI review only."""
+    while not stop_event.is_set():
+        engine.step(INTERVAL * SPEEDUP)
+        stop_event.wait(INTERVAL)
+
+
+def demo_twins():
+    with open(TWINS_PATH, encoding="utf-8") as handle:
+        definitions = json.load(handle)
+    snapshot = engine.snapshot()
+    twins = []
+    for thing_id, definition in definitions.items():
+        twin = copy.deepcopy(definition)
+        name = thing_id.split(":", 1)[1]
+        twin["thingId"] = thing_id
+        twin["features"] = {
+            key: {"properties": value}
+            for key, value in snapshot[name].items()
+        }
+        twins.append(twin)
+    return twins
+
+
 @app.on_event("startup")
 def startup():
-    Thread(target=simulation_loop, name="mine-simulation", daemon=True).start()
+    target = demo_loop if DEMO_MODE else simulation_loop
+    Thread(target=target, name="mine-simulation", daemon=True).start()
 
 
 @app.on_event("shutdown")
@@ -83,6 +113,8 @@ def health():
 
 @app.get("/api/state")
 def state():
+    if DEMO_MODE:
+        return {"source": "local-simulator-demo", "twins": demo_twins()}
     if not DITTO_PASSWORD:
         raise HTTPException(status_code=503, detail="Ditto credentials unavailable")
     auth = (DITTO_USER, DITTO_PASSWORD)

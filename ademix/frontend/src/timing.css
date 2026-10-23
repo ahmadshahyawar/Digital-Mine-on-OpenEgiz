@@ -1,0 +1,5 @@
+.reading.timing {
+  border-left: 2px solid #39e58c;
+  padding-left: 9px;
+  background: linear-gradient(90deg, rgba(57, 229, 140, 0.06), transparent);
+}

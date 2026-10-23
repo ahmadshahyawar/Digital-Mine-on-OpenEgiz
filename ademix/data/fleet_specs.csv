@@ -1,0 +1,11 @@
+entity_type,entity_count,parameter,value,unit,classification,source_or_reason
+haul_truck,6,payload_capacity,77,t,sourced_reference,OpenMines north_pit_mine.json truck capacity; fleet reduced to six for legibility and software rendering
+haul_truck,6,nominal_travel_speed,25,km/h,sourced_reference,OpenMines north_pit_mine.json truck speed
+excavator,1,shovel_pass_capacity,20.32,t,sourced_reference,OpenMines north_pit_mine.json shovel capacity
+excavator,1,shovel_cycle_time,1.5,min,sourced_reference,OpenMines north_pit_mine.json shovel cycle
+excavator,1,modeled_loading_time,6,min,team_assumption,Four shovel passes rounded to a six-minute loading event
+crusher,1,rated_capacity,900,t/h,team_assumption,Demonstration capacity selected as the baseline production constraint
+crusher,1,initial_rom_inventory,250,t,team_assumption,Starting buffer prevents an empty crusher at simulation startup
+haul_road,1,one_way_route_length,3.2,km,sourced_reference,Reduced route-distance scale calibrated from OpenMines North Pit
+haul_truck,6,dump_time,1,min,sourced_reference,OpenMines north_pit_mine.json dump duration
+

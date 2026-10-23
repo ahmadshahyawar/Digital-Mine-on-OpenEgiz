@@ -2,7 +2,9 @@
 
 services:
   ademix-setup:
-    build: ../../ademix/simulator
+    build:
+      context: ../../ademix
+      dockerfile: simulator/Dockerfile
     image: ademix/mine-simulator:local
     restart: "no"
     command: ["python", "setup_twins.py"]

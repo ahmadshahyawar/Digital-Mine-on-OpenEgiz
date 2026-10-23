@@ -23,6 +23,8 @@ Decision meanings:
 | [Poly Haven](https://polyhaven.com/license) | CC0 | One compressed rock/soil texture or low-resolution HDRI | **Shortlist** | Excellent quality, but high-resolution assets would hurt software rendering. Bundle locally. |
 | [CAOS MineHaul / minehaulsim](https://github.com/fsantibanezleal/CAOS_MINEHAUL) | Apache-2.0 | Grade-aware travel time, congestion, deterministic event design | **Reference** | Strong simulation concepts, but adopting a second simulator now would add scope and integration risk. |
 | [MineFlow](https://github.com/MineFlowCSM/MineFlow) | MIT | Pit-limit and mine-planning concepts | **Reference** | Legitimate mining library but outside our dispatch/crusher decision scope. |
+| [Procedural Open-Pit Mine Terrain Generator](https://github.com/GoyalKrish/open-pit-mine-terrain-generator) | No reusable license confirmed | Bench-index, explicit bench-height/width, and road-flattening design reference | **Reference only** | Blender-specific implementation and unclear redistribution terms prevent copying. Ademix independently implements the documented geometric method in TypeScript on its existing THREE.Terrain grid. |
+| [Poly Pizza Dump Truck by Crachboss32](https://poly.pizza/m/gYWUCpb09B) | CC-BY | Possible construction dump-truck replacement | **Reject** | Requires attribution and is distributed without wheels; it is not a better competition-ready replacement for the audited bundled CC0 hauler. |
 
 ## Web and 3D engineering
 

@@ -37,10 +37,10 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 ## Five-minute judging path
 
 1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
-2. Orbit the pit with drag and zoom with the wheel.
+2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Keep **Balanced** graphics for software rendering.
 3. Select a truck to inspect payload, fuel, speed, position, trips, and cycle time from its Ditto twin.
 4. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls.
-5. Choose **Main road restriction**. The road turns orange and moving truck speed falls from 25 to 15.5 km/h.
+5. Choose **Main road restriction**. The road turns orange and moving truck speed falls from 25 to approximately 10.72 km/h.
 6. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
 7. Choose **Normal operations** to reset the active operating condition.
 
@@ -69,7 +69,7 @@ docker compose --env-file deploy/compose/.env \
   -f deploy/compose/docker-compose.yml \
   -f ademix/compose.yml \
   run --rm --no-deps ademix-simulator \
-  python -m unittest discover -s /app -p 'test_*.py' -v
+  python -m unittest discover -s /app/simulator -p 'test_*.py' -v
 ```
 
 ## Stop or reset
@@ -86,7 +86,7 @@ To remove this deployment's containers and volumes, add `-v` to the final comman
 
 ## Windows 10 development
 
-Docker Desktop with Linux containers is sufficient; WSL Ubuntu is not required. Run `scripts/compose-env.sh` with Git Bash once, then run the same `docker compose` command in PowerShell. The competition release is verified against the Ubuntu commands above.
+Docker Desktop with Linux containers is sufficient; WSL Ubuntu is not required. Run `scripts/compose-env.sh` with Git Bash once, then run the same `docker compose` command in PowerShell. A clean Ubuntu run of the commands above remains a release gate; Windows checks are not proof of judge-environment compatibility.
 
 ## Architecture
 
@@ -110,6 +110,7 @@ Deterministic Python simulation
 | Path | Purpose |
 |---|---|
 | `ademix/simulator/` | Deterministic haulage/crusher model, twin definitions, MQTT publisher, Ditto read API, and tests |
+| `ademix/data/` | Fleet specification, telemetry dictionary, model manifest, and included OpenMines calibration data |
 | `ademix/frontend/` | CPU-conscious React Three Fiber command center served by Nginx |
 | `ademix/data/openmines/` | Included MIT-licensed North Pit reference configuration and its license |
 | `ademix/compose.yml` | Services layered onto the official OpenEgiz Compose deployment |

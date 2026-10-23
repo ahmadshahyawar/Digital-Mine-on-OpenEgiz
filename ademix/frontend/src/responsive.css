@@ -1,0 +1,41 @@
+ .camera-tools {
+  flex-wrap: wrap;
+  max-width: 310px;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(101, 230, 169, .34);
+  border-radius: 8px;
+  background: rgba(7, 20, 17, .82);
+  backdrop-filter: blur(6px);
+ }
+ .camera-tools button {
+  border: 1px solid #285340;
+  border-radius: 5px;
+  padding: 7px 10px;
+  color: #dff9ec;
+  background: #102a21;
+  cursor: pointer;
+  font-size: 11px;
+ }
+ .camera-tools button:hover { border-color: #65e6a9; background: #17382c; }
+ .camera-help { flex-basis: 100%; font-size: 10px; color: #c5d8cc; }
+ .viewport canvas { cursor: grab; }
+ .viewport canvas:active { cursor: grabbing; }
+
+@media (max-width: 900px) {
+  body { min-width: 0; }
+  main { height: auto; min-height: 100vh; padding: 10px; grid-template-rows: auto auto auto; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(520px, 70vh) auto auto; }
+  .viewport { grid-row: 1; min-width: 0; }
+  .workspace > aside:first-child { grid-row: 2; max-height: 360px; }
+  .workspace > .detail { grid-row: 3; max-height: 360px; }
+  header { align-items: flex-start; gap: 12px; }
+  .live { text-align: right; }
+  .camera-tools { top: 58px; right: 8px; flex-wrap: wrap; max-width: 220px; }
+  .camera-tools button { padding: 6px 8px; }
+}

@@ -1,0 +1,9 @@
+local_file,represents,source,license,size_bytes,sha256
+frontend/public/models/excavator.glb,Loading excavator,SELENE-ISRU pinned commit 2dfe2000321cce7f10292f3671df655b3d2f7148,CC0-1.0,240868,2CE9DAA0CC776DA8116F9C34C0BD3847381535367D50C4CC1DF8C7B6C2D8BCD9
+frontend/public/models/hauler.glb,Haul truck,SELENE-ISRU pinned commit 2dfe2000321cce7f10292f3671df655b3d2f7148,CC0-1.0,206784,F3B4D96B5C2E69780FAA4CBF42909451A3C9D751B5E108DCFCBF1DDB55AD60BB
+frontend/public/models/plant-hopper.glb,Truck dump hopper,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,11308,EBB427E3AB2BC1FABCA3A0DEADCA1F65164943630C073F61D1A01029EDB37F01
+frontend/public/models/plant-crusher.glb,Primary crusher,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,29828,0907F6616F49BBDAA20241AC4B568B780F30352F204851C53568B8E7DF59B528
+frontend/public/models/plant-conveyor.glb,Transfer conveyor,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,26632,727A56DFAE9A04D12437123B7B051EF76327887F02C837090178B9781FA56534
+frontend/public/models/plant-conveyor-slope.glb,Inclined conveyor,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,36556,EF043AC520572CEA0AB570873EF891D9BD8F0C748A1CAA4FEEA82F560CDC8C6F
+frontend/public/models/plant-stairs.glb,Plant access stairs,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,66256,0356A040EBBF632CD20DFE384A13108270DF26426AD1DD51A2C767C8F6A6960C
+

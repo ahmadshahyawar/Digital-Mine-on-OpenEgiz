@@ -1,0 +1,60 @@
+entity_kind,field,meaning,unit,classification,update_behavior
+mine,production_t,Cumulative processed ore,t,synthetic_telemetry,Every simulation update
+mine,throughput_tph,Average processed throughput since start,t/h,synthetic_telemetry,Every simulation update
+mine,fleet_utilization,Cumulative share of fleet-time spent loading travelling or dumping,%,derived_metric,Every simulation update
+mine,excavator_utilization,Cumulative share of elapsed time that the loader is occupied,%,derived_metric,Every simulation update
+mine,dump_point_utilization,Cumulative share of elapsed time that the dump point is occupied,%,derived_metric,Every simulation update
+mine,crusher_utilization,Cumulative share of elapsed time that the crusher processes ore,%,derived_metric,Every simulation update
+mine,average_loading_queue,Time-weighted average number of trucks waiting for the loader,trucks,derived_metric,Every simulation update
+mine,average_crusher_queue,Time-weighted average number of trucks waiting for the dump point,trucks,derived_metric,Every simulation update
+mine,trips_per_hour,Completed dump trips normalized by elapsed simulation time,trips/h,derived_metric,Every simulation update
+mine,average_cycle_min,Mean completed truck cycle time,min,synthetic_telemetry,Every simulation update
+mine,average_loading_wait_min,Mean most recent loading-queue wait across active cycles,min,derived_metric,Every simulation update
+mine,average_crusher_wait_min,Mean most recent crusher-queue wait across trucks with completed trips,min,derived_metric,Every simulation update
+mine,extracted_total_t,Cumulative ore loaded at the face including startup payload,t,synthetic_telemetry,After each loading event
+mine,truck_payload_total_t,Ore currently carried by all trucks,t,derived_metric,Every simulation update
+mine,mass_balance_error_t,Unaccounted ore across extraction payload ROM and processing,t,derived_metric,Every simulation update
+mine,active_scenario,Currently selected operating scenario,,synthetic_state,On scenario change
+mine,sim_time_s,Elapsed simulation time,s,synthetic_telemetry,Every simulation update
+haul-truck,state,Current loading hauling dumping returning or breakdown state,,synthetic_state,Every simulation update
+haul-truck,payload_t,Current carried ore,t,synthetic_telemetry,Every simulation update
+haul-truck,payload_fill_pct,Visual bed-fill progression during loading carrying and dumping,%,derived_metric,Every simulation update
+haul-truck,fuel_pct,Synthetic remaining fuel indicator,%,synthetic_telemetry,Every simulation update
+haul-truck,speed_kmh,Current modeled travel speed,km/h,synthetic_telemetry,Every simulation update
+haul-truck,route_progress_pct,Authoritative progress between loading face and crusher,%,synthetic_telemetry,Every simulation update
+haul-truck,position_x,Horizontal scene position,,synthetic_telemetry,Every simulation update
+haul-truck,position_z,Depth-axis scene position,,synthetic_telemetry,Every simulation update
+haul-truck,heading,Route direction indicator,,synthetic_state,Every simulation update
+haul-truck,trips_total,Completed dump trips,,synthetic_telemetry,After each dump
+haul-truck,cycle_time_min,Duration of most recently completed cycle,min,synthetic_telemetry,After each dump
+haul-truck,loading_wait_min,Most recent wait before loading,min,synthetic_telemetry,When loading begins
+haul-truck,crusher_wait_min,Most recent wait before dumping,min,synthetic_telemetry,When dumping begins
+haul-truck,loading_time_min,Most recent loading duration,min,synthetic_telemetry,When loading completes
+haul-truck,haul_time_min,Most recent loaded travel duration,min,synthetic_telemetry,When the truck reaches the crusher queue
+haul-truck,dumping_time_min,Most recent dumping duration,min,synthetic_telemetry,When dumping completes
+haul-truck,return_time_min,Most recent empty return duration,min,synthetic_telemetry,When the truck reaches the loading queue
+excavator,state,Ready or loading state,,synthetic_state,Every simulation update
+excavator,resource_busy,Whether the loading resource is currently occupied,,synthetic_state,Every simulation update
+excavator,queue_length,Trucks currently in the loading event,,synthetic_telemetry,Every simulation update
+excavator,position_x,Horizontal scene position,,asset_definition,Static
+excavator,position_z,Depth-axis scene position,,asset_definition,Static
+crusher,state,Operating or constrained state,,synthetic_state,Every simulation update
+crusher,dump_point_busy,Whether a truck currently occupies the dumping resource,,synthetic_state,Every simulation update
+crusher,capacity_tph,Scenario-dependent processing capacity,t/h,synthetic_telemetry,Every simulation update
+crusher,queue_length,Trucks currently in the dumping event,,synthetic_telemetry,Every simulation update
+crusher,rom_inventory_t,Ore waiting in the run-of-mine buffer,t,synthetic_telemetry,Every simulation update
+crusher,processed_total_t,Cumulative processed ore,t,synthetic_telemetry,Every simulation update
+crusher,position_x,Horizontal scene position,,asset_definition,Static
+crusher,position_z,Depth-axis scene position,,asset_definition,Static
+road,state,Open or restricted operating state,,synthetic_state,Every simulation update
+road,speed_limit_kmh,Effective scenario-dependent travel speed,km/h,synthetic_telemetry,Every simulation update
+road,traffic_count,Trucks currently travelling,,synthetic_telemetry,Every simulation update
+scenario,active,Selected scenario identifier,,synthetic_state,On scenario change
+scenario,description,Human-readable scenario name,,synthetic_state,On scenario change
+scenario,affected_assets,Comma-separated assets directly affected by the scenario,,model_parameter,On scenario change
+scenario,elapsed_min,Elapsed simulated time since the scenario was activated,min,derived_metric,Every simulation update
+scenario,impact_pct,Projected change from baseline throughput,%,derived_metric,Every simulation update
+scenario,baseline_throughput_tph,Reference baseline throughput,t/h,model_parameter,Static
+scenario,projected_throughput_tph,Steady-state scenario throughput projection,t/h,derived_metric,Every simulation update
+truck,queue_position,One-based FIFO position while waiting for the loader or crusher,,derived_metric,Every simulation update
+

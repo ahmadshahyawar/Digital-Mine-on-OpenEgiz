@@ -94,6 +94,14 @@ Before another asset is added, record its exact name, creator, source URL, downl
 
 ## Rules for Future Additions
 
+### Poly Haven Dirt scan (2026-10-23)
+
+- Source: https://polyhaven.com/a/dirt — Charlotte Baglioni.
+- License: CC0, https://polyhaven.com/license . Redistribution permitted.
+- Bundled in `ademix/frontend/public/textures/dirt/`: 1K JPEG Diffuse, rough, and nor_gl maps; originals unchanged. Download metadata from https://api.polyhaven.com/files/dirt ; each downloaded file matched its published MD5.
+- Used for visual soil detail, not measured mine data. Color projection blends two scales; geometry is not displaced. No runtime CDN or new dependency.
+
+
 1. Do not use a repository merely because it is public; verify an explicit compatible license.
 2. Prefer CC0, MIT, BSD, or Apache-2.0 material.
 3. Preserve attribution and license text whenever required.
