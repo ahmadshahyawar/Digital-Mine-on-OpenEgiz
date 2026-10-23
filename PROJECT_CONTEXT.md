@@ -233,6 +233,26 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A6 authoritative simulation clock — 2026-10-24
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a6-simulation-clock (from origin/codex/ademix 37e0fa7)
+Task: publish one backend-owned simulation clock through the existing MQTT → Ditto → API path and prove
+  multiplier independence without touching Professor + Claude's active frontend paths.
+Exact files: ademix/simulator/{engine.py,app.py,twins.json,test_engine.py,test_reliability.py,
+  SIMULATION_CLOCK_CONTRACT.md,smoke_check.py}; ademix/data/{build_data_layer.py,test_data_layer.py,
+  telemetry/telemetry_dictionary.csv,telemetry/sensor_catalogue.csv,telemetry/manifest.json};
+  ademix/frontend/public/data/ingestion.json; README.md; PROJECT_CONTEXT.md.
+Contract: mine-01 retains sim_time_s and adds simulation_speed_multiplier (x) plus simulation_mode
+  (openegiz_live | local_demo | offline_model). The multiplier changes wall-clock demonstration speed only;
+  modeled time, travel/loading/dumping durations and production equations remain unchanged.
+Frontend ownership: no React, CSS, 3D, presentation or visual asset file will be edited. Visible clock label
+  and truck-interpolation consumption remain the final A6 step after accepted B6 transfers frontend ownership.
+Expected handoff: field names/types/units/modes/fallback, invariant tests at 1x/5x/20x, scheduler scaling test,
+  live Ditto/smoke evidence, regenerated data contract, limitations and commit SHA.
+```
+
 ### Handoff — Codex — A6–A11 score-focused work definition — 2026-10-24
 
 ```text

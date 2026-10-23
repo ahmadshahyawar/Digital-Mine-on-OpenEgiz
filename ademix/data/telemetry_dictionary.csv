@@ -16,6 +16,8 @@ mine,truck_payload_total_t,Ore currently carried by all trucks,t,derived_metric,
 mine,mass_balance_error_t,Unaccounted ore across extraction payload ROM and processing,t,derived_metric,Every simulation update
 mine,active_scenario,Currently selected operating scenario,,synthetic_state,On scenario change
 mine,sim_time_s,Elapsed simulation time,s,synthetic_telemetry,Every simulation update
+mine,simulation_speed_multiplier,Configured simulated-seconds per wall-clock second,x,configuration,Set at simulator startup and published every update
+mine,simulation_mode,Execution context: openegiz_live local_demo or offline_model,mode,configuration,Set at simulator startup and published every update
 haul-truck,state,Current loading hauling dumping returning or breakdown state,,synthetic_state,Every simulation update
 haul-truck,payload_t,Current carried ore,t,synthetic_telemetry,Every simulation update
 haul-truck,payload_fill_pct,Visual bed-fill progression during loading carrying and dumping,%,derived_metric,Every simulation update

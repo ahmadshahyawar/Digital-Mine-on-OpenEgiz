@@ -33,7 +33,8 @@ TWINS_PATH = os.path.join(os.path.dirname(__file__), "twins.json")
 
 log = logging.getLogger("ademix")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-engine = MineEngine()
+SIMULATION_MODE = "local_demo" if DEMO_MODE else "openegiz_live"
+engine = MineEngine(simulation_speed_multiplier=SPEEDUP, simulation_mode=SIMULATION_MODE)
 stop_event = Event()
 mqtt_client = None if DEMO_MODE else mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ademix-simulator")
 app = FastAPI(title="Ademix Mine API", version="0.1.0")
@@ -112,7 +113,12 @@ def shutdown():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch}
+    return {
+        "status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch,
+        "sim_time_s": engine.sim_time_s,
+        "simulation_speed_multiplier": engine.simulation_speed_multiplier,
+        "simulation_mode": engine.simulation_mode,
+    }
 
 
 @app.get("/api/state")

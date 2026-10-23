@@ -212,12 +212,29 @@ def projection(scenario: str, truck_count: int = TRUCK_COUNT, dispatch: str = "f
     }
 
 
+SIMULATION_MODES = {"openegiz_live", "local_demo", "offline_model"}
+
+
+def wall_seconds_for_simulated(simulated_seconds: float, speed_multiplier: float) -> float:
+    """Wall-clock duration required to advance a modeled duration at the configured demo speed."""
+    if speed_multiplier <= 0:
+        raise ValueError("simulation speed multiplier must be greater than zero")
+    return simulated_seconds / speed_multiplier
+
+
 class MineEngine:
-    def __init__(self, seed: int = 42, truck_count: int = TRUCK_COUNT):
+    def __init__(self, seed: int = 42, truck_count: int = TRUCK_COUNT,
+                 simulation_speed_multiplier: float = 1.0, simulation_mode: str = "offline_model"):
+        if simulation_speed_multiplier <= 0:
+            raise ValueError("simulation speed multiplier must be greater than zero")
+        if simulation_mode not in SIMULATION_MODES:
+            raise ValueError(f"unknown simulation mode: {simulation_mode}")
         self.lock = RLock()
         self.rng = random.Random(seed)
         self.truck_count = truck_count
         self.sim_time_s = 0.0
+        self.simulation_speed_multiplier = float(simulation_speed_multiplier)
+        self.simulation_mode = simulation_mode
         self.production_t = 0.0
         self.delivered_t = 0.0
         self.excavated_t = 0.0
@@ -813,6 +830,8 @@ class MineEngine:
                     "average_cycle_min": self.metric(kpi["average_cycle_min"], "min"),
                     "active_scenario": self.metric(self.scenario),
                     "sim_time_s": self.metric(self.sim_time_s, "s"),
+                    "simulation_speed_multiplier": self.metric(self.simulation_speed_multiplier, "x"),
+                    "simulation_mode": self.metric(self.simulation_mode),
                     "throughput_avg_tph": self.metric(kpi["throughput_avg_tph"], "t/h"),
                     "excavated_t": self.metric(self.excavated_t, "t"),
                     "delivered_t": self.metric(self.delivered_t, "t"),

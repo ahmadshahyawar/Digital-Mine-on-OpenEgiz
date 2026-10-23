@@ -9,6 +9,7 @@ from engine import (
     DIESEL_CO2_KG_PER_L, EXCAVATOR_FUEL_LPH, LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH,
     INITIAL_ROM_T, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS, TRUCK_FUEL_LPH,
     CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection, trucks_required,
+    wall_seconds_for_simulated,
 )
 
 SCENARIO_NAMES = tuple(SCENARIOS)
@@ -45,6 +46,37 @@ class DeterminismTests(unittest.TestCase):
             MineEngine().set_scenario("magic_output")
         with self.assertRaises(ValueError):
             MineEngine().step(0)
+
+
+class SimulationClockTests(unittest.TestCase):
+    def test_multiplier_changes_wall_duration_not_one_hour_model_result(self):
+        results = []
+        for multiplier in (1, 5, 20):
+            mine = MineEngine(simulation_speed_multiplier=multiplier)
+            mine.step(3600)
+            results.append({
+                "production_t": mine.production_t,
+                "trips": [truck.trips for truck in mine.trucks],
+                "states": [truck.state for truck in mine.trucks],
+                "queues": (len(mine.excavator_queue), len(mine.dump_queue)),
+                "mass_balance_error_t": mine.mass_balance_error_t(),
+            })
+            self.assertEqual(wall_seconds_for_simulated(3600, multiplier), 3600 / multiplier)
+            clock = mine.snapshot()["mine-01"]
+            self.assertEqual(clock["sim_time_s"]["value"], 3600)
+            self.assertEqual(clock["simulation_speed_multiplier"]["value"], multiplier)
+            self.assertEqual(clock["simulation_mode"]["value"], "offline_model")
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(results[1], results[2])
+
+    def test_clock_rejects_false_multiplier_or_mode(self):
+        for multiplier in (0, -1):
+            with self.assertRaises(ValueError):
+                MineEngine(simulation_speed_multiplier=multiplier)
+            with self.assertRaises(ValueError):
+                wall_seconds_for_simulated(60, multiplier)
+        with self.assertRaises(ValueError):
+            MineEngine(simulation_mode="pretend_live")
 
 
 class FuelAndEmissionsTests(unittest.TestCase):
@@ -833,7 +865,8 @@ class InterfaceTests(unittest.TestCase):
     def test_snapshot_keeps_every_feature_the_interface_reads(self):
         state = MineEngine().snapshot()
         required = {
-            "mine-01": ["production_t", "throughput_tph", "fleet_utilization", "average_cycle_min", "active_scenario", "sim_time_s"],
+            "mine-01": ["production_t", "throughput_tph", "fleet_utilization", "average_cycle_min", "active_scenario", "sim_time_s",
+                        "simulation_speed_multiplier", "simulation_mode"],
             "excavator-01": ["state", "queue_length", "position_x", "position_z"],
             "crusher-01": ["state", "capacity_tph", "queue_length", "rom_inventory_t", "processed_total_t", "position_x", "position_z"],
             "road-main": ["state", "speed_limit_kmh", "traffic_count", "blockage", "blocked_trucks",

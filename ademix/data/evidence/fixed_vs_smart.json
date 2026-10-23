@@ -9,7 +9,7 @@
     "trigger": "dispatch policy and operating condition are applied at the same simulated instant",
     "transient_window_h": 1,
     "steady_window_h": 8,
-    "common_start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+    "common_start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
     "fuel_basis": "A1 interval-integrated comparable-equipment medium-load rates"
   },
   "metric_definitions": [
@@ -62,7 +62,7 @@
   "scenarios": {
     "baseline": {
       "label": "Normal operations",
-      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+      "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
       "trucks_required": 4,
       "periods": {
         "transient": {
@@ -195,7 +195,7 @@
     },
     "truck_breakdown": {
       "label": "Truck HT-01 breakdown",
-      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+      "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
       "trucks_required": 4,
       "periods": {
         "transient": {
@@ -328,7 +328,7 @@
     },
     "road_closure": {
       "label": "Main road restriction",
-      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+      "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
       "trucks_required": 8,
       "periods": {
         "transient": {
@@ -461,7 +461,7 @@
     },
     "crusher_slowdown": {
       "label": "Crusher capacity −45%",
-      "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+      "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
       "trucks_required": 3,
       "periods": {
         "transient": {
