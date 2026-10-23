@@ -233,20 +233,36 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — A5 combined release verification — 2026-10-23
+### Handoff — Codex — A5 combined release verification — 2026-10-23
 
 ```text
 Owner: Ahmad + Codex
+Status: implementation and clean Windows Docker/Linux-container verification complete; ready for integration
 Branch: codex/a5-release-verification (from origin/codex/ademix 52e5f09)
-Task: verify the full fixed/smart × baseline/breakdown/road-restriction/crusher-slowdown matrix through
-  frontend proxy → API → simulator → MQTT → Eclipse Ditto → API, then reset cleanly and record release gates.
+Implementation commit: 2711e6e
 Exact files: ademix/simulator/verify_scenarios.py; README.md; SUBMISSION.md; FINAL_TODO.md;
   RULES_CHECKLIST.md; PROJECT_CONTEXT.md.
 Contract: no twin/API behavior change. Verification consumes the frozen A1–A4 contracts.
 Frontend ownership: no React/3D source or presentation file will be edited. Human visual approval remains
   a named gate; automated checks will not be represented as human approval.
-Expected handoff: eight-state live results, clean-start/smoke/test/build results, remaining Ubuntu and human
-  visual gates, commit SHA and release-candidate integration instructions.
+Live verification: fixed baseline, breakdown, road restriction and crusher slowdown all passed through the
+  frontend proxy, API, simulator, MQTT, Eclipse Ditto and API. Smart Dispatch then passed the same four
+  conditions with required/cycling/standby counts 4/4/2, 4/4/1, 8/6/0 and 3/3/3. Final fixed/baseline reset
+  removed stale breakdown and blockage state.
+Checks actually run: clean Compose down -v followed by documented build/start reached healthy state; judge
+  smoke passed API health, Eclipse Ditto source, 11 twins and all 141 fields/units; UI, API health/state and
+  Grafana URLs returned HTTP 200; 72 simulator/API tests and 35 data tests passed; TypeScript/Vite production
+  build passed with the existing non-fatal >500 kB chunk warning. Built Ademix images report linux/amd64.
+Docker footprint observed: 5.803 GB images, 353.9 MB volumes and 3.07 GB build cache, below the 60 GB cap.
+Hygiene: tracked-file scan found no committed .env, dependency/build output, browser capture or generated
+  cache paths; working tree was clean except for the expected branch-ahead state.
+Clarification: an additional attempt to discover tests inside the lean production simulator image failed
+  because that image intentionally does not copy the repository test directory. This is not counted as a
+  product test failure; the repository suite passed and the production image passed the official smoke test.
+Remaining gates: native clean Ubuntu 24.04 AMD64 rehearsal and Team human visual acceptance are unverified;
+  presentation reconciliation is intentionally deferred. Do not merge to main until those gates are accepted.
+Integration: push this feature branch, fast-forward it into codex/ademix, rerun combined checks and push only
+  codex/ademix. Main remains untouched.
 ```
 
 ### Handoff — Codex — A4 two-way road and breakdown consistency — 2026-10-23
@@ -608,6 +624,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed A2 matched fixed-versus-smart evidence | Versioned JSON fixture proves identical starts and matched windows for all four conditions; baseline preserves 770 t/h with 4 cycling + 2 parked, -33.3% operating truck-hours and -26.0% estimated fuel |
 | 2026-10-23 | Codex | Completed A3 production and recovery history | Versioned five-minute history separates observed rolling throughput from projection and marks breakdown, 20-minute tow, recovery threshold and reset into a new comparison period |
 | 2026-10-23 | Codex | Completed A4 two-way-road breakdown consistency | Same-direction followers stop behind HT-01 while opposing traffic continues; directional Ditto fields, hauling/returning tests, tow/reset behavior and regenerated evidence are ready for integration |
+| 2026-10-23 | Codex | Completed A5 combined release verification | Full fixed/smart four-condition live matrix, clean reset, 107 automated checks, production build, clean Docker start and judge smoke all pass; Ubuntu and human visual approval remain explicit gates |
 
 ## Decisions
 
