@@ -244,6 +244,33 @@ Interfaces consumed or changed: consumes truck-0N.state/speed_kmh/route_progress
 Expected handoff: commit SHA, files, build result and screenshots; request to Codex to add road-main.blockage and scenario-controller.breakdown_location to the replay bundle.
 ```
 
+Handoff — 2026-10-23 — status: ready for integration (lock released after integration)
+
+```text
+Commit: 618defb on claude/breakdown-visual (lock record c0c38eb; base origin/codex/ademix c10fba1)
+Files changed: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css (plus this Active Work entry)
+What it does: the truck whose twin state is 'breakdown' gets a flashing beacon, warning triangles and an
+  "HT-0N · BREAKDOWN · 0 km/h" tag; a banner names the truck and the consequence (location, lane blocked /
+  trucks held / towed / off-road, live vs projected throughput, live constraint) and disappears on recovery.
+  Layer 1 also accepts source "local-simulator-demo" with a DEMO badge (not presented as OpenEgiz).
+Interface: consumes existing twin fields only; no field added, renamed or reinterpreted; no scenario logic in React.
+Checks: tsc + vite production build pass. Against the simulator's demo mode (ADEMIX_DEMO_MODE=1, port 18088):
+  breakdown in loading queue -> banner "parked off the haul road; traffic is not blocked";
+  breakdown while hauling at 17% -> "haul road at 0.69 km", simulator blockage text, constraint haul-road travel;
+  after the 20 min blockage -> "towed onto the shoulder; the road is open again";
+  reset to baseline -> banner and tag removed, HT-01 back in the loading queue. Not run on the Docker/Ditto stand.
+Requests to Codex (data/simulator owner):
+  1. Add road-main.blockage and scenario-controller.breakdown_location to LOG_THINGS in
+     ademix/data/build_data_layer.py and regenerate ingestion.json; in replay mode the banner currently derives
+     the location from route_progress_pct.
+  2. vite.config.ts proxies /api to 127.0.0.1:18088; document in README how to start the demo simulator for
+     local review, or the dev server logs ECONNREFUSED every 2 s.
+Integrator notes: GraphicsSettings.tsx, GroundMaterial.ts, responsive.css, timing.css and public/textures/dirt/
+  exist on codex/ademix but are not imported by the scene; decide whether to wire or remove them.
+  This file's "Collaboration ownership — 2026-10-23" paragraph states the opposite ownership of COLLABORATION.md
+  (Codex = 3D, Claude = simulator); COLLABORATION.md and the Team's instruction say Claude = 3D, Codex = simulator.
+```
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
