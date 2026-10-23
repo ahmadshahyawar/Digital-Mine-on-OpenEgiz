@@ -17,6 +17,10 @@ The current release integrator is **Ahmad + Codex** until a later `PROJECT_CONTE
 
 Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work begins. An agent must not edit another owner's paths without recording a handoff first. Claude owns the accepted visual scene; Codex must not restyle or replace it unless the Team explicitly transfers that task. Claude must not change simulator behavior to make a visual effect work; it consumes the documented twin fields instead.
 
+### C-phase ownership transfer
+
+Professor + Claude own frontend/3D work only through B1–B6. Codex may prepare nonvisual C contracts while B work continues, without touching Claude-owned frontend paths. After B6 is accepted and integrated, the Team transfers the exact frontend/3D paths required by C1–C6 to Ahmad + Codex. From that point, Professor + Claude have no C implementation assignment, and Codex must preserve the accepted B experience while adding the score-focused C views. This staged transfer prevents concurrent edits to the same frontend files.
+
 For cross-layer work, agree on the twin/API contract before parallel implementation. Ahmad + Codex own field meaning, units, allowed values, scenario/reset behavior and backend fixtures. Professor + Claude own presentation and may request contract changes before it is frozen. After freeze, neither side silently renames, duplicates or reinterprets a field.
 
 ## Branch rules

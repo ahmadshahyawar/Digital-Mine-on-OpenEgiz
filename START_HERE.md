@@ -8,6 +8,8 @@ This page is for Ahmad, Professor, Codex and Claude. The AI agents manage the te
 - **Professor + Claude:** 3D mine, interface, charts, explanations, animations and visual checks.
 - Both sides read the same project context and understand the complete mine.
 
+Professor + Claude's assigned implementation ends after B6. Ahmad + Codex own all C tasks; Codex may prepare nonvisual C contracts during B work and begins C frontend edits only after B6 is accepted and integrated.
+
 ## The branch that combines both sides
 
 `origin/codex/ademix` is the current shared integration branch: the latest tested combination of both workstreams.

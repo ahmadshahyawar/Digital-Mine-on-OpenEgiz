@@ -233,6 +233,23 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — C1 twin relationship contract — 2026-10-24
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/c1-twin-relationships (from origin/codex/ademix cfb4ec9)
+Task: define and validate the machine-readable relationship contract for the 11 existing Eclipse Ditto twins.
+Exact files: ademix/data/topology/twin_relationships.json; ademix/data/build_data_layer.py;
+  ademix/data/test_data_layer.py; ademix/simulator/TWIN_RELATIONSHIP_CONTRACT.md;
+  ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
+Contract: additive static schema `ademix.twin-relationships.v1`; no new twin, telemetry field, API route,
+  simulation behavior or OpenEgiz delivery change. Every node joins to live `/api/state` by exact thing ID.
+Frontend ownership: no React, CSS, 3D scene or presentation source will be edited during this contract step.
+  Ahmad + Codex own the later C1 UI, but begin it only after Professor + Claude's B6 is accepted and integrated.
+Expected handoff: schema, relationship direction/category rules, deterministic generated bundle, tests,
+  limitations, commit SHA and exact integration instruction.
+```
+
 ### Handoff — Codex — A5 combined release verification — 2026-10-23
 
 ```text
@@ -766,7 +783,7 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Owner/branch: Ahmad + Codex planning on `codex/high-score-improvements`; no application source is changed by this planning task.
 - Added `03_HIGH_SCORE_IMPROVEMENTS.md` between the A/B implementation streams and the final J examination. Required C1–C5 target visible twin relationships, one dispatcher decision board, spatial scenario cause/effect, model trust/limitations and combined acceptance. Optional C6 adds reproducible sensitivity evidence only if release safety and time permit.
 - The plan is based on the current verified strengths: 11 Ditto twins, deterministic constrained material flow, matched fixed/Smart evidence, production/recovery evidence, and three live disruptions. It avoids a second face, alternate route, new service or unrelated dashboard because those would add more release risk than score evidence at this stage.
-- Ownership remains separated: Codex freezes data/relationship/truth contracts and integrates; Claude owns the frontend/3D experience. Each cross-layer task requires a contract-first handoff and combined regression checks.
+- Team ownership decision: Professor + Claude implement B1–B6 only. Ahmad + Codex own C1–C6 completely, including limited frontend/3D edits after B6 is accepted and integrated. Codex may prepare nonvisual C contracts in parallel with B work; neither AI edits the same frontend paths concurrently.
 - J1–J8 were renumbered into `04_AI_JUDGE_READINESS.md` and remain the final phase after required C work is complete. No score, runtime result or completed task is claimed by this plan.
 
 ## Handoff Template

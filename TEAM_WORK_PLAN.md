@@ -140,6 +140,6 @@ This structure keeps each person's work independent at the file level while keep
 
 ## Score-focused phase before final examination
 
-After A1–A5 and B1–B6 are completed and integrated, follow `03_HIGH_SCORE_IMPROVEMENTS.md`. It adds visible mine relationships, a unified dispatcher decision board, spatial scenario cause/effect and an honest model-trust view using the contracts and evidence already built by both streams. Complete required C1–C5 before freezing the candidate. C6 sensitivity evidence is optional and must be skipped if it threatens release stability or time.
+Ahmad + Codex own all work in `03_HIGH_SCORE_IMPROVEMENTS.md`. They may prepare nonvisual C contracts while Professor + Claude complete B1–B6, but they begin C frontend work only after the accepted B6 handoff is integrated. Professor + Claude have no C implementation assignment. Required C1–C5 add visible mine relationships, a unified dispatcher decision board, spatial scenario cause/effect and an honest model-trust view. C6 sensitivity evidence is optional and must be skipped if it threatens release stability or time.
 
 `04_AI_JUDGE_READINESS.md` remains the last phase. J1–J8 examine the frozen combined application; they do not replace unfinished A, B or C implementation.
