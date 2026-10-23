@@ -142,6 +142,7 @@ A strong submission should ideally provide:
 - Stage 5 live-motion review at `?stage=motion` animates the six haulers along the approved spiral, oscillates the excavator only while its OpenEgiz twin reports loading, and moves ore markers through the plant at a rate controlled by crusher state. Truck state, reported speed, direction, and breakdown status drive movement and status markers.
 - **Core Simulation Engine rewrite (branch `claude/core-simulation-engine`, based on `codex/ademix`):** `ademix/simulator/engine.py` is now an event-driven DES. It models one single-server excavator (FIFO), one crusher dump bay (FIFO), a 600 t ROM bin that can block dumping, and a single-lane road with a shared speed limit and breakdown blockage. It reports full cycle time, queue waits, utilization, rolling-hour throughput, trips and a mass balance. With the team's OpenMines parameters, the baseline is **excavator-limited at 770 t/h** (match factor 1.61), not 900 t/h. Road restriction gives 647 t/h (haulage-limited) and crusher slowdown 495 t/h (crusher-limited). A single breakdown costs about 190 t/h during the 20-minute lane blockage and nothing in steady state. 21 deterministic tests pass. Formulas, assumptions, results and limitations are in `ademix/simulator/MODEL.md`.
 - **What-If Scenario Engine (branch `claude/what-if-scenarios`, based on `claude/core-simulation-engine`):** scenarios now carry a cycle guard (illegal truck-state transitions and payload/state contradictions raise), report HT-01's breakdown location, and publish a live bottleneck measured over the last 30 simulated minutes next to the analytical one. Both use the five constraint names: loading resource, haul-road travel, available truck fleet, dump point and crusher processing capacity. `compare_scenarios.py` compares all scenarios from an identical 4 h baseline over the same 9 h, with every metric and its % change, plus a breakdown trigger-time sensitivity table. The reset test found and fixed a stale-blockage bug. 31 tests pass. Details and results: `ademix/simulator/SCENARIOS.md`. `CORE_SIMULATION_TASKS.md`, named in the request, does not exist in the repository.
+- **Data & Asset Layer (branch `claude/data-asset-layer`, based on `claude/what-if-scenarios`; built at TurkenGulzat's request, who is informing the professor who owns this layer):** `ademix/data/` now holds a 25-parameter register with field-level source traceability, fleet and route tables derived from OpenMines, a twin-type schema, a 65-feature telemetry dictionary, four reproducible synthetic telemetry logs with a SHA-256 manifest, a data card (`DATA_CARD.md`) and 19 validation tests. Findings: the recorded OpenMines checksum was for a CRLF copy; four `twins.json` seed values disagreed with the model (`bucket_t` 22 → 20.32, road speed 35 → 25, two `idle` states); the 3.2 km route is shorter than 76 % of the source load-to-dump distances.
 - **2026-10-23 presentation update:** Slide 7 now covers baseline operations, breakdown injection, dynamic bottleneck shifts and smart dispatch as future work. It uses DES projections (770, 770, 647.3 and 495 t/h), identifies the 581.6 t/h breakdown first-hour transient, and states that automatic dispatch/rerouting is not implemented. Slide 6's baseline and road values and slide 8's engine test count were corrected. Editable PPTX/PDF exports are in `presentation/output/`.
 
 ## Immediate Decisions and Tasks
@@ -202,6 +203,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | Codex | Refine the live 3D command center and complete release evidence | `codex/ademix` | In progress | End-to-end OpenEgiz integration passes; improve visual quality, performance evidence, and final documentation next |
 | Claude (for TurkenGulzat) | Core Simulation Engine review and improvement | `claude/core-simulation-engine` | Ready for review | Engine, tests, MODEL.md, comparison script and SUBMISSION/README figures are done. Still needed: merge into `codex/ademix`, a Docker/Ditto end-to-end rerun, and the one-line UI label fix (see Known Issues) |
 | Claude (for TurkenGulzat) | What-If Scenario Engine review and improvement | `claude/what-if-scenarios` | Ready for review | Builds on the engine branch; merge that first or merge this branch instead. Stand not rerun (Docker was uninstalled from this laptop on 2026-10-23) |
+| Claude (for TurkenGulzat) | Data & Asset Layer | `claude/data-asset-layer` | Ready for review | Professor owns this layer; TurkenGulzat approved building it and is informing the professor. Contains the engine and What-If branches |
 
 ## Completed Work Log
 
@@ -232,6 +234,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Added Stage 5 purposeful motion linked to OpenEgiz truck, excavator, and crusher twin properties | Production build passes; 1440×1000 software-Edge capture confirms the moving fleet remains separated and the full scene stays in frame |
 | 2026-10-22 | Claude | Rewrote the simulator as a deterministic discrete-event model with excavator/dump-bay queues, a limited ROM bin, breakdown lane blockage, full cycle time, utilization and a mass-balance ledger; added `MODEL.md` and `compare_scenarios.py`; corrected the SUBMISSION/README scenario figures | `python -m unittest test_engine`: 21 tests pass; `compare_scenarios.py` reproduces the MODEL.md table; `py_compile` passes for app.py, engine.py and compare_scenarios.py. Docker/Ditto end-to-end was **not** rerun (Docker unavailable on this machine) |
 | 2026-10-23 | Claude | What-If Scenario Engine: live and analytical bottleneck analysis with five named constraints, cycle-transition guard, breakdown location, time-averaged queues and ROM, identical-baseline comparison with % impacts and breakdown timing sensitivity; fixed trucks staying `blocked` after a blockage cleared | `python -m unittest test_engine`: 31 tests pass; `compare_scenarios.py` reproduces SCENARIOS.md; mass-balance error ≤ 9.1e-13 t. Not run on the Docker stand |
+| 2026-10-23 | Claude | Data & Asset Layer: parameter register with source traceability, derived fleet and route tables, twin-type schema, telemetry dictionary, synthetic logs with provenance manifest, data card; corrected the OpenMines checksum record and four `twins.json` seed values; pinned LF endings for data and simulator files | `python -m unittest discover -s ademix/data`: 19 tests pass; simulator: 31 tests pass |
 | 2026-10-23 | Codex | Rebuilt the scenario presentation section from the DES model, corrected adjacent baseline/validation figures, and documented smart dispatch as future work | PPTX finalizer reports 9 slides, one editable chart, clean package/layout checks and successful Artifact Tool import; rendered slides reviewed. GitHub fetch could not connect, so organizer updates were not checked |
 
 ## Decisions
@@ -253,6 +256,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Use an event-driven simulation with an explicit single-server excavator and dump bay, and report the binding bottleneck | The time-stepped model let several trucks load from one excavator at once, which overstated baseline throughput (900 t/h against a physical limit of 770 t/h). Event scheduling also makes results independent of the publishing tick | Claude (for TurkenGulzat) |
 | 2026-10-22 | Model the breakdown as a 20-minute single-lane blockage followed by a 5-truck fleet, replacing the unexplained 0.64 fleet-wide speed factor | The effect now follows from a stated mechanism and can be observed on the road and truck twins | Claude (for TurkenGulzat) |
 | 2026-10-23 | Detect the live bottleneck as the most downstream saturated server (≥ 95 % busy over 30 min) with trucks waiting or the ROM bin accumulating; otherwise haulage (road if speed-limited, else fleet); a blocked lane overrides | A measured rule that agrees with the analytical bound in steady state but shows transient shifts, such as the blocked road and post-blockage truck bunching | Claude (for TurkenGulzat) |
+| 2026-10-23 | Keep the engine's constants in code and enforce agreement with `ademix/data/registry/parameters.csv` by tests, instead of reading the register at runtime | The simulator image's build context is `ademix/simulator`, so a runtime dependency on `ademix/data` would break the stand | Claude (for TurkenGulzat) |
 
 ## Known Issues and Risks
 
@@ -269,12 +273,15 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 - Commit `aa0156d` on `claude/core-simulation-engine` (pushed) was made with `git commit -a` and unintentionally included Codex's then-uncommitted edits to `presentation/build.mjs`, `presentation/render_pdf.py` and two PROJECT_CONTEXT.md lines, under TurkenGulzat's name. Nothing was lost; Codex has newer uncommitted presentation edits in the working tree. Decide whether to keep or revert those presentation changes on that branch before merging.
 - The breakdown scenario's first-hour effect depends on where HT-01 is when triggered (0 % to −25 % of first-hour production; table in SCENARIOS.md). The demo should trigger it while HT-01 is on the road to show the blockage.
+- The Data & Asset Layer belongs to the professor; the `claude/data-asset-layer` branch should be reviewed with them before merging. If `engine.py` or the register changes, rerun `python ademix/data/build_data_layer.py`, or the provenance tests fail.
 - The scenario comparison label in `ademix/frontend/src/main.tsx` now reads `baseline_throughput_tph` from the scenario-controller twin (commit 3e5d5ad) instead of the hard-coded 900 t/h. Verified on 2026-10-23 with Node.js 24.22.1: `npm ci && npm run build` (which runs `tsc -b` then `vite build`) passes. The Docker image uses Node 22, which was not tested locally.
 - Root `presentation.pdf` and `presentation.pptx` remain the original exports. Use the refreshed editable exports in `presentation/output/` for review and submission.
 - The new truck states (`queued_at_excavator`, `queued_at_crusher`, `blocked`) have no dedicated colour in `fleet.css` or `MineScene.tsx`, so they render in the default green. These trucks report speed 0, so the motion review stops them correctly.
 - Fuel is synthetic and has no refuelling. It reaches 0 % after roughly 13 simulated hours (about 40 real minutes at 20× speed).
 
 ## Next Recommended Action
+
+Data & Asset branch: review `claude/data-asset-layer` with the professor (it contains the engine and What-If work), then merge it into `codex/ademix`.
 
 What-If branch: review `claude/what-if-scenarios` (it contains the engine branch). When a 16 GB machine with Docker is available, rerun the stand and confirm `bottleneck_live` on `mine-01` changes as SCENARIOS.md describes.
 
@@ -324,4 +331,18 @@ Checks/tests run: python -m unittest test_engine (31 pass, Python 3.13); python 
 Decisions made: live bottleneck rule and 30 min / 95 % thresholds; bottleneck label names; scenarios stay mutually exclusive.
 Known issues: Docker stand not rerun; breakdown effect depends on trigger time; dump point can never bind with current parameters; misattributed presentation edits in aa0156d (see Known Issues).
 Next action: review and merge; rerun the stand on a 16 GB machine; optionally show bottleneck_live in the UI.
+```
+
+### Handoff — 2026-10-23 — Data & Asset Layer
+
+```text
+Date: 2026-10-23
+Contributor: Claude (for TurkenGulzat; layer owned by the professor, who is being informed)
+Goal: Complete the Data & Asset Layer of the architecture at research-data standard without inventing measurements.
+Completed: registry/parameters.csv (25 parameters, status vocabulary, field paths, formulas, engine constants); fleet/haulage_fleet_specs.csv, route_distances.csv, route_distance_summary.csv (generated from OpenMines); assets/asset_types.json; telemetry/telemetry_dictionary.csv (65 features); telemetry/logs/*.csv (4 synthetic scenario logs) + manifest.json; build_data_layer.py; test_data_layer.py (19 tests); DATA_CARD.md.
+Files changed: ademix/data/** (new files), ademix/simulator/twins.json (4 seed values), DATA_LICENSES.md (checksum record), .gitattributes (LF for data/simulator), README.md (optional data-test command), SUBMISSION.md (data paragraph), PROJECT_CONTEXT.md. Not touched: engine logic, frontend, models, presentation.
+Checks/tests run: python -m unittest discover -s ademix/data (19 pass); python -m unittest test_engine in ademix/simulator (31 pass); build_data_layer.py regenerates identical files.
+Decisions made: register is enforced by tests rather than read at runtime; sanity ranges are team-chosen; source units are interpreted, not confirmed.
+Known issues: OpenMines checksum not re-verified against upstream; no measured data exists; stand not rerun (Docker removed from this laptop).
+Next action: professor review; merge; rerun the stand on a 16 GB machine.
 ```

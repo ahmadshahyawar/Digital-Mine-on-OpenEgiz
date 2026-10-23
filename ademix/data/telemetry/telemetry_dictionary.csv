@@ -1,0 +1,66 @@
+thing_kind,feature,value_type,unit,min,max,allowed_values,origin,description
+mine,production_t,number,t,0,,,kpi,Ore processed by the crusher since the start of the run.
+mine,throughput_tph,number,t/h,0,900,,kpi,Processed tonnes in the last 60 simulated minutes.
+mine,fleet_utilization,number,%,0,100,,kpi,Share of truck-time spent loading hauling dumping or returning since the scenario started.
+mine,average_cycle_min,number,min,0,,,kpi,Mean dump-to-dump cycle time including queueing since the scenario started.
+mine,active_scenario,string,,,,baseline|truck_breakdown|road_closure|crusher_slowdown,configuration,Active what-if condition.
+mine,sim_time_s,number,s,0,,,simulated_state,Simulated time since start.
+mine,throughput_avg_tph,number,t/h,0,900,,kpi,Processed tonnes divided by elapsed time since start.
+mine,excavated_t,number,t,0,,,simulated_state,Ore loaded by the excavator since start (excludes the opening loads).
+mine,delivered_t,number,t,0,,,simulated_state,Ore tipped into the ROM bin since start.
+mine,ore_in_trucks_t,number,t,0,462,,simulated_state,Ore currently carried by trucks.
+mine,mass_balance_error_t,number,t,-0.000001,0.000001,,kpi,Opening stock + excavated − (in trucks + ROM + processed).
+mine,truck_trips_total,integer,,0,,,simulated_state,Completed dumps by all trucks.
+mine,truck_queue_pct,number,%,0,100,,kpi,Share of truck-time spent queueing at the excavator or crusher.
+mine,bottleneck,string,,,,loading resource|haul-road travel|available truck fleet|dump point|crusher processing capacity,analytical,Steady-state binding constraint of the active scenario.
+mine,bottleneck_live,string,,,,loading resource|haul-road travel|available truck fleet|dump point|crusher processing capacity,kpi,Constraint measured over the last 30 simulated minutes.
+mine,bottleneck_live_reason,text,,,,,kpi,Plain-language explanation of the live constraint.
+excavator,state,string,,,,ready|loading,simulated_state,Whether a truck is under the excavator.
+excavator,queue_length,integer,trucks,0,6,,simulated_state,Trucks waiting to be loaded.
+excavator,position_x,number,scene units,-25,-25,,static,Scene coordinate of the loading face.
+excavator,position_z,number,scene units,-18,-18,,static,Scene coordinate of the loading face.
+excavator,utilization_pct,number,%,0,100,,kpi,Busy share since the scenario started.
+excavator,average_wait_min,number,min,0,,,kpi,Mean wait before loading since the scenario started.
+excavator,loading_truck,string,,,,none|truck-01|truck-02|truck-03|truck-04|truck-05|truck-06,simulated_state,Truck currently being loaded.
+excavator,average_queue,number,trucks,0,6,,kpi,Time-averaged queue length since the scenario started.
+crusher,state,string,,,,operating|starved|constrained,simulated_state,Constrained during the slowdown scenario; starved when the ROM bin is empty.
+crusher,capacity_tph,number,t/h,495,900,,configuration,Current processing rate.
+crusher,queue_length,integer,trucks,0,6,,simulated_state,Trucks waiting to dump.
+crusher,rom_inventory_t,number,t,0,600,,simulated_state,Ore in the ROM bin.
+crusher,processed_total_t,number,t,0,,,simulated_state,Ore processed since start.
+crusher,position_x,number,scene units,27,27,,static,Scene coordinate of the crusher.
+crusher,position_z,number,scene units,18,18,,static,Scene coordinate of the crusher.
+crusher,rom_bin_capacity_t,number,t,600,600,,configuration,ROM bin capacity.
+crusher,utilization_pct,number,%,0,100,,kpi,Processing share since the scenario started.
+crusher,average_wait_min,number,min,0,,,kpi,Mean wait before dumping since the scenario started.
+crusher,delivered_total_t,number,t,0,,,simulated_state,Ore tipped since start.
+crusher,average_queue,number,trucks,0,6,,kpi,Time-averaged dump queue since the scenario started.
+crusher,rom_average_t,number,t,0,600,,kpi,Time-averaged ROM inventory since the scenario started.
+road,state,string,,,,open|restricted,simulated_state,Restricted during the road scenario or while a breakdown blocks the lane.
+road,speed_limit_kmh,number,km/h,10.72,25,,configuration,Speed applied to every moving truck.
+road,traffic_count,integer,trucks,0,6,,simulated_state,Trucks currently travelling.
+road,blockage,text,,,,,simulated_state,Description of an active lane blockage or none.
+road,blocked_trucks,integer,trucks,0,5,,simulated_state,Trucks held behind a blockage.
+scenario,active,string,,,,baseline|truck_breakdown|road_closure|crusher_slowdown,configuration,Active what-if condition.
+scenario,description,string,,,,Normal operations|Truck HT-01 breakdown|Main road restriction|Crusher capacity −45%,configuration,Display label of the condition.
+scenario,impact_pct,integer,%,-100,100,,analytical,Projected change against the baseline projection.
+scenario,baseline_throughput_tph,number,t/h,0,900,,analytical,Projected steady-state throughput of normal operations.
+scenario,projected_throughput_tph,number,t/h,0,900,,analytical,Projected steady-state throughput of the active condition.
+scenario,bottleneck,string,,,,loading resource|haul-road travel|available truck fleet|dump point|crusher processing capacity,analytical,Binding constraint of the projection.
+scenario,match_factor,number,,0,,,analytical,Active trucks × loading time ÷ free cycle time.
+scenario,fleet_supply_tph,number,t/h,0,,,analytical,Throughput the active trucks could haul with no queueing.
+scenario,excavator_capacity_tph,number,t/h,770,770,,analytical,Loading-face capacity.
+scenario,crusher_capacity_tph,number,t/h,495,900,,analytical,Crusher capacity of the active condition.
+scenario,bottleneck_reason,text,,,,,analytical,Plain-language explanation of the projected constraint.
+scenario,breakdown_location,text,,,,,simulated_state,Where HT-01 failed or none.
+haul-truck,state,string,,,,queued_at_excavator|loading|hauling|queued_at_crusher|dumping|returning|blocked|breakdown,simulated_state,Truck-cycle state.
+haul-truck,payload_t,number,t,0,77,,simulated_state,Ore on board (0 or a full load).
+haul-truck,fuel_pct,number,%,0,100,,synthetic_signal,Synthetic fuel level for display; not calibrated.
+haul-truck,speed_kmh,number,km/h,0,25,,simulated_state,Current speed; 0 when not travelling.
+haul-truck,position_x,number,scene units,-25,27,,simulated_state,Scene coordinate along the route.
+haul-truck,position_z,number,scene units,-18,18,,simulated_state,Scene coordinate along the route.
+haul-truck,heading,integer,,-1,1,,simulated_state,1 toward the crusher; -1 toward the face.
+haul-truck,trips_total,integer,,0,,,simulated_state,Completed dumps.
+haul-truck,cycle_time_min,number,min,0,,,kpi,Last dump-to-dump cycle time.
+haul-truck,queue_wait_min,number,min,0,,,kpi,Queueing time in the last cycle.
+haul-truck,route_progress_pct,number,%,0,100,,simulated_state,Position along the route from the face (0) to the crusher (100).

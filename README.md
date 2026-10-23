@@ -72,6 +72,12 @@ docker compose --env-file deploy/compose/.env \
   python -m unittest discover -s /app -p 'test_*.py' -v
 ```
 
+Optional, on a machine with Python 3.12 or newer and no extra packages: validate the Data & Asset Layer (parameter traceability, twin schema, telemetry dictionary and reproducible synthetic logs; see `ademix/data/DATA_CARD.md`):
+
+```bash
+python -m unittest discover -s ademix/data -p 'test_*.py' -v
+```
+
 ## Stop or reset
 
 Stop containers while keeping data:

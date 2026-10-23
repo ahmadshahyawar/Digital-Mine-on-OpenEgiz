@@ -1,0 +1,26 @@
+parameter_id,value,unit,category,status,source,source_field,derivation,engine_constant,engine_factor,check_min,check_max,notes
+truck_payload_t,77,t,fleet,sourced,OpenMines north_pit_mine.json,charging_site.trucks[type=OfficalTruck].capacity,,CAPACITY_T,1,1,400,"Largest truck class in the source (9 units of type ""OfficalTruck"", spelling as in source). Unit not stated in the file; read as tonnes."
+truck_speed_kmh,25,km/h,fleet,sourced,OpenMines north_pit_mine.json,charging_site.trucks[type=OfficalTruck].speed,,BASE_SPEED_KMH,1,5,60,Unit not stated in the file; read as km/h. Same speed for loaded and empty travel in the source and in the model.
+truck_fleet_size,6,trucks,fleet,assumption,Team choice,,,TRUCK_COUNT,1,1,9,Reduced from the 9 trucks of the 77 t class in the source so the 3D scene stays legible under software rendering.
+shovel_pass_t,20.32,t,loading,sourced,OpenMines north_pit_mine.json,load_sites[name=NorthPitMine-LoadSite2].shovels[name=NorthPitMine-LoadSite2-Shovel-1].tons,,SHOVEL_PASS_T,1,1,60,Largest shovel class in the source (also LoadSite3-5 Shovel-1 and LoadSite5 Shovel-2).
+shovel_cycle_min,1.5,min,loading,sourced,OpenMines north_pit_mine.json,load_sites[name=NorthPitMine-LoadSite2].shovels[name=NorthPitMine-LoadSite2-Shovel-1].cycle_time,,SHOVEL_PASS_S,60,0.2,5,Unit not stated in the file; read as minutes per pass.
+load_passes,4,passes,loading,derived,Derived,,ceil(truck_payload_t / shovel_pass_t),LOAD_PASSES,1,1,20,ceil(77 / 20.32) = 4; the last pass is partial.
+load_time_min,6,min,loading,derived,Derived,,load_passes * shovel_cycle_min,LOAD_SECONDS,60,1,30,Spotting and manoeuvring time is not added separately.
+excavator_capacity_tph,770,t/h,loading,derived,Derived,,truck_payload_t * 60 / load_time_min,,,100,3000,Upper bound of the single loading face.
+dump_time_min,1,min,dumping,sourced,OpenMines north_pit_mine.json,dump_sites[name=NorthPitMine-DumpSite1].dumpers[0].cycle_time,,DUMP_SECONDS,60,0.2,10,Unit not stated in the file; read as minutes.
+dump_capacity_tph,4620,t/h,dumping,derived,Derived,,truck_payload_t * 60 / dump_time_min,,,100,20000,Upper bound of the single dump bay.
+route_length_km,3.2,km,road,assumption,Team choice,,,ROUTE_KM,1,0.5,40,"One-way loading-face-to-crusher distance of the simplified layout. Compared with the source's load-to-dump distance matrix in fleet/route_distance_summary.csv."
+road_restriction_speed_kmh,10.72,km/h,road,scenario_input,Team scenario input,,,ROAD_RESTRICTION_SPEED_KMH,1,1,25,What-if input for the main road restriction.
+breakdown_blockage_min,20,min,road,scenario_input,Team scenario input,,,BREAKDOWN_RECOVERY_S,60,1,240,Time a broken-down truck blocks the single lane before it is towed aside.
+crusher_capacity_tph,900,t/h,crusher,assumption,Team planning assumption,,,BASE_CRUSHER_TPH,1,100,5000,Not a manufacturer rating or site figure.
+crusher_slowdown_factor,0.55,ratio,crusher,scenario_input,Team scenario input,,,CRUSHER_SLOWDOWN_FACTOR,1,0.05,1,"What-if input: crusher at 55 % of planning capacity (495 t/h)."
+rom_bin_capacity_t,600,t,crusher,assumption,Team assumption,,,ROM_BIN_CAPACITY_T,1,77,5000,About 7.8 truckloads of surge capacity at the dump pocket.
+initial_rom_t,250,t,crusher,assumption,Team assumption,,,INITIAL_ROM_T,1,0,600,Opening ROM inventory of the demonstration shift.
+fuel_burn_loaded_pct_per_route,1.4,% of tank per one-way route,fuel,synthetic,Synthetic display signal,,,FUEL_PCT_PER_ROUTE_LOADED,1,0,10,Not calibrated to an engine or duty cycle.
+fuel_burn_empty_pct_per_route,0.8,% of tank per one-way route,fuel,synthetic,Synthetic display signal,,,FUEL_PCT_PER_ROUTE_EMPTY,1,0,10,Not calibrated to an engine or duty cycle.
+kpi_window_min,60,min,model,model_setting,Model setting,,,KPI_WINDOW_S,60,1,1440,Rolling window of the live throughput KPI.
+bottleneck_window_min,30,min,model,model_setting,Model setting,,,BOTTLENECK_WINDOW_S,60,1,1440,Measurement window of the live bottleneck.
+saturation_share,0.95,ratio,model,model_setting,Model setting,,,SATURATED_SHARE,1,0.5,1,Busy share above which a server counts as saturated.
+random_seed,42,-,model,model_setting,Model setting,,,,,0,1000000,Seed of the only random draw (initial fuel levels).
+road_repair_rate,0.00833,source unit not stated,road,sourced,OpenMines north_pit_mine.json,road.road_event_params.lambda_repair,,,,0,1,Recorded for reference; not used by the Ademix model (no random road events).
+road_repair_duration,50,source unit not stated,road,sourced,OpenMines north_pit_mine.json,road.road_event_params.mu_repair_duration,,,,0,1000,Recorded for reference; not used by the Ademix model.

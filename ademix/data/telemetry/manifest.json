@@ -1,0 +1,54 @@
+{
+  "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
+  "generator": "ademix/data/build_data_layer.py",
+  "inputs_sha256": {
+    "ademix/data/openmines/north_pit_mine.json": "a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c",
+    "ademix/data/registry/parameters.csv": "fcb84a785108837f2c81bbcc7ad8e30fe68a159a671812ded81111f6dbc447cf",
+    "ademix/simulator/engine.py": "83b6c0a739984ede7584127bd86ef5458a9e47377c8337be25fefc367e0fe367"
+  },
+  "telemetry_settings": {
+    "seed": 42,
+    "step_s": 20.0,
+    "sample_s": 300.0,
+    "warmup_h": 4,
+    "scenario_h": 9,
+    "scenario_switch_s": 14400
+  },
+  "outputs": {
+    "fleet/haulage_fleet_specs.csv": {
+      "sha256": "40f370f0205afdd6e016b80600cbd392cbae3aac42e5a313d079f615155d4026",
+      "rows": 28,
+      "columns": 9
+    },
+    "fleet/route_distances.csv": {
+      "sha256": "cccfbf7da99ba8df08c21ced205bbd4f33d4047c97d23a2737a2c68fe434621c",
+      "rows": 50,
+      "columns": 4
+    },
+    "fleet/route_distance_summary.csv": {
+      "sha256": "40ca1399936c7572d95b1061b658c3719b02686a9ec46a05687df2f5babc73da",
+      "rows": 2,
+      "columns": 10
+    },
+    "telemetry/logs/baseline.csv": {
+      "sha256": "33afe39f4837da58045d737e560ae8ff2ac3aa17f97d97381403db3a51c428cd",
+      "rows": 157,
+      "columns": 122
+    },
+    "telemetry/logs/truck_breakdown.csv": {
+      "sha256": "4e3a9f19c155aee33e4b986e41bb669ed14de66b59777662174b7a9cc6df5bf7",
+      "rows": 157,
+      "columns": 122
+    },
+    "telemetry/logs/road_closure.csv": {
+      "sha256": "b7a78a18d412de6e0d40032c75522ad64d97ecfc6e30fde111af74e1f1919ff8",
+      "rows": 157,
+      "columns": 122
+    },
+    "telemetry/logs/crusher_slowdown.csv": {
+      "sha256": "17945d57299fdc3ebd4f65c8952f4f2d33d6bce40b3a5555f2c6bcc0ee97fa7d",
+      "rows": 157,
+      "columns": 122
+    }
+  }
+}

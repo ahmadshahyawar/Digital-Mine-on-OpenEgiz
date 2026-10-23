@@ -12,7 +12,8 @@ This file records every external dataset, code reference, model, texture, and vi
 - License: MIT
 - Copyright: Copyright (c) 2023 stone meng
 - License copy: `ademix/data/openmines/LICENSE`
-- Local SHA-256: `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`
+- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. This has not been re-checked against the upstream repository. `ademix/data/test_data_layer.py` verifies the stored file.
+- Derived data: `ademix/data/fleet/` (equipment and route-distance tables extracted from this file) and `ademix/data/registry/parameters.csv` (field-level traceability). See `ademix/data/DATA_CARD.md`.
 - Use: calibration reference for fleet size, truck capacity, truck speed, shovel capacity/cycle time, dump time, route distances, and road-repair event parameters.
 - Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for judge-environment performance. It does not claim to reproduce the full OpenMines simulation.
 
