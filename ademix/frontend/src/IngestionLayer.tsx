@@ -186,13 +186,29 @@ function forwardBlend(from: number, to: number, f: number) {
 }
 
 const ACCELERATION_MS2 = .5 // gentle haul-truck acceleration and braking, m/s²
+const LOAD_SECONDS = 360 // 4 shovel passes × 1.5 min (OpenMines)
+const DUMP_SECONDS = 60 // 1 min tipping (OpenMines)
+// Hauler model parts (front of the truck is +X): the dump body pivots about BedPivot.
+const BED_PIVOT = new THREE.Vector3(-.65, 1.25, 0)
+const LOAD_ANCHOR = new THREE.Vector3(-.07, .4, 0)
+type Activity = { kind: 'loading' | 'dumping' | null; progress: number }
 
-function LoggedTruck({ index, frame, layers, positions, blockageActive, timeScale, roadKmh, loopKmh }: {
-  index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; blockageActive: boolean
-  timeScale: number; roadKmh: number; loopKmh: number
+function LoggedTruck({ index, frame, layers, positions, activity, blockageActive, timeScale, roadKmh, loopKmh }: {
+  index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>
+  activity: React.MutableRefObject<Activity[]>; blockageActive: boolean; timeScale: number; roadKmh: number; loopKmh: number
 }) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
+  // Dump-body parts and their rest transforms, so the body can be tipped about its pivot.
+  const bed = React.useMemo(() => {
+    const parts: { node: THREE.Object3D; position: THREE.Vector3; rotationZ: number }[] = []
+    model.traverse(node => {
+      if (node.name.startsWith('Hauler_Bed') && node.name !== 'Hauler_BedPivot') parts.push({ node, position: node.position.clone(), rotationZ: node.rotation.z })
+    })
+    return parts
+  }, [model])
+  const load = React.useRef<THREE.Group>(null)
+  const dwell = React.useRef<{ kind: 'loading' | 'dumping' | null; left: number }>({ kind: null, left: 0 })
   const group = React.useRef<THREE.Group>(null)
   const id = `truck-${String(index + 1).padStart(2, '0')}`
   const state = String(frame.at(`${id}.state`) ?? 'hauling')
@@ -209,16 +225,47 @@ function LoggedTruck({ index, frame, layers, positions, blockageActive, timeScal
     let gap = target - shown.current
     while (gap < 0) gap += 2
     if (gap > 1.5) gap = 0 // the data is slightly behind: wait where we are
-    if (gap > .55) { shown.current = frame.circuit(index); velocity.current = 0; gap = 0 } // replay jumped: reposition
+    if (gap > .7) { shown.current = frame.circuit(index); velocity.current = 0; gap = 0; dwell.current = { kind: null, left: 0 } } // replay jumped
     const m = metresPerUnit(shown.current)
-    const along = ((shown.current % 1) + 1) % 1
-    const inLoop = along <= LOOP_PCT / 100 || along >= 1 - LOOP_PCT / 100
-    const limit = (inLoop ? Math.min(loopKmh, roadKmh) : roadKmh) / 3.6 / m * timeScale
-    const accel = ACCELERATION_MS2 / m * timeScale * timeScale
-    const brakeLimited = Math.sqrt(2 * accel * gap)
-    const wanted = Math.min(limit, brakeLimited)
-    velocity.current = wanted > velocity.current ? Math.min(wanted, velocity.current + accel * dt) : wanted
-    shown.current = (shown.current + Math.min(gap, velocity.current * dt)) % 2
+    if (dwell.current.kind) {
+      // Parked at the excavator or the tipping point until loading or dumping is finished.
+      velocity.current = 0
+      dwell.current.left -= dt * timeScale
+      if (dwell.current.left <= 0) dwell.current = { kind: null, left: 0 }
+    } else {
+      const along = ((shown.current % 1) + 1) % 1
+      const inLoop = along <= LOOP_PCT / 100 || along >= 1 - LOOP_PCT / 100
+      const catchUp = gap > .12 ? 1.6 : 1 // more than ~400 m behind the data: up to 40 km/h to make up time
+      const limit = (inLoop ? Math.min(loopKmh, roadKmh) : roadKmh) * catchUp / 3.6 / m * timeScale
+      const accel = ACCELERATION_MS2 / m * timeScale * timeScale
+      const wanted = Math.min(limit, Math.sqrt(2 * accel * gap))
+      velocity.current = wanted > velocity.current ? Math.min(wanted, velocity.current + accel * dt) : wanted
+      const before = shown.current
+      let next = before + Math.min(gap, velocity.current * dt)
+      // Reaching the tipping point (s = 1) or the loading spot (s = 2 ≡ 0) always means stopping to work.
+      if (before < 1 && next >= 1) { next = 1; dwell.current = { kind: 'dumping', left: DUMP_SECONDS } }
+      else if (before < 2 && next >= 2) { next = 2; dwell.current = { kind: 'loading', left: LOAD_SECONDS } }
+      shown.current = next % 2
+    }
+    const work = dwell.current
+    const progress = work.kind ? 1 - work.left / (work.kind === 'loading' ? LOAD_SECONDS : DUMP_SECONDS) : 0
+    activity.current[index] = { kind: work.kind, progress }
+    // Loaded between the loading spot and the end of tipping; the load grows while the shovel fills it.
+    const s = shown.current
+    const loaded = work.kind === 'loading' ? progress : work.kind === 'dumping' ? 1 - Math.max(0, progress - .3) / .7 : s > 1e-4 && s < 1 ? 1 : 0
+    if (load.current) { load.current.visible = loaded > .02; load.current.scale.set(1, Math.max(loaded, .05), 1) }
+    // Tip the body: raise over the first 30 % of the dump, hold, lower over the last 20 %.
+    const tilt = work.kind === 'dumping' ? .62 * Math.min(1, progress / .3, (1 - progress) / .2) : 0
+    for (const part of bed) {
+      const offset = part.position.clone().sub(BED_PIVOT).applyAxisAngle(new THREE.Vector3(0, 0, 1), tilt)
+      part.node.position.copy(BED_PIVOT).add(offset)
+      part.node.rotation.z = part.rotationZ + tilt
+    }
+    if (load.current) {
+      const at = LOAD_ANCHOR.clone().add(new THREE.Vector3(0, .42, 0)).sub(BED_PIVOT).applyAxisAngle(new THREE.Vector3(0, 0, 1), tilt).add(BED_PIVOT)
+      load.current.position.copy(at)
+      load.current.rotation.z = tilt
+    }
     // Stops in its lane while it blocks the road, then is towed onto the shoulder.
     const pose = state === 'breakdown' && !blockageActive
       ? lanePose(frame.atMix(`${id}.route_progress_pct`), heading, SHOULDER_OFFSET)
@@ -229,7 +276,13 @@ function LoggedTruck({ index, frame, layers, positions, blockageActive, timeScal
   })
   const color = TRUCK_COLOR[state] ?? '#38ef9d'
   return <group ref={group}>
-    <primitive object={model} scale={1.22}/>
+    <group scale={1.22}>
+      <primitive object={model}/>
+      <group ref={load} visible={false}>
+        <mesh position={[0, .2, 0]} scale={[1, .55, .8]}><sphereGeometry args={[1.15, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]}/>
+          <meshStandardMaterial color="#8a5b36" roughness={1} flatShading/></mesh>
+      </group>
+    </group>
     <mesh position={[0, 4.4, 0]}><sphereGeometry args={[.32, 12, 10]}/><meshBasicMaterial color={color}/></mesh>
     {state === 'breakdown' && <mesh position={[0, 5.4, 0]}><octahedronGeometry args={[.55]}/><meshBasicMaterial color="#ff5149"/></mesh>}
     {layers.has('sensors') && <Html center distanceFactor={80} position={[0, 6.4, 0]} zIndexRange={[20, 0]}>
@@ -271,6 +324,30 @@ function LoopRoads() {
   </group>)}</group>
 }
 
+/** Safety berms (windrows) along both edges of the haul road and the turning loops, as on real haul roads. */
+function SafetyBerms() {
+  const tubes = React.useMemo(() => {
+    const along = (points: THREE.Vector3[]) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(40, points.length * 3), .5, 6, false)
+    const road = (side: 1 | -1) => {
+      const points: THREE.Vector3[] = []
+      for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * 4.5).position.add(new THREE.Vector3(0, .35, 0)))
+      return along(points)
+    }
+    const loop = (end: 'face' | 'crusher', side: 1 | -1) => {
+      const curve = LOOPS[end]
+      const points: THREE.Vector3[] = []
+      for (let k = 4; k <= 76; k++) {
+        const t = k / 80
+        const forward = curve.getTangentAt(t).setY(0).normalize()
+        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * 4.2).add(new THREE.Vector3(0, .35, 0)))
+      }
+      return along(points)
+    }
+    return [road(-1), loop('face', 1), loop('face', -1), loop('crusher', 1), loop('crusher', -1)]
+  }, [])
+  return <group>{tubes.map((g, i) => <mesh key={i} geometry={g}><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>)}</group>
+}
+
 /** Arrows painted in each lane: blue for empty trucks entering the pit, amber for loaded trucks leaving. */
 function LaneArrows() {
   const arrows = React.useMemo(() => {
@@ -296,15 +373,27 @@ function LaneArrows() {
     rotation={[-Math.PI / 2, 0, a.yaw]}><meshBasicMaterial color={a.color} transparent opacity={.85}/></mesh>)}</group>
 }
 
-function Excavator({ frame }: { frame: Frame }) {
+function Excavator({ activity, trucks }: { activity: React.MutableRefObject<Activity[]>; trucks: React.MutableRefObject<THREE.Vector3[]> }) {
   const { scene } = useGLTF('/models/excavator.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
   const group = React.useRef<THREE.Group>(null)
-  const loading = frame.at('excavator-01.state') === 'loading'
-  useFrame(({ clock }) => { if (group.current) group.current.rotation.y = -1.35 + (loading ? Math.sin(clock.elapsedTime * 1.8) * .2 : 0) })
+  const rocks = React.useRef<THREE.Group>(null)
   const base = haulRoadPoint(1).add(new THREE.Vector3(1.2, .35, -1.5))
+  useFrame(({ clock }) => {
+    const truck = activity.current.findIndex(a => a?.kind === 'loading')
+    const swinging = truck >= 0
+    if (group.current) group.current.rotation.y = -1.35 + (swinging ? Math.sin(clock.elapsedTime * 1.6) * .35 : 0)
+    rocks.current?.children.forEach((child, i) => {
+      child.visible = swinging
+      if (!swinging) return
+      const target = trucks.current[truck] ?? base
+      const t = (clock.elapsedTime * .8 + i / 6) % 1
+      child.position.copy(base).lerp(target, t).sub(base).add(new THREE.Vector3(0, 5.5 - t * 3 + Math.sin(t * Math.PI) * 1.5, 0))
+    })
+  })
   return <group position={base}>
     <group ref={group} rotation={[0, -1.35, 0]}><primitive object={model} scale={1.5}/></group>
+    <group ref={rocks}>{Array.from({ length: 6 }, (_, i) => <mesh key={i}><dodecahedronGeometry args={[.42, 0]}/><meshStandardMaterial color="#8a5b36" roughness={1}/></mesh>)}</group>
   </group>
 }
 
@@ -357,7 +446,7 @@ function Belt({ from, to, flow, color = '#3d4a4a' }: { from: THREE.Vector3; to: 
   </group>
 }
 
-function OreHandling({ frame, dumping }: { frame: Frame; dumping: boolean }) {
+function OreHandling({ frame, activity }: { frame: Frame; activity: React.MutableRefObject<Activity[]> }) {
   const rom = frame.atMix('crusher-01.rom_inventory_t')
   const fill = THREE.MathUtils.clamp(rom / 600, 0, 1)
   const throughput = num(frame.at('mine-01.throughput_tph'))
@@ -367,6 +456,7 @@ function OreHandling({ frame, dumping }: { frame: Frame; dumping: boolean }) {
   // Pile radius grows with the cube root of tonnes received, so its volume tracks the tonnage.
   const pileScale = Math.cbrt(1 + received / 2500)
   useFrame(({ clock }) => {
+    const dumping = activity.current.some(a => a?.kind === 'dumping' && a.progress > .25 && a.progress < .85)
     falling.current?.children.forEach((child, i) => {
       child.visible = dumping
       if (!dumping) return
@@ -748,6 +838,7 @@ export function IngestionLayer() {
   const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
+  const activity = React.useRef<Activity[]>([])
   // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
   const [live, setLive] = React.useState(false)
   const [, setTick] = React.useState(0)
@@ -864,12 +955,13 @@ export function IngestionLayer() {
         <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} speed={speed} onRow={r => r !== row && setRow(r)}/>
         <LoopRoads/>
+        <SafetyBerms/>
         <LaneArrows/>
-        {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
+        {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks} activity={activity}
           blockageActive={frame.at('road-main.state') === 'restricted'}
           timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}/>)}
-        <Excavator frame={frame}/>
-        <OreHandling frame={frame} dumping={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).includes('dumping')}/>
+        <Excavator activity={activity} trucks={trucks}/>
+        <OreHandling frame={frame} activity={activity}/>
         <RoadLighting/>
         {layers.has('weather') && <WeatherScene weather={weather}/>}
         {layers.has('safety') && <SafetyScene loopSpeed={reg('loop_speed_kmh')}/>}
