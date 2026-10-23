@@ -237,7 +237,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ```text
 Owner: Ahmad + Codex
-Status: contract implementation complete and tested; C1 UI waits for accepted B6 integration
+Status: contract integrated and verified on codex/ademix; C1 UI waits for accepted B6 integration
 Branch: codex/c1-twin-relationships (from origin/codex/ademix cfb4ec9)
 Implementation commit: d903498
 Exact files: ademix/data/topology/twin_relationships.json; ademix/data/build_data_layer.py;
@@ -261,8 +261,11 @@ Next C1 step for Ahmad + Codex: after the accepted B6 handoff is integrated, con
   the optional Mine model explorer, join node selection to returned live twins by exact `thing_id`, keep
   control links visually distinct, and do not add invented twins or relationships. Professor + Claude have
   no C-phase implementation assignment under the Team's 5821550 ownership decision.
-Integration instruction: merge this branch into codex/ademix after review, rerun combined tests/build/smoke,
-  then push codex/ademix. Do not merge to main.
+Integration: feature branch fast-forwarded into codex/ademix after the Team's C-phase ownership update.
+  Combined checks pass: 38 data/schema checks, 72 simulator/API tests, TypeScript/Vite production build,
+  rebuilt healthy Compose stack and official smoke (Eclipse Ditto, 11 twins, 141 fields/units). The served
+  bundle reports schema v1, 11 nodes, 38 relationships and zero missing live twin joins. Push codex/ademix;
+  do not merge to main. The remaining C1 explorer UI begins only after accepted B6 integration.
 ```
 
 ### Handoff — Codex — A5 combined release verification — 2026-10-23
