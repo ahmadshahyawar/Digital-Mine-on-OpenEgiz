@@ -111,19 +111,22 @@ How to read these results:
 
 ## 6. Verification performed
 
-`python -m unittest test_engine` runs 31 deterministic tests (the 10 What-If tests are described in `SCENARIOS.md`). They cover:
+`python -m unittest test_engine` runs 40 deterministic tests (the What-If tests are described in `SCENARIOS.md`). Together with the three simulator-package data-contract checks, `python -m unittest discover -s ademix/simulator -p "test_*.py"` runs 43 checks. They cover:
 
 - reproducibility with the same seed;
 - invariance to the tick size;
 - mass conservation at every step through all scenario switches, together with ROM-bin bounds and whole-payload transfers;
 - single-truck service and queue/state consistency at the excavator and dump bay;
-- FIFO order at the excavator;
+- FIFO head-of-line service at both the excavator and dump bay under every scenario;
+- single-truck occupancy at both service resources under every scenario;
+- exact 6 min loading, 7.68 min loaded haul, 1 min dumping and 7.68 min empty-return stages at the documented baseline speed, plus non-negative crusher waiting;
 - cycle time ≥ the free cycle, with cycle − wait = the free cycle;
+- direct reconciliation of opening stock + extracted ore against truck payload + ROM inventory + processed production throughout every scenario;
 - utilization shares that sum to 100 %;
 - the projection formula against a hand calculation;
 - 24 h convergence of the DES to the analytical projection (±2 % of 900 t/h);
-- breakdown blocking, recovery and reset;
-- a breakdown at the face releasing the excavator;
+- breakdown blocking, recovery and reset, including interruption while loading, dumping, or waiting in either FIFO queue;
+- every ordered direct scenario-to-scenario switch clearing the previous speed, crusher and breakdown effects;
 - speed changes applied mid-route;
 - the crusher-slowdown bin backup;
 - reset to baseline;

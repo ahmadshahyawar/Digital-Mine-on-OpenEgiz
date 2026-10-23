@@ -55,7 +55,7 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 
 Verified locally:
 
-- on 23 October, all 69 automated checks pass (37 simulator checks and 32 data-layer checks), including convergence, scenario propagation, FIFO queues, interface fields, and mass conservation;
+- on 23 October, all 75 automated checks pass (43 simulator-package checks and 32 data-layer checks), including convergence, scenario propagation, both FIFO queues under every scenario, exclusive resources, stage timing, interface fields, and mass conservation;
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and

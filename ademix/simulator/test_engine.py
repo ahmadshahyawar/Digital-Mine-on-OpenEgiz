@@ -4,7 +4,7 @@ import json
 import unittest
 
 from engine import (
-    BASE_CRUSHER_TPH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
+    BASE_CRUSHER_TPH, BASE_SPEED_KMH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
     LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS,
     CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection,
 )
@@ -73,6 +73,17 @@ class MassConservationTests(unittest.TestCase):
         self.assertEqual(truck.payload_t, 0)
         self.assertGreater(mine.rom_inventory_t, rom_before)
 
+    def test_named_mass_balance_components_reconcile_in_every_scenario(self):
+        mine = MineEngine()
+        for scenario in SCENARIO_NAMES:
+            with self.subTest(scenario=scenario):
+                mine.set_scenario(scenario)
+                for _ in range(360):
+                    mine.step(10)
+                    available = mine.opening_stock_t + mine.excavated_t
+                    accounted = mine.ore_in_trucks_t() + mine.rom_inventory_t + mine.production_t
+                    self.assertAlmostEqual(available, accounted, places=6)
+
 
 class ResourceTests(unittest.TestCase):
     def assert_single_servers(self, mine):
@@ -108,6 +119,38 @@ class ResourceTests(unittest.TestCase):
         self.assertGreater(len(starts), 20)
         self.assertEqual(starts, arrivals[:len(starts)])
 
+    def test_both_fifo_resources_serve_the_head_under_every_scenario(self):
+        """Every service start must take the oldest truck still waiting."""
+        for scenario in SCENARIO_NAMES:
+            with self.subTest(scenario=scenario):
+                mine = MineEngine()
+                mine.set_scenario(scenario)
+                load_starts, dump_starts = [], []
+                start_loading = mine._try_start_loading
+                start_dump = mine._try_start_dump
+
+                def checked_loading():
+                    head = mine.excavator_queue[0] if mine.excavator_queue else None
+                    serving = mine.excavator_truck
+                    start_loading()
+                    if serving is None and mine.excavator_truck is not None:
+                        self.assertIs(mine.excavator_truck, head)
+                        load_starts.append(mine.excavator_truck.name)
+
+                def checked_dump():
+                    head = mine.dump_queue[0] if mine.dump_queue else None
+                    serving = mine.dump_truck
+                    start_dump()
+                    if serving is None and mine.dump_truck is not None:
+                        self.assertIs(mine.dump_truck, head)
+                        dump_starts.append(mine.dump_truck.name)
+
+                mine._try_start_loading = checked_loading
+                mine._try_start_dump = checked_dump
+                run(mine, 8, dt=10, check=self.assert_single_servers)
+                self.assertGreater(len(load_starts), 5)
+                self.assertGreater(len(dump_starts), 5)
+
     def test_baseline_fleet_queues_at_the_excavator_bottleneck(self):
         mine = run(MineEngine(), 8)
         kpi = mine.kpis()
@@ -122,6 +165,52 @@ class ResourceTests(unittest.TestCase):
         for truck in mine.trucks:
             self.assertGreaterEqual(truck.last_cycle_s, free_cycle_s - 1e-6)
             self.assertAlmostEqual(truck.last_cycle_s - truck.last_wait_s, free_cycle_s, places=6)
+
+    def test_each_cycle_stage_has_the_documented_duration(self):
+        mine = MineEngine()
+        entered, durations = {}, {state: [] for state in (
+            "loading", "hauling", "queued_at_crusher", "dumping", "returning",
+        )}
+        set_state = mine._set_state
+
+        def recording_set_state(truck, state):
+            old = truck.state
+            if (truck.name, old) in entered and old in durations:
+                durations[old].append(mine.sim_time_s - entered[(truck.name, old)])
+            set_state(truck, state)
+            entered[(truck.name, state)] = mine.sim_time_s
+
+        mine._set_state = recording_set_state
+        run(mine, 8, dt=10)
+        travel_s = ROUTE_KM / BASE_SPEED_KMH * 3600.0
+        self.assertTrue(durations["loading"])
+        self.assertTrue(durations["hauling"])
+        self.assertTrue(durations["dumping"])
+        self.assertTrue(durations["returning"])
+        for observed in durations["loading"]:
+            self.assertAlmostEqual(observed, LOAD_SECONDS, places=6)
+        for observed in durations["hauling"]:
+            self.assertAlmostEqual(observed, travel_s, places=6)
+        for observed in durations["dumping"]:
+            self.assertAlmostEqual(observed, DUMP_SECONDS, places=6)
+        for observed in durations["returning"]:
+            self.assertAlmostEqual(observed, travel_s, places=6)
+        self.assertTrue(all(wait >= 0 for wait in durations["queued_at_crusher"]))
+
+    def test_operating_values_match_documented_assumptions(self):
+        self.assertEqual(CAPACITY_T, 77.0)
+        self.assertEqual(BASE_SPEED_KMH, 25.0)
+        self.assertEqual(LOAD_SECONDS, 6 * 60.0)
+        self.assertEqual(DUMP_SECONDS, 60.0)
+        mine = MineEngine()
+        for scenario in SCENARIO_NAMES:
+            mine.set_scenario(scenario)
+            mine.step(1)
+            expected_speed = ROAD_RESTRICTION_SPEED_KMH if scenario == "road_closure" else BASE_SPEED_KMH
+            for truck in mine.trucks:
+                self.assertIn(truck.payload_t, (0.0, CAPACITY_T))
+                if truck.state in ("hauling", "returning"):
+                    self.assertEqual(truck.travel_speed_kmh, expected_speed)
 
     def test_utilization_shares_are_bounded_and_complete(self):
         mine = run(MineEngine(), 3)
@@ -238,6 +327,22 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(after, [name for name in before if name != broken.name])
         self.assertEqual(len(set(after)), len(after))
 
+    def test_breakdown_removes_crusher_queued_truck_without_reordering_fifo(self):
+        mine = MineEngine()
+        mine.set_scenario("crusher_slowdown")
+        broken = mine.trucks[0]
+        deadline = mine.sim_time_s + 12 * 3600
+        while broken.state != "queued_at_crusher" and mine.sim_time_s < deadline:
+            mine.step(10)
+        self.assertEqual(broken.state, "queued_at_crusher")
+        before = [truck.name for truck in mine.dump_queue]
+        mine.set_scenario("truck_breakdown")
+        after = [truck.name for truck in mine.dump_queue]
+        self.assertEqual(broken.state, "breakdown")
+        self.assertEqual(after, [name for name in before if name != broken.name])
+        self.assertEqual(len(set(after)), len(after))
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+
     def test_reset_invalidates_breakdown_and_old_service_events(self):
         mine = MineEngine()
         broken = mine.trucks[0]
@@ -295,6 +400,31 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(state["crusher-01"]["capacity_tph"]["value"], BASE_CRUSHER_TPH)
         self.assertEqual(state["scenario-controller"]["impact_pct"]["value"], 0)
         self.assertFalse([t for t in mine.trucks if t.state in ("breakdown", "blocked")])
+
+    def test_every_direct_scenario_switch_clears_the_previous_effect(self):
+        for previous in SCENARIO_NAMES:
+            for current in SCENARIO_NAMES:
+                if previous == current:
+                    continue
+                with self.subTest(previous=previous, current=current):
+                    mine = MineEngine()
+                    mine.set_scenario(previous)
+                    run(mine, 0.5, dt=10)
+                    mine.set_scenario(current)
+                    run(mine, 0.1, dt=10)
+                    state = mine.snapshot()
+                    expected_speed = ROAD_RESTRICTION_SPEED_KMH if current == "road_closure" else BASE_SPEED_KMH
+                    expected_crusher = (BASE_CRUSHER_TPH * CRUSHER_SLOWDOWN_FACTOR
+                                        if current == "crusher_slowdown" else BASE_CRUSHER_TPH)
+                    self.assertEqual(mine.scenario, current)
+                    self.assertEqual(state["road-main"]["speed_limit_kmh"]["value"], expected_speed)
+                    self.assertAlmostEqual(state["crusher-01"]["capacity_tph"]["value"], expected_crusher)
+                    self.assertEqual(bool([t for t in mine.trucks if t.state == "breakdown"]),
+                                     current == "truck_breakdown")
+                    if current != "truck_breakdown":
+                        self.assertIsNone(mine.blockage)
+                        self.assertEqual(mine.breakdown_location, "none")
+                    self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
 
 
 class WhatIfScenarioTests(unittest.TestCase):
