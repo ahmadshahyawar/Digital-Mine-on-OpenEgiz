@@ -236,13 +236,13 @@ Include changed paths, tests or checks performed, and anything the next contribu
 ### Handoff — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
 
 ```text
-Status: ready for integration; A1 work lock released
+Status: integrated and verified on codex/ademix; A1 work lock released
 Branch: codex/a1-fuel-co2
 Implementation commit: 953b97f
 Files: ademix/simulator/{engine.py,app.py,test_engine.py,test_reliability.py,MODEL.md,FUEL_CO2_CONTRACT.md};
   ademix/data/{build_data_layer.py,registry/parameters.csv,telemetry/telemetry_dictionary.csv,
   telemetry/sensor_catalogue.csv,telemetry/logs/*.csv,telemetry/manifest.json};
-  ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
+  ademix/frontend/public/data/ingestion.json; .gitattributes; PROJECT_CONTEXT.md.
 Contract: mine-01 now publishes shift_fuel_l (L), shift_co2_kg (kg CO2),
   current_fuel_rate_lph (L/h), operating_trucks_fuel_count (trucks), shift_start_sim_s (s),
   shift_elapsed_s (s), shift_id and fuel_estimate_basis. Full types, ranges, examples and reset
@@ -251,18 +251,23 @@ Reset: scenario/dispatch changes preserve history. POST /api/shift/reset alone i
   records the simulation time and zeroes only the two cumulative estimates.
 Evidence: four operating trucks + excavator = 281.9 L/h; six + excavator = 381.1 L/h;
   one hour at each = 663.0 L and 1774.851 kg tank-to-wheel CO2.
-Tests actually run: 62 simulator/API tests pass; 32 data tests pass; verify_scenarios.py passes
+Tests actually run: 62 host simulator/API tests pass; 32 data tests pass; verify_scenarios.py passes
   Eclipse-Ditto source, 11 twins, frontend contract and all scenarios; frontend tsc + Vite build passes
-  (existing >500 kB bundle warning only). Docker clean-start verification is an integration gate, not
-  claimed by this feature commit.
+  (existing >500 kB bundle warning only). After fast-forward integration, the exact README clean Docker
+  startup reached healthy status; the judge smoke command passed all 11 twins and 136 required fields/units;
+  62 tests passed again inside the built simulator image; live scenario propagation and reset passed.
+  A live POST /api/shift/reset advanced shift_id to 2 and the reset totals then accumulated through
+  MQTT → Eclipse Ditto → API with the required comparable-equipment basis label.
 Frontend handoff: Professor + Claude should consume the cumulative twin fields directly and label them
   "estimated shift fuel" and "estimated tank-to-wheel CO2". Do not recompute past totals from the current
   fleet and do not derive them from synthetic truck fuel_pct. No Claude-owned source file was edited.
 Limitations: comparable-equipment medium-load estimates, not measurements; queued/blocked trucks are
   treated as engine-on; excavator rate is continuous; crusher electricity, upstream diesel, CH4 and N2O
   are excluded.
-Integration: merge this branch into codex/ademix, rerun all tests plus clean Docker smoke, then push the
-  tested combined origin/codex/ademix. Do not merge to main.
+Integration: codex/a1-fuel-co2 was fast-forwarded onto codex/ademix after confirming the latest Claude
+  branch was already included. The generated frontend bundle is forced to LF in .gitattributes so its
+  byte-reproducibility test also passes after Windows checkout. Push this tested integration branch only;
+  do not merge to main.
 ```
 
 ### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23

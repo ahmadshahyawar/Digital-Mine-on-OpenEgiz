@@ -5,3 +5,4 @@
 ademix/data/** text eol=lf
 ademix/simulator/*.py text eol=lf
 ademix/simulator/*.json text eol=lf
+ademix/frontend/public/data/*.json text eol=lf
