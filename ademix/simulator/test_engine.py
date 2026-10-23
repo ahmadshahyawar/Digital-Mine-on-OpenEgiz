@@ -6,7 +6,7 @@ import unittest
 from engine import (
     BASE_CRUSHER_TPH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
     LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS,
-    MineEngine, projection,
+    CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection,
 )
 
 SCENARIO_NAMES = tuple(SCENARIOS)
@@ -111,7 +111,7 @@ class ResourceTests(unittest.TestCase):
     def test_baseline_fleet_queues_at_the_excavator_bottleneck(self):
         mine = run(MineEngine(), 8)
         kpi = mine.kpis()
-        self.assertEqual(projection("baseline")["bottleneck"], "excavator")
+        self.assertEqual(projection("baseline")["bottleneck"], LOADING)
         self.assertGreater(kpi["excavator_utilization_pct"], 95)
         self.assertGreater(kpi["excavator_wait_min"], 5)
         self.assertEqual(kpi["crusher_wait_min"], 0)
@@ -136,10 +136,10 @@ class ResourceTests(unittest.TestCase):
 class ScenarioTests(unittest.TestCase):
     def test_projections_identify_each_bottleneck(self):
         expected = {
-            "baseline": (770.0, "excavator", 0),
-            "truck_breakdown": (770.0, "excavator", 0),
-            "road_closure": (647.3, "haulage fleet", -16),
-            "crusher_slowdown": (495.0, "crusher", -36),
+            "baseline": (770.0, LOADING, 0),
+            "truck_breakdown": (770.0, LOADING, 0),
+            "road_closure": (647.3, ROAD, -16),
+            "crusher_slowdown": (495.0, CRUSHER, -36),
         }
         for name, (tph, bottleneck, impact) in expected.items():
             with self.subTest(scenario=name):
@@ -156,7 +156,7 @@ class ScenarioTests(unittest.TestCase):
         travel_s = 2 * ROUTE_KM / ROAD_RESTRICTION_SPEED_KMH * 3600
         cycle_s = LOAD_SECONDS + DUMP_SECONDS + travel_s
         self.assertAlmostEqual(plan["throughput_tph"], 6 * CAPACITY_T * 3600 / cycle_s, places=9)
-        self.assertAlmostEqual(projection("baseline")["limits_tph"]["excavator"], CAPACITY_T * 3600 / LOAD_SECONDS)
+        self.assertAlmostEqual(projection("baseline")["limits_tph"][LOADING], CAPACITY_T * 3600 / LOAD_SECONDS)
 
     def test_long_run_throughput_converges_to_projection(self):
         for scenario in SCENARIO_NAMES:
@@ -248,6 +248,149 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(state["crusher-01"]["capacity_tph"]["value"], BASE_CRUSHER_TPH)
         self.assertEqual(state["scenario-controller"]["impact_pct"]["value"], 0)
         self.assertFalse([t for t in mine.trucks if t.state in ("breakdown", "blocked")])
+
+
+class WhatIfScenarioTests(unittest.TestCase):
+    """Activation, propagation, reset, comparison and bottleneck identification."""
+
+    @staticmethod
+    def started(scenario, warmup_h=4, hours=3, truck_count=6):
+        mine = MineEngine(truck_count=truck_count)
+        run(mine, warmup_h)
+        mine.set_scenario(scenario)
+        run(mine, hours)
+        return mine
+
+    def assert_valid_operation(self, mine):
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+        self.assertGreaterEqual(mine.rom_inventory_t, 0.0)
+        self.assertLessEqual(mine.rom_inventory_t, ROM_BIN_CAPACITY_T + 1e-6)
+        queued_exc = list(mine.excavator_queue)
+        queued_dump = list(mine.dump_queue)
+        self.assertEqual(len({t.name for t in queued_exc}), len(queued_exc))
+        self.assertEqual(len({t.name for t in queued_dump}), len(queued_dump))
+        for truck in mine.trucks:
+            places = [truck in queued_exc, truck in queued_dump, truck is mine.excavator_truck, truck is mine.dump_truck]
+            self.assertLessEqual(sum(places), 1, truck.name)
+            self.assertGreaterEqual(truck.fuel_pct, 0.0)
+            self.assertTrue(0.0 <= mine._progress_now(truck) <= 1.0)
+            if truck.state in ("hauling", "dumping", "queued_at_crusher"):
+                self.assertEqual(truck.payload_t, CAPACITY_T, truck.name)
+            if truck.state in ("returning", "loading", "queued_at_excavator"):
+                self.assertEqual(truck.payload_t, 0.0, truck.name)
+
+    def test_each_scenario_changes_the_operating_model(self):
+        base = MineEngine()
+        run(base, 1)
+        for scenario in ("truck_breakdown", "road_closure", "crusher_slowdown"):
+            with self.subTest(scenario=scenario):
+                mine = MineEngine()
+                run(mine, 1)
+                mine.set_scenario(scenario)
+                changed = (
+                    mine.speed_kmh() != base.speed_kmh(),
+                    mine.projection()["limits_tph"][CRUSHER] != base.projection()["limits_tph"][CRUSHER],
+                    mine.projection()["active_trucks"] != base.projection()["active_trucks"],
+                )
+                self.assertTrue(any(changed))
+                moving = [t for t in mine.trucks if t.state in ("hauling", "returning")]
+                for truck in moving:
+                    self.assertEqual(truck.travel_speed_kmh, mine.speed_kmh())
+
+    def test_effects_propagate_against_identical_baseline(self):
+        base = self.started("baseline").kpis()
+        road = self.started("road_closure").kpis()
+        crusher = self.started("crusher_slowdown").kpis()
+        breakdown = self.started("truck_breakdown").kpis()
+        self.assertGreater(road["average_cycle_min"], base["average_cycle_min"])
+        self.assertLess(road["excavator_utilization_pct"], base["excavator_utilization_pct"])
+        self.assertLess(road["excavator_queue_avg"], base["excavator_queue_avg"])
+        self.assertLess(road["production_t"], base["production_t"])
+        self.assertGreater(crusher["crusher_queue_avg"], base["crusher_queue_avg"])
+        self.assertGreater(crusher["rom_avg_t"], base["rom_avg_t"])
+        self.assertLess(crusher["excavator_utilization_pct"], base["excavator_utilization_pct"])
+        self.assertLess(crusher["production_t"], base["production_t"])
+        self.assertGreater(breakdown["truck_down_pct"], 0)
+        self.assertGreater(breakdown["truck_blocked_pct"], 0)
+        self.assertLess(breakdown["excavator_queue_avg"], base["excavator_queue_avg"])
+        self.assertLess(breakdown["production_t"], base["production_t"])
+
+    def test_breakdown_on_the_road_starves_the_crusher_until_cleared(self):
+        mine = MineEngine()
+        run(mine, 4)
+        mine.set_scenario("truck_breakdown")
+        self.assertTrue(mine.breakdown_location.startswith("haul road"))
+        mine.step(BREAKDOWN_RECOVERY_S - 30)
+        self.assertEqual(mine.rom_inventory_t, 0.0)
+        self.assertEqual(mine.snapshot()["crusher-01"]["state"]["value"], "starved")
+        mine.step(60)
+        self.assertIsNone(mine.blockage)
+
+    def test_reset_restores_valid_state_from_any_trigger_time(self):
+        for scenario in ("truck_breakdown", "road_closure", "crusher_slowdown"):
+            for offset_min in range(0, 40, 4):
+                with self.subTest(scenario=scenario, offset_min=offset_min):
+                    mine = MineEngine()
+                    run(mine, 2 + offset_min / 60, dt=10)
+                    mine.set_scenario(scenario)
+                    run(mine, 0.4 + offset_min / 120, dt=10, check=self.assert_valid_operation)
+                    mine.set_scenario("baseline")
+                    self.assertIsNone(mine.blockage)
+                    self.assertEqual(mine.speed_kmh(), 25.0)
+                    self.assertFalse([t for t in mine.trucks if t.state in ("breakdown", "blocked")])
+                    moving = [t for t in mine.trucks if t.state in ("hauling", "returning")]
+                    self.assertTrue(all(t.travel_speed_kmh == 25.0 for t in moving))
+                    run(mine, 3, dt=10, check=self.assert_valid_operation)
+                    warm = mine.production_t
+                    run(mine, 4, dt=10)
+                    self.assertAlmostEqual((mine.production_t - warm) / 4, 770.0, delta=900 * 0.02)
+
+    def test_scenario_runs_share_an_identical_baseline_until_the_switch(self):
+        runs = {}
+        for scenario in SCENARIO_NAMES:
+            mine = MineEngine()
+            run(mine, 4)
+            runs[scenario] = mine.snapshot()
+            mine.set_scenario(scenario)
+        first = runs["baseline"]
+        for scenario, state in runs.items():
+            self.assertEqual(state, first, scenario)
+
+    def test_illegal_cycle_transition_is_rejected(self):
+        mine = MineEngine()
+        truck = mine.trucks[0]
+        with self.assertRaises(RuntimeError):
+            mine._set_state(truck, "returning")  # loaded hauling -> returning would skip dumping
+
+    def test_live_bottleneck_follows_the_active_constraint(self):
+        expected = {"baseline": LOADING, "road_closure": ROAD, "crusher_slowdown": CRUSHER, "truck_breakdown": LOADING}
+        for scenario, constraint in expected.items():
+            with self.subTest(scenario=scenario):
+                mine = self.started(scenario)
+                live = mine.live_bottleneck()
+                self.assertEqual(live["constraint"], constraint)
+                self.assertEqual(live["constraint"], mine.projection()["bottleneck"])
+                self.assertTrue(live["reason"])
+
+    def test_live_bottleneck_shifts_during_a_breakdown(self):
+        mine = MineEngine()
+        run(mine, 4)
+        mine.set_scenario("truck_breakdown")
+        mine.step(60)
+        self.assertEqual(mine.live_bottleneck()["constraint"], ROAD)
+        run(mine, 2)
+        self.assertEqual(mine.live_bottleneck()["constraint"], LOADING)
+
+    def test_small_fleet_is_fleet_limited(self):
+        mine = self.started("baseline", truck_count=3)
+        self.assertEqual(mine.projection()["bottleneck"], FLEET)
+        self.assertEqual(mine.live_bottleneck()["constraint"], FLEET)
+
+    def test_bottleneck_reasons_quote_the_binding_numbers(self):
+        self.assertIn("770", projection("baseline")["reason"])
+        self.assertIn("10.72", projection("road_closure")["reason"])
+        self.assertIn("495", projection("crusher_slowdown")["reason"])
+        self.assertEqual(projection("baseline")["limits_tph"][DUMP], CAPACITY_T * 60)
 
 
 class InterfaceTests(unittest.TestCase):

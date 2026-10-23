@@ -55,7 +55,7 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 
 Verified locally:
 
-- all 21 deterministic engine tests pass, covering mass conservation, resource limits, FIFO queues, tick-size independence, every scenario and reset, and 24-hour convergence of simulated to projected throughput (verification of the stated model, not validation against mine data);
+- all 31 deterministic engine tests pass, covering mass conservation, resource limits, FIFO queues, tick-size independence, every scenario, reset from 30 trigger times, live bottleneck identification, and 24-hour convergence of simulated to projected throughput (verification of the stated model, not validation against mine data);
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and

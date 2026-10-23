@@ -4,7 +4,8 @@ The model is event-driven: trucks move between scheduled events (arrival, end of
 loading, end of dumping, bin space available, road cleared). ``step(dt)`` simply
 advances the clock to ``now + dt`` and processes every event on the way, so results
 do not depend on the publishing tick size. Formulas, units, sources and
-limitations are documented in ``MODEL.md`` next to this file.
+limitations are documented in ``MODEL.md``; the what-if scenarios and bottleneck
+analysis in ``SCENARIOS.md``.
 
 Limited resources:
 - one excavator that loads one truck at a time (FIFO queue at the face);
@@ -48,6 +49,11 @@ BREAKDOWN_RECOVERY_S = 1200.0
 FUEL_PCT_PER_ROUTE_LOADED = 1.4
 FUEL_PCT_PER_ROUTE_EMPTY = 0.8
 KPI_WINDOW_S = 3600.0
+# Dynamic bottleneck detection: measured over the last 30 simulated minutes; a
+# server is saturated when busy at least 95 % of that time.
+BOTTLENECK_WINDOW_S = 1800.0
+SATURATED_SHARE = 0.95
+QUEUE_PRESENT_TRUCKS = 0.05
 
 SCENARIOS = {
     "baseline": "Normal operations",
@@ -55,11 +61,32 @@ SCENARIOS = {
     "road_closure": "Main road restriction",
     "crusher_slowdown": "Crusher capacity −45%",
 }
+LOADING, ROAD, FLEET, DUMP, CRUSHER = (
+    "loading resource", "haul-road travel", "available truck fleet",
+    "dump point", "crusher processing capacity",
+)
 TRAVEL_STATES = {"hauling", "returning"}
 PRODUCTIVE_STATES = {"loading", "hauling", "dumping", "returning"}
 TRUCK_STATES = (
     "queued_at_excavator", "loading", "hauling", "queued_at_crusher",
     "dumping", "returning", "blocked", "breakdown",
+)
+# Legal truck-cycle transitions. "hauling -> hauling" is a re-plan after a speed or
+# blockage change; anything else (a skipped stage) raises immediately.
+ALLOWED_TRANSITIONS = {
+    "queued_at_excavator": {"loading", "breakdown"},
+    "loading": {"hauling", "breakdown"},
+    "hauling": {"hauling", "queued_at_crusher", "blocked", "breakdown"},
+    "queued_at_crusher": {"dumping", "breakdown"},
+    "dumping": {"returning", "breakdown"},
+    "returning": {"returning", "queued_at_excavator", "blocked", "breakdown"},
+    "blocked": {"hauling", "returning"},
+    "breakdown": {"hauling", "returning", "queued_at_excavator", "queued_at_crusher"},
+}
+COUNTERS = (
+    "production_t", "excavator_busy_s", "dump_busy_s", "crusher_busy_s", "truck_s",
+    "productive_s", "travel_s", "excavator_queue_s", "crusher_queue_s", "blocked_s",
+    "down_s", "rom_ts", "delivered_t",
 )
 EPS_T = 1e-6
 
@@ -94,7 +121,7 @@ def road_speed_kmh(scenario: str) -> float:
     return ROAD_RESTRICTION_SPEED_KMH if scenario == "road_closure" else BASE_SPEED_KMH
 
 
-def projection(scenario: str) -> dict:
+def projection(scenario: str, truck_count: int = TRUCK_COUNT) -> dict:
     """Steady-state capacity of each stage of the cycle (t/h) and the binding one.
 
     For a closed, deterministic cyclic system, long-run throughput is the minimum of
@@ -102,30 +129,46 @@ def projection(scenario: str) -> dict:
     """
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario: {scenario}")
-    active = TRUCK_COUNT - (1 if scenario == "truck_breakdown" else 0)
-    travel_s = 2 * ROUTE_KM / road_speed_kmh(scenario) * 3600.0
+    active = truck_count - (1 if scenario == "truck_breakdown" else 0)
+    speed = road_speed_kmh(scenario)
+    travel_s = 2 * ROUTE_KM / speed * 3600.0
     free_cycle_s = LOAD_SECONDS + DUMP_SECONDS + travel_s
+    haulage = ROAD if speed < BASE_SPEED_KMH else FLEET
     limits = {
-        "haulage fleet": active * CAPACITY_T * 3600.0 / free_cycle_s,
-        "excavator": CAPACITY_T * 3600.0 / LOAD_SECONDS,
-        "dump bay": CAPACITY_T * 3600.0 / DUMP_SECONDS,
-        "crusher": crusher_capacity_tph(scenario),
+        haulage: active * CAPACITY_T * 3600.0 / free_cycle_s,
+        LOADING: CAPACITY_T * 3600.0 / LOAD_SECONDS,
+        DUMP: CAPACITY_T * 3600.0 / DUMP_SECONDS,
+        CRUSHER: crusher_capacity_tph(scenario),
     }
     bottleneck = min(limits, key=limits.get)
+    runner_up = min((k for k in limits if k != bottleneck), key=limits.get)
+    reasons = {
+        LOADING: f"One excavator loads a {CAPACITY_T:.0f} t truck every {LOAD_SECONDS / 60:.0f} min "
+                 f"({limits[LOADING]:.0f} t/h), while {active} trucks could supply {limits[haulage]:.0f} t/h.",
+        ROAD: f"At {speed:.2f} km/h a round trip takes {travel_s / 60:.1f} min, so {active} trucks "
+              f"deliver only {limits[haulage]:.0f} t/h; the excavator ({limits[LOADING]:.0f} t/h) waits for trucks.",
+        FLEET: f"{active} trucks on a {free_cycle_s / 60:.1f} min cycle supply only {limits[haulage]:.0f} t/h, "
+               f"less than the excavator's {limits[LOADING]:.0f} t/h.",
+        DUMP: f"The single dump bay accepts at most {limits[DUMP]:.0f} t/h.",
+        CRUSHER: f"The crusher processes {limits[CRUSHER]:.0f} t/h, less than the {limits[runner_up]:.0f} t/h "
+                 f"the {runner_up} can deliver; the ROM bin fills and trucks wait to dump.",
+    }
     return {
         "active_trucks": active,
         "free_cycle_min": free_cycle_s / 60.0,
         "match_factor": active * LOAD_SECONDS / free_cycle_s,
         "limits_tph": limits,
         "bottleneck": bottleneck,
+        "reason": reasons[bottleneck],
         "throughput_tph": limits[bottleneck],
     }
 
 
 class MineEngine:
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, truck_count: int = TRUCK_COUNT):
         self.lock = RLock()
         self.rng = random.Random(seed)
+        self.truck_count = truck_count
         self.sim_time_s = 0.0
         self.production_t = 0.0
         self.delivered_t = 0.0
@@ -139,18 +182,20 @@ class MineEngine:
         self._crusher_token = 0
         self._blockage_token = 0
         self._last_sync_s = 0.0
-        self._history = deque([(0.0, 0.0)])
+        self.cum = dict.fromkeys(COUNTERS, 0.0)
+        self._history = deque([(0.0, tuple(self.cum.values()))])
         self.excavator_queue: deque[Truck] = deque()
         self.excavator_truck: Truck | None = None
         self.dump_queue: deque[Truck] = deque()
         self.dump_truck: Truck | None = None
         self.trucks = [
-            Truck(f"truck-{i:02d}", (i - 1) / TRUCK_COUNT, payload_t=CAPACITY_T, state="hauling")
-            for i in range(1, TRUCK_COUNT + 1)
+            Truck(f"truck-{i:02d}", (i - 1) / truck_count, payload_t=CAPACITY_T, state="hauling")
+            for i in range(1, truck_count + 1)
         ]
         for truck in self.trucks:
             truck.fuel_pct = self.rng.uniform(68, 98)
         self.opening_stock_t = INITIAL_ROM_T + sum(t.payload_t for t in self.trucks)
+        self.breakdown_location = "none"
         self._reset_window()
         for truck in self.trucks:
             self._start_travel(truck)
@@ -190,33 +235,61 @@ class MineEngine:
     def _schedule(self, delay_s: float, kind: str, subject=None, token: int = 0):
         heapq.heappush(self._events, (self.sim_time_s + delay_s, next(self._seq), kind, subject, token))
 
+    def _set_state(self, truck: Truck, state: str):
+        if state not in ALLOWED_TRANSITIONS[truck.state]:
+            raise RuntimeError(f"{truck.name}: illegal transition {truck.state} -> {state}")
+        if state in ("hauling", "dumping") and truck.payload_t != CAPACITY_T:
+            raise RuntimeError(f"{truck.name}: {state} without a full payload")
+        if state in ("returning", "loading") and truck.payload_t != 0.0:
+            raise RuntimeError(f"{truck.name}: {state} while still loaded")
+        truck.state = state
+
     def _sync(self, time_s: float):
         """Integrate continuous quantities (crusher draw, state durations) up to ``time_s``."""
         span = time_s - self._last_sync_s
         if span > 0:
-            stats = self.window
-            for truck in self.trucks:
-                stats["truck_s"][truck.state] += span
-            if self.excavator_truck:
-                stats["excavator_busy_s"] += span
-            if self.dump_truck:
-                stats["dump_busy_s"] += span
             rate_tps = crusher_capacity_tph(self.scenario) / 3600.0
-            run = min(span, self.rom_inventory_t / rate_tps)
-            if run > 0:
-                processed = run * rate_tps
-                self.rom_inventory_t = max(0.0, self.rom_inventory_t - processed)
-                if run < span:
-                    self.rom_inventory_t = 0.0
-                self.production_t += processed
-                stats["crusher_busy_s"] += run
-                if run < span:
-                    self._history.append((self._last_sync_s + run, self.production_t))
+            to_empty = self.rom_inventory_t / rate_tps
+            if 0 < to_empty < span:
+                # Record the exact moment the bin runs dry so rolling KPIs stay exact.
+                self._integrate(to_empty, rate_tps)
+                self.rom_inventory_t = 0.0
+                self._history.append((self._last_sync_s + to_empty, tuple(self.cum.values())))
+                self._integrate(span - to_empty, rate_tps)
+            else:
+                self._integrate(span, rate_tps)
         self._last_sync_s = time_s
         self.sim_time_s = time_s
-        self._history.append((time_s, self.production_t))
-        while len(self._history) > 2 and self._history[1][0] <= time_s - KPI_WINDOW_S:
+        self._history.append((time_s, tuple(self.cum.values())))
+        horizon = time_s - max(KPI_WINDOW_S, BOTTLENECK_WINDOW_S)
+        while len(self._history) > 2 and self._history[1][0] <= horizon:
             self._history.popleft()
+
+    def _integrate(self, span: float, rate_tps: float):
+        cum = self.cum
+        counts = {state: 0 for state in TRUCK_STATES}
+        for truck in self.trucks:
+            counts[truck.state] += 1
+        cum["truck_s"] += span * len(self.trucks)
+        cum["productive_s"] += span * sum(counts[s] for s in PRODUCTIVE_STATES)
+        cum["travel_s"] += span * (counts["hauling"] + counts["returning"])
+        cum["excavator_queue_s"] += span * counts["queued_at_excavator"]
+        cum["crusher_queue_s"] += span * counts["queued_at_crusher"]
+        cum["blocked_s"] += span * counts["blocked"]
+        cum["down_s"] += span * counts["breakdown"]
+        if self.excavator_truck:
+            cum["excavator_busy_s"] += span
+        if self.dump_truck:
+            cum["dump_busy_s"] += span
+        run = min(span, self.rom_inventory_t / rate_tps)
+        if run > 0:
+            start = self.rom_inventory_t
+            processed = run * rate_tps
+            cum["rom_ts"] += start * run - rate_tps * run * run / 2
+            self.rom_inventory_t = max(0.0, start - processed)
+            self.production_t += processed
+            cum["production_t"] += processed
+            cum["crusher_busy_s"] += run
 
     def _handle(self, kind: str, truck: Truck | None, token: int):
         if kind == "bin_space":
@@ -225,17 +298,14 @@ class MineEngine:
             return
         if kind == "road_cleared":
             if token == self._blockage_token and self.blockage:
-                self.blockage = None
-                for other in self.trucks:
-                    if other.state == "blocked":
-                        self._start_travel(other)
+                self._clear_blockage()
             return
         if token != truck.token:
             return  # superseded by a speed change, blockage or breakdown
         if kind == "arrive":
             self._commit_travel(truck)
             if truck.travel_blocked:
-                truck.state = "blocked"
+                self._set_state(truck, "blocked")
             elif truck.direction == 1:
                 self._join_crusher_queue(truck)
             else:
@@ -251,6 +321,7 @@ class MineEngine:
         elif kind == "dump_done":
             self.rom_inventory_t += truck.payload_t
             self.delivered_t += truck.payload_t
+            self.cum["delivered_t"] += truck.payload_t
             self.window["delivered_t"] += truck.payload_t
             truck.payload_t = 0.0
             truck.trips += 1
@@ -269,7 +340,8 @@ class MineEngine:
     # -------------------------------------------------------------- resources
 
     def _join_excavator_queue(self, truck: Truck):
-        truck.progress, truck.state, truck.wait_started_s = 0.0, "queued_at_excavator", self.sim_time_s
+        truck.progress, truck.wait_started_s = 0.0, self.sim_time_s
+        self._set_state(truck, "queued_at_excavator")
         self.excavator_queue.append(truck)
         self._try_start_loading()
 
@@ -280,13 +352,14 @@ class MineEngine:
         wait = self.sim_time_s - truck.wait_started_s
         truck.cycle_wait_s += wait
         self.window["excavator_waits_s"].append(wait)
-        truck.state = "loading"
+        self._set_state(truck, "loading")
         self.excavator_truck = truck
         truck.token += 1
         self._schedule(LOAD_SECONDS, "load_done", truck, truck.token)
 
     def _join_crusher_queue(self, truck: Truck):
-        truck.progress, truck.state, truck.wait_started_s = 1.0, "queued_at_crusher", self.sim_time_s
+        truck.progress, truck.wait_started_s = 1.0, self.sim_time_s
+        self._set_state(truck, "queued_at_crusher")
         self.dump_queue.append(truck)
         self._try_start_dump()
 
@@ -305,7 +378,7 @@ class MineEngine:
         wait = self.sim_time_s - truck.wait_started_s
         truck.cycle_wait_s += wait
         self.window["crusher_waits_s"].append(wait)
-        truck.state = "dumping"
+        self._set_state(truck, "dumping")
         self.dump_truck = truck
         truck.token += 1
         self._schedule(DUMP_SECONDS, "dump_done", truck, truck.token)
@@ -319,7 +392,7 @@ class MineEngine:
         return self.speed_kmh() / BASE_SPEED_KMH
 
     def _start_travel(self, truck: Truck):
-        truck.state = "hauling" if truck.direction == 1 else "returning"
+        self._set_state(truck, "hauling" if truck.direction == 1 else "returning")
         target, blocked = (1.0 if truck.direction == 1 else 0.0), False
         if self.blockage and truck.name != BREAKDOWN_TRUCK:
             point = self.blockage[0]
@@ -366,25 +439,36 @@ class MineEngine:
             self._blockage_token += 1
             self.blockage = (truck.progress, self.sim_time_s + BREAKDOWN_RECOVERY_S)
             self._schedule(BREAKDOWN_RECOVERY_S, "road_cleared", None, self._blockage_token)
+            self.breakdown_location = f"haul road at {truck.progress * ROUTE_KM:.2f} km, {truck.state}"
         elif truck.state == "queued_at_excavator":
             self.excavator_queue.remove(truck)
+            self.breakdown_location = "loading area, queued"
         elif truck.state == "queued_at_crusher":
             self.dump_queue.remove(truck)
+            self.breakdown_location = "crusher, queued"
         elif truck.state == "loading":
             self.excavator_truck = None  # the partial bucket load stays at the face
+            self.breakdown_location = "loading area, under the excavator"
         elif truck.state == "dumping":
             self.dump_truck = None  # the payload stays on the truck
+            self.breakdown_location = "crusher dump bay"
         truck.token += 1
-        truck.state = "breakdown"
+        self._set_state(truck, "breakdown")
         self._try_start_loading()
         self._try_start_dump()
 
+    def _clear_blockage(self):
+        self.blockage = None
+        # Trucks still driving toward the blockage were scheduled to stop there: re-plan them too.
+        self._replan_travel()
+        for other in self.trucks:
+            if other.state == "blocked":
+                self._start_travel(other)
+
     def _recover_breakdown(self):
         if self.blockage:
-            self.blockage = None
-            for other in self.trucks:
-                if other.state == "blocked":
-                    self._start_travel(other)
+            self._clear_blockage()
+        self.breakdown_location = "none"
         truck = self._truck(BREAKDOWN_TRUCK)
         if truck.state != "breakdown":
             return
@@ -403,26 +487,32 @@ class MineEngine:
     def _reset_window(self):
         self.window = {
             "start_s": self.sim_time_s,
-            "truck_s": {state: 0.0 for state in TRUCK_STATES},
-            "excavator_busy_s": 0.0, "dump_busy_s": 0.0, "crusher_busy_s": 0.0,
+            "cum0": dict(self.cum),
             "excavator_waits_s": [], "crusher_waits_s": [], "cycles_s": [],
             "loads": 0, "trips": 0, "delivered_t": 0.0,
         }
 
-    def _production_at(self, time_s: float) -> float:
+    def _cum_at(self, time_s: float) -> dict:
         points = list(self._history)
         if time_s <= points[0][0]:
-            return points[0][1]
-        for (t0, p0), (t1, p1) in zip(points, points[1:]):
-            if t0 <= time_s <= t1:
-                return p0 if t1 == t0 else p0 + (p1 - p0) * (time_s - t0) / (t1 - t0)
-        return points[-1][1]
+            values = points[0][1]
+        else:
+            values = points[-1][1]
+            for (t0, v0), (t1, v1) in zip(points, points[1:]):
+                if t0 <= time_s <= t1:
+                    f = 0.0 if t1 == t0 else (time_s - t0) / (t1 - t0)
+                    values = tuple(a + (b - a) * f for a, b in zip(v0, v1))
+                    break
+        return dict(zip(COUNTERS, values))
+
+    def _rolling(self, window_s: float) -> tuple[dict, float]:
+        span = min(window_s, self.sim_time_s)
+        start = self._cum_at(self.sim_time_s - span)
+        return {k: self.cum[k] - start[k] for k in COUNTERS}, span
 
     def rolling_throughput_tph(self) -> float:
-        span = min(KPI_WINDOW_S, self.sim_time_s)
-        if span <= 0:
-            return 0.0
-        return (self.production_t - self._production_at(self.sim_time_s - span)) / span * 3600.0
+        delta, span = self._rolling(KPI_WINDOW_S)
+        return delta["production_t"] / span * 3600.0 if span > 0 else 0.0
 
     def ore_in_trucks_t(self) -> float:
         return sum(t.payload_t for t in self.trucks)
@@ -432,40 +522,102 @@ class MineEngine:
         return (self.opening_stock_t + self.excavated_t
                 - self.ore_in_trucks_t() - self.rom_inventory_t - self.production_t)
 
+    def projection(self) -> dict:
+        return projection(self.scenario, self.truck_count)
+
     def projected_throughput_tph(self) -> float:
-        return projection(self.scenario)["throughput_tph"]
+        return self.projection()["throughput_tph"]
+
+    @staticmethod
+    def _shares(delta: dict, span: float) -> dict:
+        truck_s = delta["truck_s"]
+        active_s = truck_s - delta["down_s"]
+
+        def pct(part, whole):
+            return 100.0 * part / whole if whole > 0 else 0.0
+
+        return {
+            "throughput_tph": delta["production_t"] / span * 3600.0 if span > 0 else 0.0,
+            "fleet_utilization_pct": pct(delta["productive_s"], truck_s),
+            "truck_queue_pct": pct(delta["excavator_queue_s"] + delta["crusher_queue_s"], truck_s),
+            "truck_blocked_pct": pct(delta["blocked_s"], truck_s),
+            "truck_down_pct": pct(delta["down_s"], truck_s),
+            "travel_share_pct": pct(delta["travel_s"], active_s),
+            "excavator_utilization_pct": pct(delta["excavator_busy_s"], span),
+            "dump_bay_utilization_pct": pct(delta["dump_busy_s"], span),
+            "crusher_utilization_pct": pct(delta["crusher_busy_s"], span),
+            "excavator_queue_avg": delta["excavator_queue_s"] / span if span > 0 else 0.0,
+            "crusher_queue_avg": delta["crusher_queue_s"] / span if span > 0 else 0.0,
+            "rom_avg_t": delta["rom_ts"] / span if span > 0 else 0.0,
+        }
 
     def kpis(self) -> dict:
         """Operational KPIs; time-based ones cover the window since the scenario started."""
         with self.lock:
             stats = self.window
             elapsed = self.sim_time_s - stats["start_s"]
-            truck_time = sum(stats["truck_s"].values())
-
-            def share(seconds, total):
-                return 100.0 * seconds / total if total > 0 else 0.0
+            delta = {k: self.cum[k] - stats["cum0"][k] for k in COUNTERS}
+            result = self._shares(delta, elapsed)
 
             def mean(values):
                 return sum(values) / len(values) if values else 0.0
 
             cycles = stats["cycles_s"] or [t.last_cycle_s for t in self.trucks if t.last_cycle_s > 0]
-            return {
+            result.update({
                 "window_h": elapsed / 3600.0,
+                "production_t": delta["production_t"],
                 "throughput_tph": self.rolling_throughput_tph(),
+                "window_throughput_tph": result["throughput_tph"],
                 "throughput_avg_tph": self.production_t / self.sim_time_s * 3600.0 if self.sim_time_s else 0.0,
-                "fleet_utilization_pct": share(sum(stats["truck_s"][s] for s in PRODUCTIVE_STATES), truck_time),
-                "truck_queue_pct": share(stats["truck_s"]["queued_at_excavator"] + stats["truck_s"]["queued_at_crusher"], truck_time),
-                "truck_blocked_pct": share(stats["truck_s"]["blocked"], truck_time),
-                "truck_down_pct": share(stats["truck_s"]["breakdown"], truck_time),
-                "excavator_utilization_pct": share(stats["excavator_busy_s"], elapsed),
-                "dump_bay_utilization_pct": share(stats["dump_busy_s"], elapsed),
-                "crusher_utilization_pct": share(stats["crusher_busy_s"], elapsed),
                 "average_cycle_min": mean(cycles) / 60.0,
                 "excavator_wait_min": mean(stats["excavator_waits_s"]) / 60.0,
                 "crusher_wait_min": mean(stats["crusher_waits_s"]) / 60.0,
                 "window_trips": stats["trips"],
                 "window_delivered_tph": stats["delivered_t"] / elapsed * 3600.0 if elapsed else 0.0,
-            }
+                "rom_end_t": self.rom_inventory_t,
+            })
+            return result
+
+    def live_bottleneck(self) -> dict:
+        """Active constraint measured from the last 30 simulated minutes of operation.
+
+        Rule: the most downstream saturated server with trucks waiting for it is the
+        constraint; if no server is saturated, the servers are waiting for trucks and
+        haulage is the constraint (road travel if the speed limit is reduced,
+        otherwise the size of the fleet). A blocked lane overrides everything.
+        """
+        with self.lock:
+            delta, span = self._rolling(BOTTLENECK_WINDOW_S)
+            s = self._shares(delta, span)
+            exc, dump, crush = (s["excavator_utilization_pct"] / 100, s["dump_bay_utilization_pct"] / 100,
+                                s["crusher_utilization_pct"] / 100)
+            if self.blockage:
+                blocked = sum(t.state == "blocked" for t in self.trucks)
+                return {"constraint": ROAD, "measured": s,
+                        "reason": f"HT-01 has stopped on the single-lane road; {blocked} truck(s) are held behind it "
+                                  f"and deliveries pause until it is towed aside."}
+            accumulating = delta["delivered_t"] > delta["production_t"] + CAPACITY_T
+            if crush >= SATURATED_SHARE and (s["crusher_queue_avg"] > QUEUE_PRESENT_TRUCKS or accumulating
+                                             or self.rom_inventory_t > ROM_BIN_CAPACITY_T - CAPACITY_T):
+                return {"constraint": CRUSHER, "measured": s,
+                        "reason": f"Crusher busy {100 * crush:.0f}% at {crusher_capacity_tph(self.scenario):.0f} t/h; "
+                                  f"ROM bin {self.rom_inventory_t:.0f} of {ROM_BIN_CAPACITY_T:.0f} t and "
+                                  f"{s['crusher_queue_avg']:.1f} trucks waiting to dump on average."}
+            if dump >= SATURATED_SHARE:
+                return {"constraint": DUMP, "measured": s,
+                        "reason": f"Dump bay busy {100 * dump:.0f}% of the last {span / 60:.0f} min."}
+            if exc >= SATURATED_SHARE:
+                return {"constraint": LOADING, "measured": s,
+                        "reason": f"Excavator busy {100 * exc:.0f}% with {s['excavator_queue_avg']:.1f} trucks "
+                                  f"queued on average; trucks wait to be loaded."}
+            if self.speed_kmh() < BASE_SPEED_KMH:
+                return {"constraint": ROAD, "measured": s,
+                        "reason": f"Speed limit {self.speed_kmh():.2f} km/h: trucks spend {s['travel_share_pct']:.0f}% "
+                                  f"of their time travelling and the excavator is idle {100 - 100 * exc:.0f}% "
+                                  f"waiting for trucks."}
+            return {"constraint": FLEET, "measured": s,
+                    "reason": f"No server is saturated: the excavator is idle {100 - 100 * exc:.0f}% and the crusher "
+                              f"{100 - 100 * crush:.0f}% waiting for trucks."}
 
     @staticmethod
     def position(progress: float):
@@ -478,8 +630,9 @@ class MineEngine:
     def snapshot(self):
         with self.lock:
             kpi = self.kpis()
-            plan = projection(self.scenario)
-            baseline = projection("baseline")["throughput_tph"]
+            live = self.live_bottleneck()
+            plan = self.projection()
+            baseline = projection("baseline", self.truck_count)["throughput_tph"]
             capacity = crusher_capacity_tph(self.scenario)
             moving = [t for t in self.trucks if t.state in TRAVEL_STATES]
             blocked = [t for t in self.trucks if t.state == "blocked"]
@@ -508,6 +661,8 @@ class MineEngine:
                     "truck_trips_total": self.metric(sum(t.trips for t in self.trucks)),
                     "truck_queue_pct": self.metric(kpi["truck_queue_pct"], "%"),
                     "bottleneck": self.metric(plan["bottleneck"]),
+                    "bottleneck_live": self.metric(live["constraint"]),
+                    "bottleneck_live_reason": self.metric(live["reason"]),
                 },
                 "excavator-01": {
                     "state": self.metric("loading" if self.excavator_truck else "ready"),
@@ -516,6 +671,7 @@ class MineEngine:
                     "utilization_pct": self.metric(kpi["excavator_utilization_pct"], "%"),
                     "average_wait_min": self.metric(kpi["excavator_wait_min"], "min"),
                     "loading_truck": self.metric(self.excavator_truck.name if self.excavator_truck else "none"),
+                    "average_queue": self.metric(kpi["excavator_queue_avg"], "trucks"),
                 },
                 "crusher-01": {
                     "state": self.metric(crusher_state),
@@ -528,6 +684,8 @@ class MineEngine:
                     "utilization_pct": self.metric(kpi["crusher_utilization_pct"], "%"),
                     "average_wait_min": self.metric(kpi["crusher_wait_min"], "min"),
                     "delivered_total_t": self.metric(self.delivered_t, "t"),
+                    "average_queue": self.metric(kpi["crusher_queue_avg"], "trucks"),
+                    "rom_average_t": self.metric(kpi["rom_avg_t"], "t"),
                 },
                 "road-main": {
                     "state": self.metric("restricted" if self.scenario == "road_closure" or self.blockage else "open"),
@@ -544,9 +702,11 @@ class MineEngine:
                     "projected_throughput_tph": self.metric(plan["throughput_tph"], "t/h"),
                     "bottleneck": self.metric(plan["bottleneck"]),
                     "match_factor": self.metric(plan["match_factor"]),
-                    "fleet_supply_tph": self.metric(plan["limits_tph"]["haulage fleet"], "t/h"),
-                    "excavator_capacity_tph": self.metric(plan["limits_tph"]["excavator"], "t/h"),
-                    "crusher_capacity_tph": self.metric(plan["limits_tph"]["crusher"], "t/h"),
+                    "fleet_supply_tph": self.metric(max(plan["limits_tph"].get(ROAD, 0), plan["limits_tph"].get(FLEET, 0)), "t/h"),
+                    "excavator_capacity_tph": self.metric(plan["limits_tph"][LOADING], "t/h"),
+                    "crusher_capacity_tph": self.metric(plan["limits_tph"][CRUSHER], "t/h"),
+                    "bottleneck_reason": self.metric(plan["reason"]),
+                    "breakdown_location": self.metric(self.breakdown_location),
                 },
             }
             for truck in self.trucks:

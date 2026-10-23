@@ -141,6 +141,7 @@ A strong submission should ideally provide:
 - Stage 4 processing-plant review at `?stage=plant` adds a compact truck dump, primary-crusher module, transfer conveyors, access stairs, and coarse-ore stockpile assembled from five pinned CC0 Kenney Factory Kit GLBs. A first SELENE-based composition was visually rejected before commit because it read as lunar equipment and extended outside the camera frame.
 - Stage 5 live-motion review at `?stage=motion` animates the six haulers along the approved spiral, oscillates the excavator only while its OpenEgiz twin reports loading, and moves ore markers through the plant at a rate controlled by crusher state. Truck state, reported speed, direction, and breakdown status drive movement and status markers.
 - **Core Simulation Engine rewrite (branch `claude/core-simulation-engine`, based on `codex/ademix`):** `ademix/simulator/engine.py` is now an event-driven DES. It models one single-server excavator (FIFO), one crusher dump bay (FIFO), a 600 t ROM bin that can block dumping, and a single-lane road with a shared speed limit and breakdown blockage. It reports full cycle time, queue waits, utilization, rolling-hour throughput, trips and a mass balance. With the team's OpenMines parameters, the baseline is **excavator-limited at 770 t/h** (match factor 1.61), not 900 t/h. Road restriction gives 647 t/h (haulage-limited) and crusher slowdown 495 t/h (crusher-limited). A single breakdown costs about 190 t/h during the 20-minute lane blockage and nothing in steady state. 21 deterministic tests pass. Formulas, assumptions, results and limitations are in `ademix/simulator/MODEL.md`.
+- **What-If Scenario Engine (branch `claude/what-if-scenarios`, based on `claude/core-simulation-engine`):** scenarios now carry a cycle guard (illegal truck-state transitions and payload/state contradictions raise), report HT-01's breakdown location, and publish a live bottleneck measured over the last 30 simulated minutes next to the analytical one. Both use the five constraint names: loading resource, haul-road travel, available truck fleet, dump point and crusher processing capacity. `compare_scenarios.py` compares all scenarios from an identical 4 h baseline over the same 9 h, with every metric and its % change, plus a breakdown trigger-time sensitivity table. The reset test found and fixed a stale-blockage bug. 31 tests pass. Details and results: `ademix/simulator/SCENARIOS.md`. `CORE_SIMULATION_TASKS.md`, named in the request, does not exist in the repository.
 - **2026-10-23 presentation update:** Slide 7 now covers baseline operations, breakdown injection, dynamic bottleneck shifts and smart dispatch as future work. It uses DES projections (770, 770, 647.3 and 495 t/h), identifies the 581.6 t/h breakdown first-hour transient, and states that automatic dispatch/rerouting is not implemented. Slide 6's baseline and road values and slide 8's engine test count were corrected. Editable PPTX/PDF exports are in `presentation/output/`.
 
 ## Immediate Decisions and Tasks
@@ -200,6 +201,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | --- | --- | --- | --- | --- |
 | Codex | Refine the live 3D command center and complete release evidence | `codex/ademix` | In progress | End-to-end OpenEgiz integration passes; improve visual quality, performance evidence, and final documentation next |
 | Claude (for TurkenGulzat) | Core Simulation Engine review and improvement | `claude/core-simulation-engine` | Ready for review | Engine, tests, MODEL.md, comparison script and SUBMISSION/README figures are done. Still needed: merge into `codex/ademix`, a Docker/Ditto end-to-end rerun, and the one-line UI label fix (see Known Issues) |
+| Claude (for TurkenGulzat) | What-If Scenario Engine review and improvement | `claude/what-if-scenarios` | Ready for review | Builds on the engine branch; merge that first or merge this branch instead. Stand not rerun (Docker was uninstalled from this laptop on 2026-10-23) |
 
 ## Completed Work Log
 
@@ -229,6 +231,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Codex | Added the Stage 4 processing-plant checkpoint and rejected an unsuitable first asset composition | Production build passes; 1440×1000 software-Edge render shows the full dump-to-crusher-to-stockpile flow inside frame |
 | 2026-10-22 | Codex | Added Stage 5 purposeful motion linked to OpenEgiz truck, excavator, and crusher twin properties | Production build passes; 1440×1000 software-Edge capture confirms the moving fleet remains separated and the full scene stays in frame |
 | 2026-10-22 | Claude | Rewrote the simulator as a deterministic discrete-event model with excavator/dump-bay queues, a limited ROM bin, breakdown lane blockage, full cycle time, utilization and a mass-balance ledger; added `MODEL.md` and `compare_scenarios.py`; corrected the SUBMISSION/README scenario figures | `python -m unittest test_engine`: 21 tests pass; `compare_scenarios.py` reproduces the MODEL.md table; `py_compile` passes for app.py, engine.py and compare_scenarios.py. Docker/Ditto end-to-end was **not** rerun (Docker unavailable on this machine) |
+| 2026-10-23 | Claude | What-If Scenario Engine: live and analytical bottleneck analysis with five named constraints, cycle-transition guard, breakdown location, time-averaged queues and ROM, identical-baseline comparison with % impacts and breakdown timing sensitivity; fixed trucks staying `blocked` after a blockage cleared | `python -m unittest test_engine`: 31 tests pass; `compare_scenarios.py` reproduces SCENARIOS.md; mass-balance error ≤ 9.1e-13 t. Not run on the Docker stand |
 | 2026-10-23 | Codex | Rebuilt the scenario presentation section from the DES model, corrected adjacent baseline/validation figures, and documented smart dispatch as future work | PPTX finalizer reports 9 slides, one editable chart, clean package/layout checks and successful Artifact Tool import; rendered slides reviewed. GitHub fetch could not connect, so organizer updates were not checked |
 
 ## Decisions
@@ -249,6 +252,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 | 2026-10-22 | Drive motion from existing twin properties rather than a disconnected animation timeline | Truck state/speed/direction, excavator state, and crusher state now visibly affect the 3D review scene while interpolation keeps movement smooth between two-second API updates | Team |
 | 2026-10-22 | Use an event-driven simulation with an explicit single-server excavator and dump bay, and report the binding bottleneck | The time-stepped model let several trucks load from one excavator at once, which overstated baseline throughput (900 t/h against a physical limit of 770 t/h). Event scheduling also makes results independent of the publishing tick | Claude (for TurkenGulzat) |
 | 2026-10-22 | Model the breakdown as a 20-minute single-lane blockage followed by a 5-truck fleet, replacing the unexplained 0.64 fleet-wide speed factor | The effect now follows from a stated mechanism and can be observed on the road and truck twins | Claude (for TurkenGulzat) |
+| 2026-10-23 | Detect the live bottleneck as the most downstream saturated server (≥ 95 % busy over 30 min) with trucks waiting or the ROM bin accumulating; otherwise haulage (road if speed-limited, else fleet); a blocked lane overrides | A measured rule that agrees with the analytical bound in steady state but shows transient shifts, such as the blocked road and post-blockage truck bunching | Claude (for TurkenGulzat) |
 
 ## Known Issues and Risks
 
@@ -263,12 +267,16 @@ Include changed paths, tests or checks performed, and anything the next contribu
 - The first live render is operational but visually sparse: trucks overlap on the single route and the procedural pit lacks enough benches and landmarks for a competition-grade overview.
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
+- Commit `aa0156d` on `claude/core-simulation-engine` (pushed) was made with `git commit -a` and unintentionally included Codex's then-uncommitted edits to `presentation/build.mjs`, `presentation/render_pdf.py` and two PROJECT_CONTEXT.md lines, under TurkenGulzat's name. Nothing was lost; Codex has newer uncommitted presentation edits in the working tree. Decide whether to keep or revert those presentation changes on that branch before merging.
+- The breakdown scenario's first-hour effect depends on where HT-01 is when triggered (0 % to −25 % of first-hour production; table in SCENARIOS.md). The demo should trigger it while HT-01 is on the road to show the blockage.
 - The scenario comparison label in `ademix/frontend/src/main.tsx` now reads `baseline_throughput_tph` from the scenario-controller twin (commit 3e5d5ad) instead of the hard-coded 900 t/h. Verified on 2026-10-23 with Node.js 24.22.1: `npm ci && npm run build` (which runs `tsc -b` then `vite build`) passes. The Docker image uses Node 22, which was not tested locally.
 - Root `presentation.pdf` and `presentation.pptx` remain the original exports. Use the refreshed editable exports in `presentation/output/` for review and submission.
 - The new truck states (`queued_at_excavator`, `queued_at_crusher`, `blocked`) have no dedicated colour in `fleet.css` or `MineScene.tsx`, so they render in the default green. These trucks report speed 0, so the motion review stops them correctly.
 - Fuel is synthetic and has no refuelling. It reaches 0 % after roughly 13 simulated hours (about 40 real minutes at 20× speed).
 
 ## Next Recommended Action
+
+What-If branch: review `claude/what-if-scenarios` (it contains the engine branch). When a 16 GB machine with Docker is available, rerun the stand and confirm `bottleneck_live` on `mine-01` changes as SCENARIOS.md describes.
 
 Review and merge `claude/core-simulation-engine` into `codex/ademix`, then replace the hard-coded 900 t/h UI label and rerun the scenarios through Docker and Ditto. The refreshed presentation figures now match the DES model, but its end-to-end integration still needs that rerun.
 
@@ -302,4 +310,18 @@ Checks/tests run: python -m unittest test_engine (21 pass, Python 3.13); python 
 Decisions made: excavator-limited 770 t/h baseline derived from the team's own OpenMines parameters; breakdown modelled as a 20-minute lane blockage; KPI windows restart at each scenario change.
 Known issues: Docker/Ditto end-to-end not rerun; presentation figures are stale; no colours yet for the new queue/blocked truck states.
 Next action: merge into codex/ademix, rerun the stand scenarios, refresh the presentation figures.
+```
+
+### Handoff — 2026-10-23 — What-If Scenario Engine
+
+```text
+Date: 2026-10-23
+Contributor: Claude (for TurkenGulzat)
+Goal: Review and improve the What-If Scenario Engine (activation, propagation, reset, identical-baseline comparison, dynamic bottleneck analysis, documentation).
+Completed: cycle-transition guard; breakdown location reporting; cumulative counters with exact rolling windows (bin-empty breakpoints); time-averaged queues and ROM; live bottleneck with reasons; analytical bottleneck with reasons under five named constraints; optional truck_count for the fleet-limited case; fix for trucks left blocked after a blockage cleared; comparison report with % impacts, transient hour, bottlenecks and breakdown timing sensitivity; 10 new tests.
+Files changed: ademix/simulator/engine.py, ademix/simulator/test_engine.py, ademix/simulator/compare_scenarios.py, ademix/simulator/SCENARIOS.md (new), ademix/simulator/MODEL.md, SUBMISSION.md, PROJECT_CONTEXT.md. Not touched: app.py, twins.json, data/openmines, frontend, presentation, models, licences, asset documentation.
+Checks/tests run: python -m unittest test_engine (31 pass, Python 3.13); python compare_scenarios.py.
+Decisions made: live bottleneck rule and 30 min / 95 % thresholds; bottleneck label names; scenarios stay mutually exclusive.
+Known issues: Docker stand not rerun; breakdown effect depends on trigger time; dump point can never bind with current parameters; misattributed presentation edits in aa0156d (see Known Issues).
+Next action: review and merge; rerun the stand on a 16 GB machine; optionally show bottleneck_live in the UI.
 ```
