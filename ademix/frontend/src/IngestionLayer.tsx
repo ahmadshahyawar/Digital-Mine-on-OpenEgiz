@@ -20,7 +20,13 @@ type Bundle = {
 }
 type Weather = Record<string, number>
 type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
-type Frame = { at: (key: string) => string | number | null; atMix: (key: string) => number; circuit: (truck: number) => number }
+type Frame = {
+  at: (key: string) => string | number | null
+  atMix: (key: string) => number
+  circuit: (truck: number) => number
+  /** Where the data next places the truck on the circuit: the waypoint it drives towards. */
+  target: (truck: number) => number
+}
 type Getter = (key: string) => unknown
 
 const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
@@ -137,6 +143,11 @@ function circuitPosition(state: string, pct: number, heading: number, rank: numb
   return heading > 0 ? held / 100 : 1 + (100 - held) / 100
 }
 
+/** Metres represented by one circuit unit (the 3.2 km route); used to turn km/h into circuit speed. */
+function metresPerUnit(_s: number) {
+  return 3200
+}
+
 function circuitPose(s: number) {
   const at = ((s % 2) + 2) % 2
   if (at <= 1) {
@@ -174,8 +185,11 @@ function forwardBlend(from: number, to: number, f: number) {
   return from + delta * THREE.MathUtils.clamp(f, 0, 1)
 }
 
-function LoggedTruck({ index, frame, layers, positions, blockageActive }: {
+const ACCELERATION_MS2 = .5 // gentle haul-truck acceleration and braking, m/s²
+
+function LoggedTruck({ index, frame, layers, positions, blockageActive, timeScale, roadKmh, loopKmh }: {
   index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; blockageActive: boolean
+  timeScale: number; roadKmh: number; loopKmh: number
 }) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
@@ -184,15 +198,27 @@ function LoggedTruck({ index, frame, layers, positions, blockageActive }: {
   const state = String(frame.at(`${id}.state`) ?? 'hauling')
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   const shown = React.useRef<number | null>(null)
-  useFrame(() => {
+  const velocity = React.useRef(0) // circuit units per real second
+  useFrame((_, delta) => {
     if (!group.current) return
-    // The displayed position only ever advances: if the data places the truck slightly behind
-    // where it is drawn, it waits there instead of reversing.
-    const target = frame.circuit(index)
-    if (shown.current === null) shown.current = target
-    let ahead = target - shown.current
-    while (ahead < 0) ahead += 2
-    if (ahead <= 1.5) shown.current = (shown.current + ahead) % 2
+    const dt = Math.min(delta, .1)
+    // The truck drives towards where the data next places it, like a driver: it speeds up to the
+    // limit, slows for the loops, brakes to stop on its spot and waits. It never reverses.
+    const target = frame.target(index)
+    if (shown.current === null) shown.current = frame.circuit(index)
+    let gap = target - shown.current
+    while (gap < 0) gap += 2
+    if (gap > 1.5) gap = 0 // the data is slightly behind: wait where we are
+    if (gap > .55) { shown.current = frame.circuit(index); velocity.current = 0; gap = 0 } // replay jumped: reposition
+    const m = metresPerUnit(shown.current)
+    const along = ((shown.current % 1) + 1) % 1
+    const inLoop = along <= LOOP_PCT / 100 || along >= 1 - LOOP_PCT / 100
+    const limit = (inLoop ? Math.min(loopKmh, roadKmh) : roadKmh) / 3.6 / m * timeScale
+    const accel = ACCELERATION_MS2 / m * timeScale * timeScale
+    const brakeLimited = Math.sqrt(2 * accel * gap)
+    const wanted = Math.min(limit, brakeLimited)
+    velocity.current = wanted > velocity.current ? Math.min(wanted, velocity.current + accel * dt) : wanted
+    shown.current = (shown.current + Math.min(gap, velocity.current * dt)) % 2
     // Stops in its lane while it blocks the road, then is towed onto the shoulder.
     const pose = state === 'breakdown' && !blockageActive
       ? lanePose(frame.atMix(`${id}.route_progress_pct`), heading, SHOULDER_OFFSET)
@@ -210,6 +236,39 @@ function LoggedTruck({ index, frame, layers, positions, blockageActive }: {
       <div className="ig-chip" style={{ borderColor: color, color }}>HT-{String(index + 1).padStart(2, '0')}</div>
     </Html>}
   </group>
+}
+
+/** Road surface along both turning loops and their links to the lanes, so trucks never drive on bare ground. */
+function LoopRoads() {
+  const parts = React.useMemo(() => (['face', 'crusher'] as const).map(end => {
+    const curve = LOOPS[end]
+    const build = (half: number, lift: number) => {
+      const positions: number[] = []
+      const indices: number[] = []
+      const segments = 160
+      for (let k = 0; k <= segments; k++) {
+        const t = k / segments
+        const point = curve.getPointAt(t)
+        const forward = curve.getTangentAt(t).setY(0).normalize()
+        const right = new THREE.Vector3(-forward.z, 0, forward.x)
+        for (const side of [-1, 1]) {
+          const v = point.clone().addScaledVector(right, side * half)
+          positions.push(v.x, v.y + lift, v.z)
+        }
+        if (k < segments) indices.push(2 * k, 2 * k + 2, 2 * k + 1, 2 * k + 1, 2 * k + 2, 2 * k + 3)
+      }
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+      geometry.setIndex(indices)
+      geometry.computeVertexNormals()
+      return geometry
+    }
+    return { surface: build(3.4, .26), edge: build(3.55, .24) }
+  }), [])
+  return <group>{parts.map((p, i) => <group key={i}>
+    <mesh geometry={p.edge}><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}/></mesh>
+    <mesh geometry={p.surface}><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}/></mesh>
+  </group>)}</group>
 }
 
 /** Arrows painted in each lane: blue for empty trucks entering the pit, amber for loaded trucks leaving. */
@@ -663,6 +722,7 @@ function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> 
   </group>
 }
 
+const STAND_SPEEDUP = 20 // the stand's simulator runs 20 simulated seconds per real second (SIM_SPEEDUP)
 const SAMPLE_SECONDS = 300 // the recorded logs hold one sample every 5 simulated minutes
 // The scene compresses the 3.2 km road to ~215 units (1 unit ≈ 15 m) but draws trucks ~9× real size so
 // they stay visible; at about 10× a truck covers its own length in ~1.4 s, as a real truck does at 25 km/h.
@@ -767,6 +827,7 @@ export function IngestionLayer() {
         const ranks = liveState.current
         return forwardBlend(circuitIn(k => prev[k] ?? curr[k], i, ranks.prevRanks[i] ?? 0), circuitIn(k => curr[k], i, ranks.currRanks[i] ?? 0), (performance.now() - at) / 2000)
       },
+      target: i => circuitIn(k => liveState.current.curr[k], i, liveState.current.currRanks[i] ?? 0),
     }
     : {
       at: key => current[index(key)],
@@ -778,6 +839,10 @@ export function IngestionLayer() {
         const i = Math.floor(head.current)
         const next = Math.min(i + 1, log.rows.length - 1)
         return forwardBlend(circuitIn(rowGetter(i), t, replayRanks[i]?.[t] ?? 0), circuitIn(rowGetter(next), t, replayRanks[next]?.[t] ?? 0), head.current - i)
+      },
+      target: t => {
+        const next = Math.min(Math.floor(head.current) + 1, log.rows.length - 1)
+        return circuitIn(rowGetter(next), t, replayRanks[next]?.[t] ?? 0)
       },
     }
   const specsOf = (asset: string) => {
@@ -798,9 +863,11 @@ export function IngestionLayer() {
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
         <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} speed={speed} onRow={r => r !== row && setRow(r)}/>
+        <LoopRoads/>
         <LaneArrows/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
-          blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
+          blockageActive={frame.at('road-main.state') === 'restricted'}
+          timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}/>)}
         <Excavator frame={frame}/>
         <OreHandling frame={frame} dumping={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).includes('dumping')}/>
         <RoadLighting/>
