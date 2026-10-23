@@ -248,6 +248,14 @@ Interfaces consumed or changed: no twin field or simulator change. Visual pit ge
 Expected handoff: commit SHA, files, build, screenshot, data-owner request.
 ```
 
+Handoff — Claude — pit-wall geometry — 2026-10-23
+
+- Commit `8f7c07c` on `claude/pit-geometry` (lock `ca62b7d`). Files: `ademix/frontend/src/TerrainStage.tsx`, `ademix/frontend/src/IngestionLayer.tsx`, `ademix/frontend/src/ingestion.css`.
+- Pit wall is now built from `PIT_DESIGN` (illustrative assumptions for a conceptual project — not approved Kazakhstan design values): 10 m benches, 70° faces, 45° overall final wall, two 20 m working benches near the floor. At the 14.9 m/unit scene scale this gives 42 benches, ≈419 m depth, implied catch berm ≈6.4 m (left to project design; derived only to keep the 45° overall slope), final wall 45.0°, 43.5° including the working benches. Bench crest/toe lines are drawn off the haul road; terrain grid 128→192 segments. Layer 1 Specs panel shows a "Pit design · illustrative" card and the pit wall carries a label.
+- Checks: `tsc -b` and Vite build pass; card text verified in the DOM. Full-size visual review not done (preview pane too small). Engine tests pass.
+- Data tests: 3 failures that come from the `codex/ademix` base, not this change: bundle/log reproducibility float rounding (35.65 vs 35.66) and the manifest input hash for `north_pit_mine.json` (expects CRLF `271134…`, file is LF `a966…`).
+- Request to Codex (data owner): `ademix/data/topology/mine_topology.json` `visual_pit_geometry` still says 6 benches × 4.35; update it to the values above, and update the geometry token check in `ademix/data/test_data_layer.py` (≈line 374: "4.35", "-23.5", "Math.PI * 2.35") to the new `PIT_DESIGN` constants. Claude has not edited these files.
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
