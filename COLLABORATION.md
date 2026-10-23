@@ -6,11 +6,12 @@ This file prevents Ahmad/Codex and Turken/Claude from implementing or merging th
 
 | Area | Owner | Paths |
 | --- | --- | --- |
-| 3D mine, terrain, roads, equipment, camera, materials | Ahmad + Codex | `ademix/frontend/src/TerrainStage.tsx`, `GroundMaterial.ts`, `GraphicsSettings.tsx`, visual CSS and bundled visual assets |
-| Simulation, scenarios, data/asset ingestion and evidence generation | Turken + Claude | `ademix/simulator/`, `ademix/data/`, `IngestionLayer.tsx`, ingestion data and CSS |
+| 3D presentation and frontend UX | Turken + Claude | `ademix/frontend/src/TerrainStage.tsx`, `IngestionLayer.tsx`, `ingestion.css`, visual models and visual assets |
+| Simulation, what-if behavior, OpenEgiz/API and automated tests | Ahmad + Codex | `ademix/simulator/`, scenario state transitions, MQTT/Ditto integration, Python tests |
+| Data evidence and generated replay bundle | Codex generates; Claude consumes | `ademix/data/`, `ademix/frontend/public/data/ingestion.json` |
 | Release integration | One designated integrator at a time | `main.tsx`, `README.md`, `SUBMISSION.md`, `PROJECT_CONTEXT.md`, `presentation/`, Compose files |
 
-Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work begins. An agent must not edit another owner's paths without recording a handoff first.
+Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work begins. An agent must not edit another owner's paths without recording a handoff first. Claude owns the accepted visual scene; Codex must not restyle or replace it unless the Team explicitly transfers that task. Claude must not change simulator behavior to make a visual effect work; it consumes the documented twin fields instead.
 
 ## Branch rules
 
@@ -20,6 +21,8 @@ Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work be
 4. Commit a coherent checkpoint before another agent integrates it. Do not hand off an uncommitted working tree.
 5. Open one pull request into the integration branch. Do not merge related stacked branches separately.
 6. The integrator reviews changed files, resolves conflicts deliberately, runs all checks, and only then merges to `main`.
+7. At the start of every AI session, run `git fetch origin`, compare the working branch with both `origin/codex/ademix` and `origin/claude/data-asset-layer`, and report overlapping changed paths before editing.
+8. Never use an automatic conflict resolution such as “take ours/theirs” for a shared file. The designated integrator composes shared files intentionally.
 
 ## Current Claude branch relationship
 
@@ -35,14 +38,18 @@ Owner / branch / exact files / purpose / expected handoff
 
 Only the listed owner edits those files until the checkpoint is committed or the ownership entry is removed. Documentation is reconciled after code integration, not independently on both branches.
 
-## Integration order for the current work
+## Cross-layer contract: truck breakdown
 
-1. Commit the current Codex visual work on `codex/ademix`.
-2. Create a temporary integration branch from that checkpoint.
-3. Merge or selectively cherry-pick `origin/claude/data-asset-layer` once.
-4. Keep Claude's simulator/data additions; keep Codex's current terrain, camera, truck and material implementation unless the team explicitly chooses the alternative ingestion scene.
-5. Resolve `main.tsx` as an intentional UI composition, then reconcile `README.md`, `SUBMISSION.md`, `PROJECT_CONTEXT.md`, and the presentation.
-6. Run frontend build, every Python test, Compose build/start, scenario smoke checks, and visual review before merging to `main`.
+Codex owns the behavior and publishes tested twin state: the selected truck enters `breakdown`, speed becomes zero, occupied resources are released, queues/throughput react, recovery is deterministic, and reset removes stale effects. Claude owns only the presentation of that state: the correct truck visibly stops, receives a breakdown marker/alert, and the UI explains the operational consequence. Neither side duplicates the other's logic.
+
+## Integration order for current work
+
+1. Each owner commits and pushes only owned files on their branch.
+2. The owner writes a handoff containing commit SHA, exact paths, interface changes, tests, and screenshots if visual.
+3. Use one temporary `integration/...` branch based on the chosen release candidate.
+4. Integrate Codex engine/API commits first, then Claude frontend commits against the documented twin contract.
+5. The integrator alone resolves `main.tsx`, documentation, Compose, generated replay data, and presentation files.
+6. Run frontend build, all Python tests, Compose build/start, every what-if smoke check, and visual review before merging to `main`.
 
 ## Definition of done for a handoff
 
