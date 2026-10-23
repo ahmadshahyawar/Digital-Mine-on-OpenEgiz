@@ -89,6 +89,7 @@ These come from `python compare_scenarios.py`. Every run uses the same determini
 | Truck util. % | 62.1 | 62.1 (+0.0%) | 100.0 (+61.0%) | 43.9 (-29.3%) |
 | Excavator util. % | 100.0 | 100.0 (+0.0%) | 84.4 (-15.6%) | 72.1 (-27.9%) |
 | Crusher util. % | 85.6 | 86.0 (+0.6%) | 71.7 (-16.2%) | 100.0 (+16.9%) |
+| Trips / h | 10.00 | 10.00 (+0.0%) | 8.38 (-16.2%) | 6.88 (-31.2%) |
 | Avg ROM t | 33 | 33 (+1.4%) | 28 (-16.2%) | 540 (+1539.3%) |
 | ROM at end of period t | 0 | 0 | 28 | 555 |
 
@@ -106,6 +107,7 @@ These come from `python compare_scenarios.py`. Every run uses the same determini
 | Truck util. % | 62.1 | 49.0 (-21.2%) | 92.3 (+48.5%) | 62.1 (+0.0%) |
 | Excavator util. % | 100.0 | 79.9 (-20.1%) | 88.6 (-11.4%) | 100.0 (+0.0%) |
 | Crusher util. % | 85.6 | 64.6 (-24.5%) | 64.9 (-24.1%) | 98.9 (+15.6%) |
+| Trips / h | 10.00 | 8.00 (-20.0%) | 8.00 (-20.0%) | 10.00 (+0.0%) |
 | Avg ROM t | 33 | 78 (+135.6%) | 26 (-21.7%) | 173 (+425.3%) |
 | ROM at end of period t | 0 | 34 | 32 | 280 |
 
@@ -148,6 +150,15 @@ These are model results for the stated assumptions:
 - **The road restriction makes haulage the constraint** (−16 %). Truck utilization reaches 100 % while the excavator becomes idle 16 % of the time.
 - **The crusher slowdown pushes back through the whole cycle** (−36 %). The ROM bin fills, trucks wait about 25 min per cycle at the dump, and the excavator idles 28 % of the time.
 
+### Operational recommendations
+
+| Scenario | Why the metrics change | Dispatcher recommendation |
+|---|---|---|
+| Normal operations | The 6 min single excavator limits throughput to 770 t/h. Extra trucks wait 13.6 min at the face, so fleet utilization is 62.1%; the crusher runs at 85.6% and ten loads are completed per hour. | Keep five trucks productive and treat the sixth as standby, or add loading capacity before adding trucks. |
+| HT-01 breakdown | A road failure blocks deliveries and cuts the first hour to 581.6 t/h, eight trips/h and 49.0% fleet utilization. After towing, five trucks still saturate the excavator, so steady throughput and crusher utilization recover while the face queue becomes shorter. | Tow the truck off the lane first; then continue with five trucks. Do not add another truck unless monitoring shows the excavator becoming starved. |
+| Main road restriction | Lower speed lengthens the free cycle, removes the face queue, raises fleet utilization to 100%, lowers trips to 8.38/h and leaves both excavator and crusher waiting; throughput falls to about 645 t/h. | Restore road speed/availability first. If the restriction must remain, add one suitable truck rather than changing crusher capacity. |
+| Crusher −45% | The crusher is continuously busy at 495 t/h. ROM fills, crusher wait rises to 25.4 min, cycle time reaches 51.6 min, and truck utilization/trips fall because trucks cannot dump. | Restore crusher capacity; meanwhile park surplus trucks or reduce loading to prevent dump congestion and excess idling. |
+
 ## 4. Assumptions specific to the scenarios
 
 All of these are team scenario inputs, not site data:
@@ -161,7 +172,7 @@ The single haul road is modelled as one lane in both directions, so a stopped tr
 
 ## 5. Verification performed
 
-`python -m unittest test_engine` runs 31 tests, all passing. The 10 What-If tests check:
+`python -m unittest test_engine` runs 41 tests, all passing. The What-If and evidence tests check:
 
 - each scenario changes a model input, and moving trucks adopt the new speed;
 - every propagated effect against an identical baseline (cycle time, queues, utilizations, ROM, production);
@@ -180,6 +191,7 @@ The single haul road is modelled as one lane in both directions, so a stopped tr
 - the live bottleneck shifting during a breakdown;
 - a 3-truck fleet identified as fleet-limited;
 - the bottleneck explanations quoting the binding numbers.
+- the frontend-facing throughput, cycle, wait, fleet-utilization and crusher-utilization twin values matching the generated steady-state evidence for all four scenarios.
 
 The reset test found a real defect in the previous engine. Trucks still driving toward a breakdown blockage at the moment it was cleared kept their old target and stayed `blocked` indefinitely. `_clear_blockage` now re-plans every moving truck.
 

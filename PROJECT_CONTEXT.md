@@ -386,6 +386,7 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 | 2026-10-23 | Codex | Integrated Claude's breakdown presentation and completed the four-scenario release gate from fresh Compose volumes | All services healthy; 69 local tests, 37 container tests, and the frontend production build pass; all four states propagated frontend proxy → API → MQTT → Ditto → API and reset cleanly |
 | 2026-10-23 | Codex | Integrated Claude's illustrative pit geometry and revalidated the final combined images | Updated pit-design evidence is bundled; the production image rebuilt successfully, all services are healthy, 37 in-image simulator tests pass, and all four live scenario checks pass through Eclipse Ditto |
 | 2026-10-23 | Codex | Completed the P1 simulation-credibility verification matrix without changing the model | 43 simulator-package and 32 data checks pass; both FIFO resources, exclusive service, stage timing, four-part mass balance, interruption transitions, documented assumptions, and every direct scenario switch are explicitly covered |
+| 2026-10-23 | Codex | Completed reproducible P1 what-if evidence and recommendations | The generator now reports seven requested KPIs including trips/h; `SUBMISSION.md` contains a concise steady comparison plus transient breakdown warning; an automated check proves frontend-facing metrics match each generated scenario run |
 
 ## Decisions
 
@@ -442,6 +443,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Cycle verification checks 6 min loading, 7.68 min loaded haul, non-negative crusher waiting, 1 min dumping, and 7.68 min empty return against the documented 77 t / 25 km/h / 3.2 km assumptions.
 - Every step reconciles opening stock plus extracted ore with payload in trucks, ROM inventory, and processed production. Additional cases cover breakdown while loading, dumping, or waiting in either queue and all 12 ordered direct switches between distinct scenarios.
 - Local and rebuilt-container result: all 43 simulator-package checks pass; all 32 data-layer checks pass locally. The live verifier also passed baseline, breakdown, road restriction, crusher slowdown, and reset through Eclipse Ditto. No simulator behavior or frontend-owned file was changed.
+
+### P1 what-if evidence handoff — 2026-10-23
+
+- Run `python ademix/simulator/compare_scenarios.py` to regenerate transient and steady results for throughput, cycle time, loading wait, crusher wait, fleet utilization, crusher utilization, and trips per hour.
+- `ademix/simulator/SCENARIOS.md` explains each causal change and records a dispatcher recommendation for baseline, truck breakdown, road restriction, and crusher slowdown.
+- `SUBMISSION.md` contains the concise steady-state comparison and explicitly calls out the location-dependent first-hour breakdown loss so the recovered long-run result is not misleading.
+- `test_frontend_metrics_match_the_generated_steady_evidence` reconstructs the evidence window and checks the frontend-facing Ditto twin metrics for every scenario.
+- Verification result: 44 simulator-package checks pass locally and in the rebuilt Docker image, 32 data-layer checks pass, and the frontend production build succeeds (the existing bundle-size warning remains non-fatal).
 
 ## Handoff Template
 

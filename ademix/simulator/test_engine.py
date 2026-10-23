@@ -594,6 +594,34 @@ class InterfaceTests(unittest.TestCase):
             mine.step(120)
             json.dumps(mine.snapshot())
 
+    def test_frontend_metrics_match_the_generated_steady_evidence(self):
+        """UI-facing twins and evidence use the same scenario window and formulas."""
+        from compare_scenarios import evaluate
+
+        for scenario in SCENARIO_NAMES:
+            with self.subTest(scenario=scenario):
+                evidence = evaluate(scenario)["steady"]
+                mine = MineEngine()
+                run(mine, 4)
+                mine.set_scenario(scenario)
+                mine._reset_window()
+                run(mine, 1)
+                mine._reset_window()
+                run(mine, 8)
+                twins = mine.snapshot()
+                self.assertAlmostEqual(twins["mine-01"]["throughput_tph"]["value"],
+                                       evidence["throughput_tph"], delta=0.01)
+                self.assertAlmostEqual(twins["mine-01"]["average_cycle_min"]["value"],
+                                       evidence["average_cycle_min"], delta=0.01)
+                self.assertAlmostEqual(twins["mine-01"]["fleet_utilization"]["value"],
+                                       evidence["fleet_utilization_pct"], delta=0.01)
+                self.assertAlmostEqual(twins["excavator-01"]["average_wait_min"]["value"],
+                                       evidence["excavator_wait_min"], delta=0.01)
+                self.assertAlmostEqual(twins["crusher-01"]["average_wait_min"]["value"],
+                                       evidence["crusher_wait_min"], delta=0.01)
+                self.assertAlmostEqual(twins["crusher-01"]["utilization_pct"]["value"],
+                                       evidence["crusher_utilization_pct"], delta=0.01)
+
 
 if __name__ == "__main__":
     unittest.main()

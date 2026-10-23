@@ -31,6 +31,7 @@ METRICS = [
     ("fleet_utilization_pct", "Truck util. %", "{:.1f}"),
     ("excavator_utilization_pct", "Excavator util. %", "{:.1f}"),
     ("crusher_utilization_pct", "Crusher util. %", "{:.1f}"),
+    ("trips_per_hour", "Trips / h", "{:.2f}"),
     ("rom_avg_t", "Avg ROM t", "{:.0f}"),
 ]
 
@@ -48,13 +49,16 @@ def evaluate(scenario, offset_min=0):
     location = mine.breakdown_location
     advance(mine, TRANSIENT_H)
     transient = mine.kpis()
+    transient["trips_per_hour"] = transient["window_trips"] / transient["window_h"]
     live_transient = mine.live_bottleneck()["constraint"]
     mine._reset_window()  # steady state is measured without the transition
     advance(mine, STEADY_H)
+    steady = mine.kpis()
+    steady["trips_per_hour"] = steady["window_trips"] / steady["window_h"]
     return {
         "plan": projection(scenario),
         "transient": transient,
-        "steady": mine.kpis(),
+        "steady": steady,
         "live_transient": live_transient,
         "live": mine.live_bottleneck(),
         "location": location,
