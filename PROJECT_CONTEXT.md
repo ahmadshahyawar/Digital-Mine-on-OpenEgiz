@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Handoff — Codex — score-first execution order — 2026-10-24
+
+```text
+Owner: both AI workstreams follow the order; Ahmad + Codex maintain the shared documents
+Branch: codex/score-first-order
+Change: the existing A6–A11 plan now requires B1–B6 integration first, then visible C1–C4 and combined C5,
+  then A6. A8/A9 run only if time remains. A7/A10/A11 are skipped when C2 already supplies their value.
+Final phase: freeze the combined candidate and run J1–J8, prioritizing clean Ubuntu startup, claim-to-evidence
+  indexing, a candidate-accurate presentation and software-rendering proof.
+Reason: maximize provable rubric levels and avoid duplicated dashboards, decorative scope and release risk.
+Application impact: documentation/order only; no implementation, runtime behavior or test result changed.
+Verification: shared references and required task/order language checked; git diff check passes.
+```
+
 ### Handoff — Codex — A6–A11 score-focused work definition — 2026-10-24
 
 ```text

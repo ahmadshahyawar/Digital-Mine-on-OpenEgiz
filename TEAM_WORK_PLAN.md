@@ -144,4 +144,4 @@ Ahmad + Codex own all work in `03_HIGH_SCORE_IMPROVEMENTS.md`. They may prepare 
 
 `04_AI_JUDGE_READINESS.md` remains the last phase. J1–J8 examine the frozen combined application; they do not replace unfinished A, B or C implementation.
 
-`A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` contains Ahmad + Codex extensions that may strengthen score evidence without expanding mine decoration. A6 is recommended because it explains accelerated simulation time. A7–A11 are optional and proceed one at a time only when required B/C work is integrated and the release remains stable. Professor + Claude are not assigned a longer map, more decorative workers or extra buildings; their priority remains the accepted B1–B6 operator experience.
+`A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md` contains the score-first order shared by both AIs: integrate Professor + Claude B1–B6; complete visible C1–C4 and combined C5; implement A6; add A8/A9 only if time remains; skip A7/A10/A11 when C2 already supplies their value; then run J1–J8. Professor + Claude are not assigned a longer map, more decorative workers or extra buildings; their priority remains the accepted B1–B6 operator experience.
