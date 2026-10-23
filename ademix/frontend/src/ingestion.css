@@ -48,3 +48,34 @@
 .ig-live-note { color: #b9ffd7; flex: 1; }
 @media (prefers-reduced-motion: no-preference) { .ig-mode.live i { animation: ig-pulse 1.6s ease-in-out infinite; } }
 @keyframes ig-pulse { 50% { opacity: .35; } }
+/* Side panels: fixed specifications on the left, sensor readings on the right. */
+.ig-panel { position: absolute; display: grid; gap: 8px; align-content: start; padding: 12px 14px; border-radius: 10px; background: var(--ig-glass); border: 1px solid var(--ig-line); overflow: auto; z-index: 30; }
+.ig-panel h2 { margin: 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #fff; }
+.ig-panel p { margin: 0; font-size: 11px; line-height: 1.45; color: var(--ig-dim); }
+.ig-left { top: 132px; left: 22px; width: 270px; max-height: calc(100vh - 230px); }
+.ig-left .ig-card { min-width: 0; border-style: dashed; background: rgba(255, 255, 255, .03); }
+.ig-right { top: 64px; right: 22px; width: 380px; max-height: calc(100vh - 140px); }
+.ig-sensors-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ig-sensors-table th { text-align: right; font-weight: 400; font-size: 10px; letter-spacing: .06em; color: var(--ig-dim); padding: 0 4px 4px; }
+.ig-sensors-table th:first-child, .ig-sensors-table th:nth-child(2), .ig-sensors-table td:first-child, .ig-sensors-table td:nth-child(2) { text-align: left; }
+.ig-sensors-table td { text-align: right; padding: 4px; border-top: 1px solid rgba(79, 209, 197, .15); white-space: nowrap; }
+.ig-sensors-table td:first-child { color: var(--ig-ink); font-weight: 600; }
+.ig-sensors-table td:first-child i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.ig-sensors-table td:nth-child(2) .ig-val { font-size: 11px; font-weight: 500; text-transform: capitalize; }
+.ig-val { display: inline-block; padding: 1px 4px; border-radius: 4px; font-size: 15px; font-weight: 600; color: #fff; transition: background-color .7s ease, color .7s ease; }
+.ig-val small { font-size: 10px; font-weight: 400; color: var(--ig-dim); }
+.ig-val.flash { background: #ffe36e; color: #10201b; transition: none; }
+.ig-val.flash small { color: #10201b; }
+.ig-gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ig-gauges > div { display: grid; gap: 2px; padding: 7px 8px; border-radius: 7px; background: rgba(255, 255, 255, .04); }
+.ig-gauges span { font-size: 10px; letter-spacing: .05em; color: var(--ig-dim); }
+.ig-gauges .ig-val { font-size: 18px; text-transform: capitalize; justify-self: start; }
+.ig-meter { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.ig-meter i { display: block; height: 100%; background: #c49a5b; transition: width .6s ease; }
+.ig-foot-note { font-size: 10px !important; }
+.ig-chip { font-size: 12px; font-weight: 600; background: rgba(6, 16, 14, .9); }
+@media (prefers-reduced-motion: reduce) { .ig-val, .ig-meter i { transition: none; } }
+@media (max-width: 1100px) { .ig-left { width: 230px; } .ig-right { width: 320px; } }
+@media (max-width: 760px) {
+  .ig-left, .ig-right { position: absolute; left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 45vh; }
+}

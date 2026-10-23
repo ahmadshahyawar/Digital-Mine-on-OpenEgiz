@@ -39,6 +39,19 @@ const LABEL: Record<string, string> = {
 const num = (v: unknown) => Number(v ?? 0)
 const roadAt = (enginePct: number) => haulRoadPoint(1 - THREE.MathUtils.clamp(enginePct, 0, 100) / 100)
 
+/** A reading that briefly highlights whenever its value changes. */
+function Flash({ value, children }: { value: unknown; children: React.ReactNode }) {
+  const [on, setOn] = React.useState(false)
+  const first = React.useRef(true)
+  React.useEffect(() => {
+    if (first.current) { first.current = false; return }
+    setOn(true)
+    const timer = window.setTimeout(() => setOn(false), 700)
+    return () => window.clearTimeout(timer)
+  }, [value])
+  return <b className={`ig-val ${on ? 'flash' : ''}`}>{children}</b>
+}
+
 function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
   return <div className="ig-card">
     <b>{title}</b>
@@ -76,19 +89,13 @@ function LoggedTruck({ index, frame, layers, positions }: { index: number; frame
     <primitive object={model} scale={1.22}/>
     <mesh position={[0, 4.4, 0]}><sphereGeometry args={[.32, 12, 10]}/><meshBasicMaterial color={color}/></mesh>
     {state === 'breakdown' && <mesh position={[0, 5.4, 0]}><octahedronGeometry args={[.55]}/><meshBasicMaterial color="#ff5149"/></mesh>}
-    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 7, 0]} zIndexRange={[20, 0]}>
-      {index === 0
-        ? <div className="ig-tag" style={{ borderColor: color }}>
-          <b>HT-01</b> {state.replace(/_/g, ' ')}
-          <span>GNSS {num(frame.at(`${id}.route_progress_pct`)).toFixed(0)}% of route · {num(frame.at(`${id}.speed_kmh`)).toFixed(1)} km/h</span>
-          <span>payload {num(frame.at(`${id}.payload_t`)).toFixed(0)} t · fuel {num(frame.at(`${id}.fuel_pct`)).toFixed(0)}% (synthetic)</span>
-        </div>
-        : <div className="ig-chip" style={{ borderColor: color }}>HT-{String(index + 1).padStart(2, '0')} · {num(frame.at(`${id}.speed_kmh`)).toFixed(0)} km/h</div>}
+    {layers.has('sensors') && <Html center distanceFactor={80} position={[0, 6.4, 0]} zIndexRange={[20, 0]}>
+      <div className="ig-chip" style={{ borderColor: color, color }}>HT-{String(index + 1).padStart(2, '0')}</div>
     </Html>}
   </group>
 }
 
-function Excavator({ frame, layers, specs }: { frame: Frame; layers: Set<Layer>; specs: Spec[] }) {
+function Excavator({ frame }: { frame: Frame }) {
   const { scene } = useGLTF('/models/excavator.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
   const group = React.useRef<THREE.Group>(null)
@@ -97,25 +104,63 @@ function Excavator({ frame, layers, specs }: { frame: Frame; layers: Set<Layer>;
   const base = haulRoadPoint(1).add(new THREE.Vector3(1.2, .35, -1.5))
   return <group position={base}>
     <group ref={group} rotation={[0, -1.35, 0]}><primitive object={model} scale={1.5}/></group>
-    {layers.has('specs') && <Html center distanceFactor={115} position={[0, 13, 0]}><SpecCard title="Excavator EX-01" specs={specs}/></Html>}
-    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 7.5, 0]}>
-      <div className="ig-tag"><b>EX-01</b> {String(frame.at('excavator-01.state'))}<span>queue {String(frame.at('excavator-01.queue_length'))} trucks</span></div>
-    </Html>}
   </group>
 }
 
-function RomBin({ frame, layers, specs }: { frame: Frame; layers: Set<Layer>; specs: Spec[] }) {
+function RomBin({ frame }: { frame: Frame }) {
   const fill = THREE.MathUtils.clamp(frame.atMix('crusher-01.rom_inventory_t') / 600, 0, 1)
   const position = haulRoadPoint(0).add(new THREE.Vector3(-9, .3, 9))
   return <group position={position}>
     <mesh position={[0, 3, 0]}><cylinderGeometry args={[3, 2.4, 6, 24, 1, true]}/><meshStandardMaterial color="#8fa3a6" transparent opacity={.35} side={THREE.DoubleSide}/></mesh>
     <mesh position={[0, .05 + fill * 3, 0]} scale={[1, Math.max(fill, .02), 1]}><cylinderGeometry args={[2.85, 2.35, 6, 24]}/><meshStandardMaterial color="#9b6a3f" roughness={1}/></mesh>
-    {layers.has('specs') && <Html center distanceFactor={115} position={[0, 15, 0]}><SpecCard title="Primary crusher CR-01" specs={specs}/></Html>}
-    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 8.5, 0]}>
-      <div className="ig-tag"><b>Bin level</b> {frame.atMix('crusher-01.rom_inventory_t').toFixed(0)} / 600 t
-        <span>belt scale {num(frame.at('mine-01.throughput_tph')).toFixed(0)} t/h · {String(frame.at('crusher-01.state'))}</span></div>
-    </Html>}
   </group>
+}
+
+function SpecsPanel({ specsOf }: { specsOf: (asset: string) => Spec[] }) {
+  return <section className="ig-panel ig-left" aria-label="Fixed specifications">
+    <h2>Fixed specifications</h2>
+    <p>Rated equipment values. They describe the machines and do not change during operation.</p>
+    <SpecCard title="Haul trucks HT-01…06" specs={specsOf('Haul truck HT-01…06')}/>
+    <SpecCard title="Excavator EX-01" specs={specsOf('Excavator EX-01')}/>
+    <SpecCard title="Primary crusher CR-01" specs={specsOf('Primary crusher CR-01')}/>
+    <SpecCard title="Main haul road" specs={specsOf('Main haul road')}/>
+  </section>
+}
+
+function SensorPanel({ frame, live }: { frame: Frame; live: boolean }) {
+  const reading = (key: string, digits = 0) => {
+    const raw = frame.at(key)
+    return typeof raw === 'number' ? raw.toFixed(digits) : String(raw ?? '—').replace(/_/g, ' ')
+  }
+  const rom = num(frame.at('crusher-01.rom_inventory_t'))
+  return <section className="ig-panel ig-right" aria-label="Sensor readings">
+    <h2>{live ? 'Live sensor readings' : 'Sensor readings · replay'}</h2>
+    <p>{live ? 'From the Eclipse Ditto twins, refreshed every 2 seconds.' : 'From the recorded synthetic log; values change as the replay plays.'} Highlighted values just changed.</p>
+    <table className="ig-sensors-table">
+      <thead><tr><th>Truck</th><th>State</th><th>km/h</th><th>Load t</th><th>Fuel %</th></tr></thead>
+      <tbody>{Array.from({ length: 6 }, (_, i) => {
+        const id = `truck-0${i + 1}`
+        const state = String(frame.at(`${id}.state`) ?? '')
+        return <tr key={id}>
+          <td><i style={{ background: TRUCK_COLOR[state] ?? '#38ef9d' }}/>HT-0{i + 1}</td>
+          <td><Flash value={state}>{reading(`${id}.state`)}</Flash></td>
+          <td><Flash value={frame.at(`${id}.speed_kmh`)}>{reading(`${id}.speed_kmh`)}</Flash></td>
+          <td><Flash value={frame.at(`${id}.payload_t`)}>{reading(`${id}.payload_t`)}</Flash></td>
+          <td><Flash value={frame.at(`${id}.fuel_pct`)}>{reading(`${id}.fuel_pct`)}</Flash></td>
+        </tr>
+      })}</tbody>
+    </table>
+    <div className="ig-gauges">
+      <div><span>ROM bin level</span><Flash value={rom}>{rom.toFixed(0)} <small>/ 600 t</small></Flash>
+        <div className="ig-meter"><i style={{ width: `${Math.min(100, rom / 6)}%` }}/></div></div>
+      <div><span>Crusher belt scale</span><Flash value={frame.at('mine-01.throughput_tph')}>{reading('mine-01.throughput_tph')} <small>t/h</small></Flash></div>
+      <div><span>Excavator</span><Flash value={frame.at('excavator-01.state')}>{reading('excavator-01.state')}</Flash></div>
+      <div><span>Queue at face</span><Flash value={frame.at('excavator-01.queue_length')}>{reading('excavator-01.queue_length')} <small>trucks</small></Flash></div>
+      <div><span>Road</span><Flash value={frame.at('road-main.state')}>{reading('road-main.state')}</Flash></div>
+      <div><span>Trucks blocked</span><Flash value={frame.at('road-main.blocked_trucks')}>{reading('road-main.blocked_trucks')}</Flash></div>
+    </div>
+    <p className="ig-foot-note">Fuel % is a synthetic display signal.</p>
+  </section>
 }
 
 function Topology({ specs }: { specs: Spec[] }) {
@@ -131,7 +176,7 @@ function Topology({ specs }: { specs: Spec[] }) {
     <mesh geometry={tube}><meshBasicMaterial color="#4fd1c5" transparent opacity={.75}/></mesh>
     {nodes.map(([name, at, detail]) => <group key={name} position={at.clone().add(new THREE.Vector3(0, 2.2, 0))}>
       <mesh><sphereGeometry args={[1, 16, 12]}/><meshBasicMaterial color="#4fd1c5"/></mesh>
-      <Html center distanceFactor={115} position={[0, 3.2, 0]}><div className="ig-node"><b>{name}</b><span>{detail}</span></div></Html>
+      <Html center distanceFactor={115} position={[0, 3.2, 0]} zIndexRange={[20, 0]}><div className="ig-node"><b>{name}</b><span>{detail}</span></div></Html>
     </group>)}
   </group>
 }
@@ -157,7 +202,7 @@ function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> 
     <group position={HUB}>
       <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[5, .35, 10, 48]}/><meshBasicMaterial color="#4fd1c5"/></mesh>
       <mesh><icosahedronGeometry args={[2.4, 1]}/><meshStandardMaterial color="#123a33" emissive="#4fd1c5" emissiveIntensity={.6} wireframe/></mesh>
-      <Html center distanceFactor={120} position={[0, 6.5, 0]}><div className="ig-node ig-hub"><b>OpenEgiz ingestion</b><span>MQTT telemetry/&lt;asset&gt; → Eclipse Ditto twins</span></div></Html>
+      <Html center distanceFactor={120} position={[0, 6.5, 0]} zIndexRange={[20, 0]}><div className="ig-node ig-hub"><b>OpenEgiz ingestion</b><span>MQTT telemetry/&lt;asset&gt; → Eclipse Ditto twins</span></div></Html>
     </group>
   </group>
 }
@@ -177,7 +222,7 @@ export function IngestionLayer() {
   const [scenario, setScenario] = React.useState('truck_breakdown')
   const [row, setRow] = React.useState(46)
   const [playing, setPlaying] = React.useState(true)
-  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['specs', 'sensors', 'topology', 'flow']))
+  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
   // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
@@ -253,13 +298,14 @@ export function IngestionLayer() {
         <TerrainStage showRoads showPlant moving twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}/>)}
-        <Excavator frame={frame} layers={layers} specs={specsOf('Excavator EX-01')}/>
-        <RomBin frame={frame} layers={layers} specs={specsOf('Primary crusher CR-01')}/>
-        {layers.has('specs') && <Html center distanceFactor={115} position={roadAt(70).add(new THREE.Vector3(0, 12, 0))}><SpecCard title="Haul trucks HT-01…06" specs={specsOf('Haul truck HT-01…06')}/></Html>}
+        <Excavator frame={frame}/>
+        <RomBin frame={frame}/>
         {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
     </div>
+    {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
+    {layers.has('sensors') && <SensorPanel frame={frame} live={live}/>}
 
     <header className="ig-title">
       <span>LAYER 1 · DATA &amp; ASSET INGESTION</span>
