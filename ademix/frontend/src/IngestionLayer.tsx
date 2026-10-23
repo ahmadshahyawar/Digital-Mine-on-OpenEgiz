@@ -284,7 +284,7 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
       </group>
     </group>
     <mesh position={[0, 4.4, 0]}><sphereGeometry args={[.32, 12, 10]}/><meshBasicMaterial color={color}/></mesh>
-    {state === 'breakdown' && <mesh position={[0, 5.4, 0]}><octahedronGeometry args={[.55]}/><meshBasicMaterial color="#ff5149"/></mesh>}
+    {state === 'breakdown' && <BreakdownMarker name={`HT-${String(index + 1).padStart(2, '0')}`} speed={num(frame.at(`${id}.speed_kmh`))}/>}
     {layers.has('sensors') && <Html center distanceFactor={80} position={[0, 6.4, 0]} zIndexRange={[20, 0]}>
       <div className="ig-chip" style={{ borderColor: color, color }}>HT-{String(index + 1).padStart(2, '0')}</div>
     </Html>}
@@ -713,6 +713,60 @@ function WeatherPanel({ weather, reg }: { weather: Weather; reg: Reg }) {
 }
 
 /** Safety readings: following distance, swing zone, ROM bin headroom and road condition. */
+/** Presentation of the simulator's breakdown state: flashing beacon, warning triangles and a label. */
+function BreakdownMarker({ name, speed }: { name: string; speed: number }) {
+  const beacon = React.useRef<THREE.Mesh>(null)
+  useFrame(({ clock }) => {
+    if (!beacon.current) return
+    const on = Math.sin(clock.elapsedTime * 7) > 0
+    beacon.current.scale.setScalar(on ? 1.25 : .8)
+    ;(beacon.current.material as THREE.MeshBasicMaterial).color.set(on ? '#ff2a1f' : '#7a1410')
+  })
+  return <group>
+    <mesh ref={beacon} position={[0, 5.6, 0]}><sphereGeometry args={[.6, 14, 10]}/><meshBasicMaterial color="#ff2a1f"/></mesh>
+    <mesh position={[0, 5.6, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[1.1, 1.35, 28]}/><meshBasicMaterial color="#ff5149" transparent opacity={.7} side={THREE.DoubleSide}/></mesh>
+    {[-4.2, -6.4].map(x => <group key={x} position={[x, .55, 0]}>
+      <mesh rotation={[0, Math.PI / 2, 0]}><coneGeometry args={[.55, 1.1, 3]}/><meshStandardMaterial color="#ff3b30" emissive="#ff3b30" emissiveIntensity={.4}/></mesh>
+    </group>)}
+    <Html center distanceFactor={90} position={[0, 8.2, 0]} zIndexRange={[25, 0]}>
+      <div className="ig-breakdown-tag"><b>{name} · BREAKDOWN</b><span>{speed.toFixed(0)} km/h · stopped</span></div>
+    </Html>
+  </group>
+}
+
+/**
+ * Alert banner naming the broken-down truck and its operational consequence. It only reads the twin
+ * fields the simulator publishes; it does not decide anything itself and disappears on recovery.
+ */
+function BreakdownAlert({ frame, reg }: { frame: Frame; reg: Reg }) {
+  const broken = Array.from({ length: 6 }, (_, i) => i).filter(i => frame.at(`truck-0${i + 1}.state`) === 'breakdown')
+  if (!broken.length) return null
+  const first = broken[0]
+  const name = `HT-0${first + 1}`
+  const pct = num(frame.at(`truck-0${first + 1}.route_progress_pct`))
+  const reported = frame.at('scenario-controller.breakdown_location')
+  const where = typeof reported === 'string' && reported !== 'none'
+    ? reported
+    : `${(pct / 100 * reg('route_length_km')).toFixed(2)} km from the loading face`
+  const blocked = num(frame.at('road-main.blocked_trucks'))
+  const roadRestricted = frame.at('road-main.state') === 'restricted'
+  const blockage = frame.at('road-main.blockage')
+  // On the haul road the simulator blocks the single lane until the truck is towed; elsewhere it does not.
+  const onRoad = typeof reported === 'string' && reported !== 'none' ? reported.startsWith('haul road') : pct > LOOP_PCT && pct < 100 - LOOP_PCT
+  const roadText = roadRestricted
+    ? blocked > 0 ? `Lane blocked: ${blocked} truck${blocked === 1 ? '' : 's'} held behind ${name}` : `Lane blocked by ${name}`
+    : onRoad ? `${name} towed onto the shoulder; the road is open again` : `${name} is parked off the haul road; traffic is not blocked`
+  const throughput = num(frame.at('mine-01.throughput_tph'))
+  const projected = num(frame.at('scenario-controller.projected_throughput_tph'))
+  const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
+  return <section id="ig-breakdown-alert" className="ig-breakdown-alert" role="alert" aria-live="polite">
+    <b>Breakdown · {broken.map(i => `HT-0${i + 1}`).join(', ')}</b>
+    <span>Stopped at {where} · {num(frame.at(`truck-0${first + 1}.speed_kmh`)).toFixed(0)} km/h</span>
+    <span>{typeof blockage === 'string' && blockage !== 'none' ? blockage : roadText}</span>
+    <span>Crusher {throughput.toFixed(0)} t/h now · {projected.toFixed(0)} t/h expected with {6 - broken.length} trucks · constraint: {bottleneck}</span>
+  </section>
+}
+
 function SafetyPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   const metresPerUnit = reg('route_length_km') * 1000
   const lanes: number[][] = [[], []]
@@ -743,7 +797,7 @@ function SafetyPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   </section>
 }
 
-function SensorPanel({ frame, live }: { frame: Frame; live: boolean }) {
+function SensorPanel({ frame, live, source }: { frame: Frame; live: boolean; source: string }) {
   const reading = (key: string, digits = 0) => {
     const raw = frame.at(key)
     return typeof raw === 'number' ? raw.toFixed(digits) : String(raw ?? '—').replace(/_/g, ' ')
@@ -751,7 +805,7 @@ function SensorPanel({ frame, live }: { frame: Frame; live: boolean }) {
   const rom = num(frame.at('crusher-01.rom_inventory_t'))
   return <section className="ig-panel ig-right" aria-label="Sensor readings">
     <h2>{live ? 'Live sensor readings' : 'Sensor readings · replay'}</h2>
-    <p>{live ? 'From the Eclipse Ditto twins, refreshed every 2 seconds.' : 'From the recorded synthetic log; values change as the replay plays.'} Highlighted values just changed.</p>
+    <p>{live ? (source === 'eclipse-ditto' ? 'From the Eclipse Ditto twins, refreshed every 2 seconds.' : 'From the local demo simulator (not via OpenEgiz), refreshed every 2 seconds.') : 'From the recorded synthetic log; values change as the replay plays.'} Highlighted values just changed.</p>
     <table className="ig-sensors-table">
       <thead><tr><th>Truck</th><th>State</th><th>km/h</th><th>Load t</th><th>Fuel %</th></tr></thead>
       <tbody>{Array.from({ length: 6 }, (_, i) => {
@@ -854,6 +908,7 @@ export function IngestionLayer() {
   const activity = React.useRef<Activity[]>([])
   // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
   const [live, setLive] = React.useState(false)
+  const [liveSource, setLiveSource] = React.useState('eclipse-ditto')
   const [, setTick] = React.useState(0)
   const liveState = React.useRef<{ prev: Record<string, unknown>; curr: Record<string, unknown>; at: number; prevRanks: number[]; currRanks: number[] }>(
     { prev: {}, curr: {}, at: 0, prevRanks: [], currRanks: [] })
@@ -867,7 +922,9 @@ export function IngestionLayer() {
         const response = await fetch('/api/state', { cache: 'no-store' })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const body = await response.json()
-        if (body.source !== 'eclipse-ditto' || !Array.isArray(body.twins) || !body.twins.length) throw new Error('not live')
+        // Live from Eclipse Ditto, or from the simulator's local demo mode (labelled as such in the badge).
+        if (!['eclipse-ditto', 'local-simulator-demo'].includes(body.source) || !Array.isArray(body.twins) || !body.twins.length) throw new Error('not live')
+        setLiveSource(body.source)
         const flat: Record<string, unknown> = {}
         for (const twin of body.twins as { thingId: string; features?: Record<string, { properties?: { value?: unknown } }> }[]) {
           const name = String(twin.thingId).split(':')[1]
@@ -989,13 +1046,16 @@ export function IngestionLayer() {
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
       {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
     </div>}
-    {layers.has('sensors') && <SensorPanel frame={frame} live={live}/>}
+    {layers.has('sensors') && <SensorPanel frame={frame} live={live} source={liveSource}/>}
+
+    <BreakdownAlert frame={frame} reg={reg}/>
 
     <header className="ig-title">
       <span>LAYER 1 · DATA &amp; ASSET INGESTION</span>
       <h1>North Pit</h1>
       <div id="ig-mode" className={`ig-mode ${live ? 'live' : 'replay'}`} role="status">
-        <i/>{live ? 'LIVE · Eclipse Ditto twins · every 2 s' : 'REPLAY · recorded synthetic log (stand offline)'}
+        <i/>{!live ? 'REPLAY · recorded synthetic log (stand offline)'
+          : liveSource === 'eclipse-ditto' ? 'LIVE · Eclipse Ditto twins · every 2 s' : 'DEMO · local simulator (not via OpenEgiz) · every 2 s'}
       </div>
     </header>
 
