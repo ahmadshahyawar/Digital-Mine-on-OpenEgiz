@@ -265,7 +265,8 @@ Handoff — Claude — Scenario C: Smart Dispatch — 2026-10-23
   1. Review the engine change; add a smart-dispatch step to `verify_scenarios.py` (POST /api/dispatch, check the new fields through Ditto) and run it on the Docker stand.
   2. If the replay bundle should show Scenario C, add smart-dispatch logs and the new fields to `build_data_layer.py` / `ingestion.json`.
   3. Integrator: mention Scenario C in `SUBMISSION.md` / `README.md` (how to activate: What-if panel → C; reset: A).
-- Known visual issue (not fixed): at the crusher loop junction, loop berm tubes cross the paved pad.
+- Fixed later on this branch: loop berms no longer cross the paved turning areas (one outer windrow per loop, open at the road; road windrows stop short of the loops). Trucks also keep a truck length apart on the circuit and stop at the back of queues.
+- Follow-up (same branch): standby trucks park in a four-bay standby pad on the free pit floor west of the face loop (off every road); the excavator animates the simulator's 4 × 90 s passes (dig at a muck pile, swing, dump into the body, swing back) and the truck load rises per bucket; OrbitControls minDistance 62 → 14 with zoomToCursor (TerrainStage.tsx). Checked in the browser on the demo stand: two trucks parked in bays; dig/swing/dump cycle visible. Visual only, no twin change.
 
 ### Lock — Claude — truck-breakdown visualization — 2026-10-23
 

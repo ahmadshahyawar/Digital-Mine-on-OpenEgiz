@@ -121,3 +121,4 @@
 .ig-wi-bottleneck span { font-size: 10px; color: var(--ig-dim); }
 .ig-wi-bottleneck b { font-size: 12px; text-transform: capitalize; }
 .ig-wi-bottleneck p { grid-column: 1 / -1; }
+.ig-bay-no { padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #1c1a16; background: #e8e2cf; }

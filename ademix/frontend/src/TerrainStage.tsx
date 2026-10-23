@@ -196,10 +196,12 @@ function HaulRoadLayer() {
   const { curve, road, outerBerm, markers } = React.useMemo(() => {
     const points = haulRoadPoints()
     const path = new THREE.CatmullRomCurve3(points)
+    // The outer berm stops before the turning areas at each end of the road (crusher and face).
+    const ends = [{ centre: points[0], clear: 15.9 }, { centre: points[points.length - 1], clear: 13.6 }]
     const offsetCurve = (distance: number) => new THREE.CatmullRomCurve3(points.map(point => {
       const radial = new THREE.Vector3(point.x / 59, 0, point.z / 41).normalize()
       return point.clone().addScaledVector(radial, distance).add(new THREE.Vector3(0, .52, 0))
-    }))
+    }).filter(p => ends.every(e => Math.hypot(p.x - e.centre.x, p.z - e.centre.z) > e.clear)))
     return {
       curve: path,
       road: ribbonGeometry(path, 13.6), // two lanes plus a shoulder on each side
@@ -392,6 +394,6 @@ export function TerrainStage({ showRoads = false, showEquipment = false, showPla
     {showEquipment && <EquipmentLayer twins={twins} moving={moving}/>}
     {showPlant && <ProcessingPlantLayer twins={twins} moving={moving} hideStorage={hideStorage}/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
-    <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
+    <OrbitControls makeDefault target={[0, -6, 0]} minDistance={14} maxDistance={175} maxPolarAngle={Math.PI / 2.08} zoomToCursor/>
   </>
 }
