@@ -233,6 +233,17 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — truck-breakdown visualization — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat)
+Branch: claude/breakdown-visual (from origin/codex/ademix c10fba1)
+Task: present the simulator's truck-breakdown state in the Layer 1 scene: the broken truck visibly stops, carries a breakdown marker, the UI names the affected truck and shows the operational consequence, and recovery removes the warning. No scenario logic in React.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css (this Active Work entry is the only PROJECT_CONTEXT.md change)
+Interfaces consumed or changed: consumes truck-0N.state/speed_kmh/route_progress_pct/heading, road-main.state/blocked_trucks/blockage, scenario-controller.breakdown_location/projected_throughput_tph/bottleneck, mine-01.throughput_tph/bottleneck_live; no twin field added or changed.
+Expected handoff: commit SHA, files, build result and screenshots; request to Codex to add road-main.blockage and scenario-controller.breakdown_location to the replay bundle.
+```
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
