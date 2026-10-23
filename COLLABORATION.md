@@ -1,17 +1,23 @@
 # Team collaboration protocol
 
-This file prevents Ahmad/Codex and Turken/Claude from implementing or merging the same work twice.
+This file prevents Ahmad/Codex and Professor/Claude from implementing or merging the same work twice. `TEAM_WORK_PLAN.md` is the authoritative assignment of the remaining improvements. Both agents still read the complete `PROJECT_CONTEXT.md` and `RULES_CHECKLIST.md`; file ownership does not mean either agent works without knowledge of the other stream.
+
+`START_HERE.md` is the short repeating workflow. After each completed integration, the tested combination is pushed to `origin/codex/ademix`. Every new feature begins from that integrated state. Feature branches are pushed for handoff; `main` remains reserved for the final accepted submission.
 
 ## Current ownership
 
 | Area | Owner | Paths |
 | --- | --- | --- |
-| 3D presentation and frontend UX | Turken + Claude | `ademix/frontend/src/TerrainStage.tsx`, `IngestionLayer.tsx`, `ingestion.css`, visual models and visual assets |
+| 3D presentation and frontend UX | Professor + Claude | `ademix/frontend/src/TerrainStage.tsx`, `IngestionLayer.tsx`, `ingestion.css`, visual models and visual assets |
 | Simulation, what-if behavior, OpenEgiz/API and automated tests | Ahmad + Codex | `ademix/simulator/`, scenario state transitions, MQTT/Ditto integration, Python tests |
 | Data evidence and generated replay bundle | Codex generates; Claude consumes | `ademix/data/`, `ademix/frontend/public/data/ingestion.json` |
 | Release integration | One designated integrator at a time | `main.tsx`, `README.md`, `SUBMISSION.md`, `PROJECT_CONTEXT.md`, `presentation/`, Compose files |
 
+The current release integrator is **Ahmad + Codex** until a later `PROJECT_CONTEXT.md` entry transfers that role. The integrator role permits combining accepted handoffs; it does not permit redesigning Professor + Claude's scene or silently changing Ahmad + Codex's model behavior.
+
 Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work begins. An agent must not edit another owner's paths without recording a handoff first. Claude owns the accepted visual scene; Codex must not restyle or replace it unless the Team explicitly transfers that task. Claude must not change simulator behavior to make a visual effect work; it consumes the documented twin fields instead.
+
+For cross-layer work, agree on the twin/API contract before parallel implementation. Ahmad + Codex own field meaning, units, allowed values, scenario/reset behavior and backend fixtures. Professor + Claude own presentation and may request contract changes before it is frozen. After freeze, neither side silently renames, duplicates or reinterprets a field.
 
 ## Branch rules
 

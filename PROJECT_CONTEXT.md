@@ -24,7 +24,7 @@ The team may choose its own functional modules. Possible modules include equipme
 | Team member | Primary responsibilities | Current focus |
 | --- | --- | --- |
 | Ahmad Shah Yawar (`ahmadshahyawar`) | Product decisions and final review; technical work assisted by Codex and Claude | Repository access and project initiation |
-| Turken Gulzat (`TurkenGulzat`) | Product decisions and final review; technical work assisted by Codex and Claude | Awaiting official repository invitation |
+| Professor (`TurkenGulzat`) | Product decisions and final review; technical work assisted by Codex and Claude | Awaiting official repository invitation |
 
 ## Competition Summary
 
@@ -236,7 +236,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 ### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23
 
 ```text
-Owner: Claude (for TurkenGulzat). The simulator is Codex-owned; TurkenGulzat explicitly approved Claude
+Owner: Claude (for Professor). The simulator is Codex-owned; Professor explicitly approved Claude
   building Smart Dispatch in the simulator on its own branch and informing Codex (2026-10-23).
 Branch: claude/smart-dispatch (from origin/codex/ademix 8d8a30e)
 Task: add a dispatch policy (fixed | smart) orthogonal to the four operating scenarios. Smart dispatch
@@ -261,7 +261,7 @@ Handoff — Claude — Scenario C: Smart Dispatch — 2026-10-23
 - Model results (`compare_scenarios.py`, steady state hours 2–9): production identical in all four conditions; truck operating h per kt −33 % normal, −20 % breakdown, −50 % crusher slowdown, 0 % road restriction; wait at face 13.6 → 1.6 min. First-hour production after a breakdown equals the fixed fleet at all 12 trigger times. Synthetic model output, no fuel saving claimed.
 - Checks: `python -m unittest test_engine` 41 tests pass (7 new `DispatchTests`); `tsc -b` and Vite build pass; demo stand (ADEMIX_DEMO_MODE=1): `/api/dispatch` switches policy, 4 cycling / 2 parked appear in the panel and sensor table, breakdown with smart on releases one parked truck. Not run on the Docker/Ditto stand.
 - Interfaces (additive): truck state `standby`; scenario-controller `dispatch_policy`, `dispatch_description`, `trucks_required`, `trucks_in_cycle`, `trucks_standby`, `dispatch_reason`; mine-01 `truck_operating_h_per_kt`, `operating_fleet_utilization`; `POST /api/dispatch {"policy": "fixed"|"smart"}`; `/api/health` reports `dispatch`.
-- Request to Codex (simulator/data owner; TurkenGulzat approved Claude editing the simulator for this task):
+- Request to Codex (simulator/data owner; Professor approved Claude editing the simulator for this task):
   1. Review the engine change; add a smart-dispatch step to `verify_scenarios.py` (POST /api/dispatch, check the new fields through Ditto) and run it on the Docker stand.
   2. If the replay bundle should show Scenario C, add smart-dispatch logs and the new fields to `build_data_layer.py` / `ingestion.json`.
   3. Integrator: mention Scenario C in `SUBMISSION.md` / `README.md` (how to activate: What-if panel → C; reset: A).
@@ -271,7 +271,7 @@ Handoff — Claude — Scenario C: Smart Dispatch — 2026-10-23
 ### Lock — Claude — truck-breakdown visualization — 2026-10-23
 
 ```text
-Owner: Claude (for TurkenGulzat)
+Owner: Claude (for Professor)
 Branch: claude/breakdown-visual (from origin/codex/ademix c10fba1)
 Task: present the simulator's truck-breakdown state in the Layer 1 scene: the broken truck visibly stops, carries a breakdown marker, the UI names the affected truck and shows the operational consequence, and recovery removes the warning. No scenario logic in React.
 Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css (this Active Work entry is the only PROJECT_CONTEXT.md change)
@@ -308,7 +308,7 @@ Integrator notes: GraphicsSettings.tsx, GroundMaterial.ts, responsive.css, timin
 ### Lock — Claude — illustrative pit-wall geometry — 2026-10-23
 
 ```text
-Owner: Claude (for TurkenGulzat)
+Owner: Claude (for Professor)
 Branch: claude/pit-geometry (from origin/codex/ademix d4c320c)
 Task: rebuild the 3D pit wall from the Team's illustrative design values (bench height 10 m, bench face 70°,
   working bench width 20 m, overall slope 45°; catch berm to be set by project design) and label them as
@@ -331,7 +331,7 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 ### Lock — Claude — wider haul road, broken trucks on the shoulder — 2026-10-23
 
 ```text
-Owner: Claude (for TurkenGulzat)
+Owner: Claude (for Professor)
 Branch: claude/road-shoulder (from claude/pit-geometry 21078a8, PR #2)
 Task: widen the drawn haul road and its loops so each direction has a lane plus a shoulder, and show a truck
   whose twin state is `breakdown` pulled to the right-hand edge (still encroaching its lane while
@@ -347,9 +347,9 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 - Road ribbon 7.2→13.6 units, terrain shelf flattened to 7.2 (blend to 10.6), outer berm 4.2→7.3, loop half-width 3.35→4.4, loop berms, loop speed signs, ramp lights and escape lane moved out to match. Broken-down truck eases to offset 3.7 (over its lane line) while `road-main.state` is `restricted`, then 5.1 (shoulder) once open.
 - Checks: `tsc -b` passes; overview canvas captured in the browser shows the wider ramp shelf. Not done: a breakdown observed on the wider road, and the crusher-loop junction, where loop berm tubes cross the paved pad (may predate this change; needs a close review).
 
-### Collaboration ownership — 2026-10-23
+### Superseded collaboration ownership — 2026-10-23
 
-- `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
+- This earlier ownership statement is superseded because it inverted the Team's intended lanes. The authoritative split is now: Ahmad + Codex own simulator, scenarios, OpenEgiz/API, data evidence and backend tests; Professor + Claude own 3D presentation and frontend UX. `COLLABORATION.md` and `TEAM_WORK_PLAN.md` define the current protocol. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
 - Remote inspection confirms `claude/data-asset-layer` contains the histories of both `claude/what-if-scenarios` and `claude/core-simulation-engine`; integrate the latest stacked branch once rather than merging all three.
 - Current Codex worktree is not ready for integration because it contains uncommitted visual and release-audit changes. Commit a coherent Codex checkpoint before attempting any Claude merge. No branch was merged during this inspection.
 
@@ -530,6 +530,43 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - The professor's authoritative Layer 1 scene is now the default `http://localhost:4173` entry point; explicit legacy review-stage query strings remain available. This prevents judges from landing on the obsolete minimal command-center scene.
 - Final integrated checks after the professor update: 56 simulator-package tests pass, 32 data-layer tests pass, TypeScript/Vite production build passes, all Docker images rebuild and services become healthy, the read-only live smoke test passes 11 twins and 128 fields/units, and the mutating verifier passes baseline, Smart Dispatch (4 cycling/2 standby), breakdown, restriction, slowdown, and fixed/baseline reset through Eclipse Ditto.
 - Browser-control access to localhost was disabled in the current Work settings, and headless screenshot attempts were not reliable, so final human visual acceptance of the rebuilt default route remains required before merging to `main`. Native Ubuntu 24.04 clean-start and presentation reconciliation also remain release gates.
+
+### Advisory review handoff — 2026-10-23
+
+- Owner: Codex on `codex/ademix`; scope: read-only product/rules review requested by the Team, plus this context entry. No frontend, simulation, Concept, or release branch was changed.
+- Read the shared context/checklist, submission, README, collaboration protocol, model description, relevant frontend code, and saved `evidence/release-candidate-ingestion.png`. Reviewed the contest home, rules, Mine Map, data, judge environment, FAQ, and the two visible official Discussions. The university announcement repeatedly failed to load; private repository pull-request listings could not be verified in this environment.
+- `git fetch origin` succeeded. No `origin/main` commits are missing from HEAD; fetched `origin/main` remains the initial template (`5db0a87`), with the developed branch 71 commits ahead. Final integration into `main` remains essential. HEAD matches `origin/codex/ademix`; no missing commits from `origin/claude/data-asset-layer` were found.
+- Read-only live API checks through port 4173 returned healthy baseline/fixed dispatch, `source=eclipse-ditto`, and 11 twins. Automated tests, browser interaction, software-render frame rate, PDF layout, and Ubuntu startup were not rerun in this advisory review.
+- Recommendations for Team consideration, not approved implementation: make existing Smart Dispatch results directly comparable on screen; provide a short guided demonstration; open with fewer overlays and clearer operator language; reconcile model/visual road assumptions and all documentation; then complete presentation reconciliation, Ubuntu/software-WebGL evidence, human visual acceptance, and final `main` integration. Optional larger extensions are a second route or loading face, only after release gates are secure.
+- Preserve current ownership: Professor + Claude handle frontend proposals; Codex handles simulator/data changes; one integrator handles shared release files. No feature work was assigned or started by this review.
+
+### Consolidated checklist handoff — 2026-10-23
+
+- Team requested one clear to-do list combining both advisory reviews, with a test for every task. Added `FINAL_TODO.md`: 22 ordered verification, correction, presentation and optional-extension items, with ownership, acceptance tests and an execution sequence.
+- The checklist distinguishes existing tested features from proposed improvements. It records the specific current-rate-times-elapsed-shift CO₂ issue, existing standby exclusion in estimated diesel, no-queue versus queued cycle time, advisory safety limits, road-model consistency, final Ubuntu/performance evidence, PDF reconciliation and official `main` submission.
+- No implementation, test execution, scenario mutation, visual redesign or release merge was performed for this checklist request. Optional features remain proposals; contributor ownership and final visual acceptance remain unchanged.
+
+### Two-person work-plan handoff — 2026-10-23
+
+- Added `TEAM_WORK_PLAN.md` to assign the remaining improvements without isolating the contributors: Ahmad + Codex own operational truth and verification; Professor + Claude own operator presentation and visual acceptance; both consume the complete shared context and a frozen twin/API contract.
+- Defined five coordinated batches: cumulative fuel/CO2, fixed-versus-smart comparison, event timeline, road-direction consistency, and final guided demo/opening view. Each batch lists separate owned work and a combined integration test.
+- `COLLABORATION.md` now names Ahmad + Codex as the current release integrator, requires contract-first cross-layer work, and points to the work plan. The earlier inverted ownership paragraph is explicitly marked superseded rather than silently deleted.
+- No simulator or frontend implementation was changed. Existing uncommitted advisory documents and the user's screenshot evidence were preserved.
+
+### Numbered two-person startup notes — 2026-10-23
+
+- Added `01_AHMAD_CODEX_WORK.md` with tasks A1–A5 and `02_PROFESSOR_CLAUDE_WORK.md` with tasks B1–B6. Every task includes owned scope, dependency/handoff and acceptance tests.
+- Claude's note begins with a copyable prompt that requires the shared context/rules/collaboration files, protects backend ownership, starts B1 independently, and waits for Codex's frozen A1 contract before B2.
+- Cross-stream mapping: A1 → B2 fuel/ESG, A2 → B3 fixed/smart comparison, A3 → B4 timeline, and A4 → the road behavior portion of B5. B1 can run in parallel with A1.
+- No application code or behavior was changed. Markdown consistency checks remain the only verification needed for this planning change.
+
+### Reusable AI collaboration cycle — 2026-10-23
+
+- Added `START_HERE.md`, a plain-language page for both humans and AIs: sync, confirm prior handoffs are integrated, branch from `origin/codex/ademix`, stay within file ownership, test, push the feature branch, integrate both streams, push the tested combined branch, then repeat.
+- Added `PROFESSOR_CLAUDE_PROMPT.md`, a short reusable prompt that Professor can give Claude for every new request. It requires checking both workstreams and prevents dependent work from being stacked before completed work is integrated.
+- Updated `AGENTS.md` so all AI agents read the collaboration files and follow the repeating cycle. Updated `CLAUDE.md` so Claude loads the same guidance and its numbered work note automatically.
+- The shared integration branch is currently `origin/codex/ademix`; Ahmad + Codex remain the designated integrator. Feature branches are pushed for handoff, while official `main` remains reserved for the final accepted release.
+- No application behavior was changed. These planning files are intended for GitHub so future AI sessions receive the workflow directly from the repository.
 
 ## Handoff Template
 

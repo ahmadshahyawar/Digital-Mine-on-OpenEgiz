@@ -2,7 +2,9 @@
 
 This repository is a Team Repository of the contest “Digital Mine on OpenEgiz”: [Rules](https://openegiz-contest.github.io/rules/). You work on it with the Team. The platform is documented in [OPENEGIZ.md](OPENEGIZ.md).
 
-Before planning, editing, or reviewing this repository, read `PROJECT_CONTEXT.md` and `RULES_CHECKLIST.md` in full. Treat them as the shared source of truth for project goals, competition requirements, team status, active work, decisions, release gates, and handoffs.
+Before planning, editing, or reviewing this repository, read `PROJECT_CONTEXT.md`, `RULES_CHECKLIST.md`, `START_HERE.md`, `COLLABORATION.md`, and `TEAM_WORK_PLAN.md` in full, followed by the relevant numbered work note. Treat them as the shared source of truth for project goals, competition requirements, team status, active work, decisions, ownership, integration, release gates, and handoffs.
+
+For every new change, follow the repeating cycle in `START_HERE.md`: fetch, confirm prior work is integrated, branch from the latest shared integration state, edit only owned paths, test, push a feature branch, hand off, integrate and test both workstreams together, then push the updated shared integration branch. Do not start a dependent feature from an unintegrated branch.
 
 ## The Concept comes from the Team
 
