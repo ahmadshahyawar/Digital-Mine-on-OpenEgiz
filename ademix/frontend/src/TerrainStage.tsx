@@ -196,10 +196,12 @@ function HaulRoadLayer() {
   const { curve, road, outerBerm, markers } = React.useMemo(() => {
     const points = haulRoadPoints()
     const path = new THREE.CatmullRomCurve3(points)
+    // The outer berm stops before the turning areas at each end of the road (crusher and face).
+    const ends = [{ centre: points[0], clear: 15.9 }, { centre: points[points.length - 1], clear: 13.6 }]
     const offsetCurve = (distance: number) => new THREE.CatmullRomCurve3(points.map(point => {
       const radial = new THREE.Vector3(point.x / 59, 0, point.z / 41).normalize()
       return point.clone().addScaledVector(radial, distance).add(new THREE.Vector3(0, .52, 0))
-    }))
+    }).filter(p => ends.every(e => Math.hypot(p.x - e.centre.x, p.z - e.centre.z) > e.clear)))
     return {
       curve: path,
       road: ribbonGeometry(path, 13.6), // two lanes plus a shoulder on each side

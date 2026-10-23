@@ -393,22 +393,35 @@ function LoopRoads() {
 function SafetyBerms() {
   const tubes = React.useMemo(() => {
     const along = (points: THREE.Vector3[]) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(40, points.length * 3), .5, 6, false)
+    // Each turning loop gets one windrow round its outside edge, open where the haul road joins; the
+    // island inside the loop needs none. Road windrows stop short of the loops so no berm crosses the
+    // paved turning area that trucks swing through.
+    const loops = [{ centre: haulRoadPoint(1), radius: 7.3, end: 1 }, { centre: haulRoadPoint(0), radius: 9.6, end: 0 }]
+    const clearOfLoops = (p: THREE.Vector3) => loops.every(l => Math.hypot(p.x - l.centre.x, p.z - l.centre.z) > l.radius + LOOP_HALF_WIDTH + 1.6)
     const road = (side: 1 | -1) => {
       const points: THREE.Vector3[] = []
       for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * (ROAD_HALF_WIDTH + .5)).position.add(new THREE.Vector3(0, .35, 0)))
-      return along(points)
+      return along(points.filter(clearOfLoops))
     }
-    const loop = (end: 'face' | 'crusher', side: 1 | -1) => {
-      const curve = LOOPS[end]
+    const loopBerm = ({ centre, radius, end }: typeof loops[number]) => {
+      const r = radius + LOOP_HALF_WIDTH + .9
+      // Where the haul road's centreline crosses the berm circle: leave the road's width open there.
+      let join = centre.clone()
+      for (let k = 0; k <= 400; k++) {
+        const point = haulRoadPoint(end === 1 ? 1 - k / 2000 : k / 2000)
+        join = point
+        if (Math.hypot(point.x - centre.x, point.z - centre.z) >= r) break
+      }
+      const gapAt = Math.atan2(join.z - centre.z, join.x - centre.x)
+      const halfGap = Math.atan((ROAD_HALF_WIDTH + 1.4) / r) * 1.1
       const points: THREE.Vector3[] = []
-      for (let k = 4; k <= 76; k++) {
-        const t = k / 80
-        const forward = curve.getTangentAt(t).setY(0).normalize()
-        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * (LOOP_HALF_WIDTH + .9)).add(new THREE.Vector3(0, .35, 0)))
+      for (let k = 0; k <= 96; k++) {
+        const a = gapAt + halfGap + (Math.PI * 2 - 2 * halfGap) * k / 96
+        points.push(new THREE.Vector3(centre.x + Math.cos(a) * r, centre.y + .35, centre.z + Math.sin(a) * r))
       }
       return along(points)
     }
-    return [road(-1), loop('face', 1), loop('face', -1), loop('crusher', 1), loop('crusher', -1)]
+    return [road(-1), ...loops.map(loopBerm)]
   }, [])
   return <group>{tubes.map((g, i) => <mesh key={i} geometry={g}><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>)}</group>
 }
