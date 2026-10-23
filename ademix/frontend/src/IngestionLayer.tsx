@@ -18,7 +18,7 @@ type Frame = { at: (key: string) => string | number | null; atMix: (key: string)
 const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow']]
 const STATUS_COLOR: Record<string, string> = {
   sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
-  synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b',
+  synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b', external_reference: '#5ec8f2',
 }
 const TRUCK_COLOR: Record<string, string> = {
   hauling: '#38ef9d', returning: '#4fd1c5', loading: '#ffc246', dumping: '#ffc246',
@@ -274,7 +274,7 @@ export function IngestionLayer() {
     </nav>
 
     <div className="ig-key" aria-label="Value status">
-      {[['sourced', 'OpenMines'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic'], ['required_input', 'required input']].map(([s, l]) =>
+      {[['sourced', 'OpenMines'], ['external_reference', 'Cat handbook'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic']].map(([s, l]) =>
         <span key={s}><i style={{ background: STATUS_COLOR[s] }}/>{l}</span>)}
     </div>
 

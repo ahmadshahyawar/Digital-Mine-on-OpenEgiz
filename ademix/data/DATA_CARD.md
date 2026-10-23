@@ -20,7 +20,8 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 |---|---|---|---|
 | `openmines/north_pit_mine.json` | OpenMines "North Pit Mine" configuration, unchanged | Third-party source (MIT) | 1 file |
 | `openmines/LICENSE` | Upstream MIT licence | Licence | 1 file |
-| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 27 parameters (2 are required inputs with no value) |
+| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 27 parameters |
+| `registry/fuel_references.csv` | Caterpillar Performance Handbook fuel rates (low/medium/high) and payloads of the comparable Cat 775G, 777G and 6020B, each with its source URL and page | External reference | 3 models |
 | `fleet/haulage_fleet_specs.csv` | All trucks, shovels and dump points in the source, marking the three the model uses | Derived from source | 28 rows |
 | `fleet/route_distances.csv` | Source load-to-dump and dump-to-load distance matrices, long format | Derived from source | 50 rows |
 | `fleet/route_distance_summary.csv` | Distribution statistics of those distances, and the model route's position in them | Derived from source | 2 rows |
@@ -32,7 +33,7 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 122 columns |
 | `telemetry/manifest.json` | SHA-256 of every input and output, plus generation settings | Provenance record | 1 file |
 | `build_data_layer.py` | Regenerates every derived and synthetic file | Code | — |
-| `test_data_layer.py` | 24 validation tests | Code | — |
+| `test_data_layer.py` | 28 validation tests | Code | — |
 
 The twin instances themselves remain in `ademix/simulator/twins.json`, because the setup container reads them from there.
 
@@ -46,7 +47,7 @@ The twin instances themselves remain in `ademix/simulator/twins.json`, because t
 | scenario_input | 3 | What-if magnitude chosen for the demonstration | 10.72 km/h restriction, 55 % crusher factor, 20 min blockage |
 | synthetic | 2 | Display-only signal with no physical calibration | Fuel burn per route, loaded and empty |
 | model_setting | 4 | Numerical or analysis setting | KPI window, bottleneck window, 95 % saturation, random seed |
-| required_input | 2 | Needed by the specification but not available in any source the team holds; no value is stored | Truck and excavator fuel consumption (L/h) |
+| external_reference | 2 | Taken from a published manufacturer reference for a comparable machine, not from the modelled machine itself | Truck fuel 49.6 L/h (Cat 775G–777G interpolated to 77 t), excavator fuel 83.5 L/h (Cat 6020B) |
 
 The source file states **no units**. Reading them as tonnes, km/h, minutes and km is an interpretation consistent across the file (77 t trucks at 25 km/h), but it has not been confirmed against the OpenMines code or documentation. The register says this for each affected value. The source's road-repair parameters (`lambda_repair` 0.00833, `mu_repair_duration` 50) are recorded for completeness but are not used, because the Ademix model has no random road events.
 
@@ -67,7 +68,7 @@ The source file states **no units**. Reading them as tonnes, km/h, minutes and k
 | Element group | Where it is | Status |
 |---|---|---|
 | Technical specifications of trucks and excavators: speed, capacity | `registry/parameters.csv`, `fleet/haulage_fleet_specs.csv` | Sourced from OpenMines; derived loading and dumping capacities |
-| Fuel consumption | `registry/parameters.csv` (`truck_fuel_consumption_lph`, `excavator_fuel_consumption_lph`) | **Required input.** No source the team holds gives it. The formula fuel (L/h) = power (kW) × load factor × brake-specific fuel consumption (g/kWh) ÷ (1000 × diesel density, kg/L) is recorded; a manufacturer or site figure must be supplied. |
+| Fuel consumption | `registry/parameters.csv` (`truck_fuel_consumption_lph`, `excavator_fuel_consumption_lph`) from `registry/fuel_references.csv` | **External reference.** Caterpillar Performance Handbook fuel tables (VisionLink telematics, December 2022 extract; idle 50/30/10 % for low/medium/high load). Truck: the 77 t truck lies between the Cat 775G (64.0 t) and 777G (90.8 t), so its medium-load rate is interpolated in payload: 49.6 L/h, range 38.1–61.1 L/h. Excavator: the Cat 6020B (22 t per pass) is the closest class to the 20.32 t pass: 83.5 L/h, range 63.6–103.5 L/h. These describe comparable Caterpillar machines, not the fictional demonstration fleet. The truck fuel *level* in the live twins remains a synthetic display signal. |
 | Historical telemetry logs | `telemetry/logs/*.csv` | Synthetic, deterministic, hash-verified |
 | Real-time IoT sensor data | `telemetry/sensor_catalogue.csv` → MQTT `telemetry/<thing>` → Ditto | Simulated sensors, labelled with their real-world equivalents |
 | Mine topological parameters | `topology/mine_topology.json`, `fleet/route_distance*.csv` | Modelled layout plus OpenMines distance matrices; no surveyed elevations or grades |
@@ -90,7 +91,7 @@ If the engine or the register changes, a test fails until the generator is rerun
 
 ## 6. Validation
 
-All 24 tests pass. They check the following:
+All 28 tests pass. They check the following:
 
 - **Source integrity:** the stored source file matches its recorded checksum, and its MIT licence is present.
 - **Register:**
@@ -121,7 +122,8 @@ All 24 tests pass. They check the following:
 
 - **Sensors:** every published feature is produced by exactly the documented sensor kinds, and the publish interval matches the simulator settings.
 - **Topology:** every node and edge references registered parameters and existing twins, and the 3D pit geometry matches the scene code.
-- **Frontend bundle:** it regenerates byte for byte, its statuses match the register, and fuel consumption stays empty until it is supplied.
+- **Fuel references:** each cites the handbook and a payload source; the truck value is recomputed by payload interpolation and the excavator value by unit conversion (gal/h × 3.785411784), including the low and high range.
+- **Frontend bundle:** it regenerates byte for byte, its statuses match the register, and the fuel values equal the register.
 
 These tests verify internal consistency and traceability. They do not validate the model against a real mine, and no such data is available to the team.
 

@@ -24,7 +24,7 @@ sys.path.insert(0, str(DATA.parent / "simulator"))
 import build_data_layer as build  # noqa: E402
 import engine  # noqa: E402
 
-STATUSES = {"sourced", "derived", "assumption", "scenario_input", "synthetic", "model_setting", "required_input"}
+STATUSES = {"sourced", "derived", "assumption", "scenario_input", "synthetic", "model_setting", "required_input", "external_reference"}
 ORIGINS = {"simulated_state", "kpi", "analytical", "configuration", "static", "synthetic_signal"}
 SOURCE_SHA256_LF = "a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c"
 
@@ -265,6 +265,43 @@ class TelemetryLogTests(unittest.TestCase):
                         self.assertEqual(row["scenario-controller.active"], expected)
 
 
+class FuelReferenceTests(unittest.TestCase):
+    REFS = {r["model"]: r for r in read_csv(DATA / "registry" / "fuel_references.csv")}
+    GAL_TO_L = 3.785411784
+
+    def test_references_cite_a_source_and_page(self):
+        for model, ref in self.REFS.items():
+            with self.subTest(model=model):
+                self.assertIn("Caterpillar Performance Handbook", ref["fuel_source"])
+                self.assertTrue(ref["payload_source"].startswith(("Caterpillar", "Peterson Cat")))
+                self.assertTrue(ref["fuel_page"].isdigit())
+                low, med, high = (float(ref[k]) for k in ("low_gal_h", "medium_gal_h", "high_gal_h"))
+                self.assertLess(low, med)
+                self.assertLess(med, high)
+
+    def test_truck_fuel_is_payload_interpolated_between_bracketing_trucks(self):
+        a, b = self.REFS["Cat 775G"], self.REFS["Cat 777G"]
+        self.assertLess(float(a["payload_t"]), value("truck_payload_t"))
+        self.assertLess(value("truck_payload_t"), float(b["payload_t"]))
+        weight = (value("truck_payload_t") - float(a["payload_t"])) / (float(b["payload_t"]) - float(a["payload_t"]))
+        row = REGISTER["truck_fuel_consumption_lph"]
+        for column, key in (("value", "medium_gal_h"), ("check_min", "low_gal_h"), ("check_max", "high_gal_h")):
+            expected = (float(a[key]) + weight * (float(b[key]) - float(a[key]))) * self.GAL_TO_L
+            self.assertAlmostEqual(float(row[column]), expected, delta=0.05)
+
+    def test_excavator_fuel_uses_the_closest_shovel_class(self):
+        ref = self.REFS["Cat 6020B"]
+        self.assertAlmostEqual(float(ref["payload_t"]), value("shovel_pass_t"), delta=2.5)
+        row = REGISTER["excavator_fuel_consumption_lph"]
+        for column, key in (("value", "medium_gal_h"), ("check_min", "low_gal_h"), ("check_max", "high_gal_h")):
+            self.assertAlmostEqual(float(row[column]), float(ref[key]) * self.GAL_TO_L, delta=0.05)
+
+    def test_fuel_values_are_labelled_as_external_references(self):
+        for pid in ("truck_fuel_consumption_lph", "excavator_fuel_consumption_lph"):
+            self.assertEqual(REGISTER[pid]["status"], "external_reference")
+            self.assertIn("not a measurement", REGISTER[pid]["notes"])
+
+
 class SensorTopologyBundleTests(unittest.TestCase):
     SENSORS = read_csv(DATA / "telemetry" / "sensor_catalogue.csv")
     TOPOLOGY = json.loads((DATA / "topology" / "mine_topology.json").read_text(encoding="utf-8"))
@@ -314,7 +351,7 @@ class SensorTopologyBundleTests(unittest.TestCase):
             for spec in equipment["specs"]:
                 self.assertEqual(spec["status"], REGISTER[spec["parameter_id"]]["status"])
         fuel = [s for e in bundle["equipment"] for s in e["specs"] if s["parameter_id"].endswith("fuel_consumption_lph")]
-        self.assertTrue(fuel and all(s["value"] is None for s in fuel))
+        self.assertTrue(fuel and all(s["value"] == value(s["parameter_id"]) for s in fuel))
 
 
 if __name__ == "__main__":
