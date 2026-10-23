@@ -233,23 +233,34 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — A3 production and recovery history — 2026-10-23
+### Handoff — Codex — A3 production and recovery history — 2026-10-23
 
 ```text
+Status: ready for integration; A3 work lock released
 Owner: Ahmad + Codex
-Branch: codex/a3-recovery-history (from origin/codex/ademix ff16548)
-Task: generate a minimal, versioned simulator timeline with simulated timestamps for baseline,
-  breakdown, tow/road-clear, recovery and reset; keep observed throughput distinct from projection.
-Exact files: ademix/simulator/history_evidence.py, ademix/simulator/test_history_evidence.py,
-  ademix/simulator/HISTORY_CONTRACT.md, ademix/data/build_data_layer.py,
-  ademix/data/test_data_layer.py, ademix/data/evidence/production_recovery.json,
-  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
-  PROJECT_CONTEXT.md.
-Contract: no live twin/API field change. Generated ingestion.json gains productionRecovery schema v1,
-  with ordered events and 5-minute samples whose source keys map exactly to existing Ditto twin fields.
-Frontend ownership: no React/3D source will be edited; Professor + Claude consume the generated contract.
-Expected handoff: history schema, baseline/breakdown fixtures, event-label rules, reset behavior,
-  reproduction command, tests, commit SHA, limitations and integration instructions.
+Branch: codex/a3-recovery-history
+Implementation commit: a87dab0
+Exact files: ademix/simulator/{history_evidence.py,test_history_evidence.py,HISTORY_CONTRACT.md};
+  ademix/data/{build_data_layer.py,test_data_layer.py,evidence/production_recovery.json,
+  telemetry/manifest.json}; ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
+Contract: no live twin/API field change. `productionRecovery` in the generated bundle and source fixture
+  use `ademix.production-recovery.v1`. HISTORY_CONTRACT.md freezes types, units, twin-source mappings,
+  event kinds, reset behavior, chart semantics and label rules.
+Fixture: identical hashed state after 4 h warm-up; 5-minute samples; breakdown at sim 14400 s;
+  road cleared/tow at 15600 s (exactly 1200 s); observed rolling throughput recovers to >=95% of
+  projected capacity at the first qualifying sample, 19200 s; reset starts period 2 at 25200 s.
+  The incident series reaches 516.6 t/h; reset begins at elapsed 0 with baseline/open/0 blocked trucks.
+Reproduction: `python ademix/data/build_data_layer.py` regenerates the history, manifest and frontend
+  bundle byte-for-byte.
+Tests actually run: 70 simulator/API tests pass; 34 data tests pass; frontend tsc + Vite build passes
+  (existing >500 kB bundle warning only).
+Frontend handoff: Professor + Claude should use simulated time, plot observed throughput as a solid line,
+  projected steady capacity as a distinct dashed line, and use only supplied event markers. Preserve old
+  period 1 after reset and begin period 2 at elapsed zero. Do not invent events or smooth away the dip.
+Limitations: deterministic five-minute sampling and a one-hour rolling observed KPI; recovery marker uses
+  a documented 95% threshold; this is synthetic model history, not field telemetry or validation.
+Integration instruction: merge into codex/ademix, run combined tests/build and Docker/OpenEgiz gates,
+  then push codex/ademix only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
@@ -540,6 +551,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed the P1 OpenEgiz/API reliability gate | The exact judge smoke command passed against live Ditto: 11 twins and 120 fields/units; delayed dependency recovery, graceful API errors, invalid controls, and LIVE/DEMO/REPLAY distinction are covered by tests |
 | 2026-10-23 | Codex | Completed A1 cumulative fuel and tank-to-wheel CO2 accounting | Interval integration preserves history across fleet/scenario changes; explicit shift reset, 8-field frontend contract, 663.0 L fixture, 62 simulator/API tests, 32 data tests, scenario verifier and frontend build pass |
 | 2026-10-23 | Codex | Completed A2 matched fixed-versus-smart evidence | Versioned JSON fixture proves identical starts and matched windows for all four conditions; baseline preserves 770 t/h with 4 cycling + 2 parked, -33.3% operating truck-hours and -26.0% estimated fuel |
+| 2026-10-23 | Codex | Completed A3 production and recovery history | Versioned five-minute history separates observed rolling throughput from projection and marks breakdown, 20-minute tow, recovery threshold and reset into a new comparison period |
 
 ## Decisions
 
