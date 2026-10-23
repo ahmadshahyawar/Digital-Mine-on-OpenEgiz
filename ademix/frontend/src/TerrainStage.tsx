@@ -392,6 +392,6 @@ export function TerrainStage({ showRoads = false, showEquipment = false, showPla
     {showEquipment && <EquipmentLayer twins={twins} moving={moving}/>}
     {showPlant && <ProcessingPlantLayer twins={twins} moving={moving} hideStorage={hideStorage}/>}
     <mesh position={[0, -24.5, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[190, 145]}/><meshStandardMaterial color="#3b2d26" roughness={1}/></mesh>
-    <OrbitControls makeDefault target={[0, -6, 0]} minDistance={62} maxDistance={175} maxPolarAngle={Math.PI / 2.08}/>
+    <OrbitControls makeDefault target={[0, -6, 0]} minDistance={14} maxDistance={175} maxPolarAngle={Math.PI / 2.08} zoomToCursor/>
   </>
 }

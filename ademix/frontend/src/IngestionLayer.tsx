@@ -143,8 +143,8 @@ function circuitPosition(state: string, pct: number, heading: number, rank: numb
   if (state === 'dumping') return 1
   if (state === 'queued_at_crusher') return (100 - LOOP_PCT - rank * QUEUE_SPACING_PCT) / 100
   if (state === 'queued_at_excavator') return 1 + (100 - (LOOP_PCT + rank * QUEUE_SPACING_PCT)) / 100
-  // Smart dispatch ready line: parked empty on the inbound shoulder before the face loop (moved aside below).
-  if (state === 'standby') return 1 + (100 - (LOOP_PCT + (rank + .5) * QUEUE_SPACING_PCT)) / 100
+  // Smart dispatch: drive round the face loop to the point beside the standby bay (then into the bay).
+  if (state === 'standby') return STANDBY_S
   const held = state === 'blocked' ? pct - heading * QUEUE_SPACING_PCT * (rank + .6) : pct
   return heading > 0 ? held / 100 : 1 + (100 - held) / 100
 }
@@ -199,6 +199,21 @@ const BED_PIVOT = new THREE.Vector3(-.65, 1.25, 0)
 const LOAD_ANCHOR = new THREE.Vector3(-.07, .4, 0)
 type Activity = { kind: 'loading' | 'dumping' | null; progress: number }
 
+// Loading follows the simulator: 4 shovel passes of 20.32 t, one every 90 s (OpenMines North Pit).
+// Each pass: dig at the muck pile, swing loaded, dump into the truck body, swing back empty.
+const LOAD_PASSES = 4
+const PASS = { dig: .3, swing: .55, dump: .7 } // phase boundaries within one pass
+function loadingPass(progress: number) {
+  const scaled = THREE.MathUtils.clamp(progress, 0, .9999) * LOAD_PASSES
+  return { pass: Math.floor(scaled), phase: scaled % 1 }
+}
+/** Share of a full payload in the truck body: rises in one step per bucket, while that bucket is dumped. */
+function loadedShare(progress: number) {
+  if (progress >= 1) return 1
+  const { pass, phase } = loadingPass(progress)
+  return (pass + THREE.MathUtils.smoothstep(phase, PASS.swing + .02, PASS.dump - .02)) / LOAD_PASSES
+}
+
 function LoggedTruck({ index, frame, layers, positions, activity, blockageActive, timeScale, roadKmh, loopKmh }: {
   index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>
   activity: React.MutableRefObject<Activity[]>; blockageActive: boolean; timeScale: number; roadKmh: number; loopKmh: number
@@ -221,7 +236,8 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   const shown = React.useRef<number | null>(null)
   const velocity = React.useRef(0) // circuit units per real second
-  const pullOver = React.useRef(0) // extra sideways offset towards the shoulder while broken down or parked
+  const pullOver = React.useRef(0) // extra sideways offset towards the shoulder while broken down
+  const park = React.useRef(0) // 0 on the face loop, 1 in its standby bay
   useFrame((_, delta) => {
     if (!group.current) return
     const dt = Math.min(delta, .1)
@@ -259,7 +275,7 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     activity.current[index] = { kind: work.kind, progress }
     // Loaded between the loading spot and the end of tipping; the load grows while the shovel fills it.
     const s = shown.current
-    const loaded = work.kind === 'loading' ? progress : work.kind === 'dumping' ? 1 - Math.max(0, progress - .3) / .7 : s > 1e-4 && s < 1 ? 1 : 0
+    const loaded = work.kind === 'loading' ? loadedShare(progress) : work.kind === 'dumping' ? 1 - Math.max(0, progress - .3) / .7 : s > 1e-4 && s < 1 ? 1 : 0
     if (load.current) { load.current.visible = loaded > .02; load.current.scale.set(1, Math.max(loaded, .05), 1) }
     // Tip the body: raise over the first 30 % of the dump, hold, lower over the last 20 %.
     const tilt = work.kind === 'dumping' ? .62 * Math.min(1, progress / .3, (1 - progress) / .2) : 0
@@ -276,13 +292,31 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     // A broken-down truck pulls to the right-hand edge. While the simulator reports the road restricted it
     // still overhangs its lane; once the road reopens it sits fully on the shoulder.
     const pose = circuitPose(shown.current)
-    if (state === 'breakdown' || state === 'standby') {
-      const wanted = (state === 'breakdown' && blockageActive ? PULLED_OVER_OFFSET : SHOULDER_OFFSET) - LANE_OFFSET
+    if (state === 'breakdown') {
+      const wanted = (blockageActive ? PULLED_OVER_OFFSET : SHOULDER_OFFSET) - LANE_OFFSET
       pullOver.current += (wanted - pullOver.current) * Math.min(1, dt * 1.2)
     } else pullOver.current += (0 - pullOver.current) * Math.min(1, dt * 1.2)
     if (Math.abs(pullOver.current) > 1e-3) pose.position.add(new THREE.Vector3(Math.sin(pose.yaw), 0, Math.cos(pose.yaw)).multiplyScalar(pullOver.current))
+    // Parked by smart dispatch: once beside the bay, drive off the loop into this truck's own bay; on
+    // release, drive back onto the loop and carry on to the excavator.
+    const besideBay = Math.abs(shown.current - STANDBY_S) < .004
+    park.current += ((state === 'standby' && besideBay ? 1 : 0) - park.current) * Math.min(1, dt * .8)
+    let yaw = pose.yaw
+    if (park.current <= 1e-3 && state !== 'standby') bayOf.delete(index)
+    if (park.current > 1e-3) {
+      const k = THREE.MathUtils.smoothstep(park.current, 0, 1)
+      if (!bayOf.has(index)) {
+        const taken = new Set(bayOf.values())
+        bayOf.set(index, [0, 1, 2, 3].find(b => !taken.has(b)) ?? index % 4)
+      }
+      pose.position.lerp(STANDBY_BAY.slots[bayOf.get(index)!], k)
+      let turn = STANDBY_BAY.yaw - pose.yaw
+      while (turn > Math.PI) turn -= Math.PI * 2
+      while (turn < -Math.PI) turn += Math.PI * 2
+      yaw = pose.yaw + turn * k
+    }
     group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
-    group.current.rotation.y = pose.yaw
+    group.current.rotation.y = yaw
     positions.current[index] = group.current.position.clone()
   })
   const color = TRUCK_COLOR[state] ?? '#38ef9d'
@@ -393,27 +427,110 @@ function LaneArrows() {
     rotation={[-Math.PI / 2, 0, a.yaw]}><meshBasicMaterial color={a.color} transparent opacity={.85}/></mesh>)}</group>
 }
 
+/**
+ * Excavator loading cycle driven by the loading truck's progress: four passes, each digging at the muck
+ * pile, swinging to the truck, opening the bucket over the body (rock falls in) and swinging back.
+ * The boom and the arm/bucket are the model's own pivots (Excavator_BoomPivot, Excavator_BucketPivot).
+ */
 function Excavator({ activity, trucks }: { activity: React.MutableRefObject<Activity[]>; trucks: React.MutableRefObject<THREE.Vector3[]> }) {
   const { scene } = useGLTF('/models/excavator.glb')
-  const model = React.useMemo(() => scene.clone(), [scene])
+  const rig = React.useMemo(() => {
+    const model = scene.clone()
+    const boom = model.getObjectByName('Excavator_BoomPivot')
+    const arm = model.getObjectByName('Excavator_BucketPivot')
+    const bucket = model.getObjectByName('Excavator_Bucket')
+    // Material carried in the bucket, shown between digging and dumping.
+    const heap = new THREE.Mesh(new THREE.SphereGeometry(.62, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#8a5b36', roughness: 1, flatShading: true }))
+    heap.position.set(1.25, -1.45, 0)
+    heap.scale.set(1, .7, .9)
+    heap.visible = false
+    arm?.add(heap)
+    return { model, boom, arm, bucket, heap, boomZ: boom?.rotation.z ?? 0, armZ: arm?.rotation.z ?? 0 }
+  }, [scene])
   const group = React.useRef<THREE.Group>(null)
   const rocks = React.useRef<THREE.Group>(null)
-  const base = haulRoadPoint(1).add(new THREE.Vector3(1.2, .35, -1.5))
-  useFrame(({ clock }) => {
+  const base = React.useMemo(() => haulRoadPoint(1).add(new THREE.Vector3(1.2, .35, -1.5)), [])
+  const { truckYaw, digYaw, pile } = React.useMemo(() => {
+    // Aim at the middle of the truck's dump body, behind the cab (the truck's front is local +X).
+    const loading = loopPose('face', .5)
+    const spot = loading.position.clone().add(new THREE.Vector3(-Math.cos(loading.yaw), 0, Math.sin(loading.yaw)).multiplyScalar(1.6))
+    const truckYaw = -Math.atan2(spot.z - base.z, spot.x - base.x)
+    const digYaw = truckYaw + 1.9 // the muck pile lies a little over a quarter-turn from the truck
+    const pile = new THREE.Vector3(Math.cos(-digYaw), 0, Math.sin(-digYaw)).multiplyScalar(4.6)
+    return { truckYaw, digYaw, pile }
+  }, [base])
+  const bucketAt = React.useMemo(() => new THREE.Vector3(), [])
+  const state = React.useRef({ yaw: truckYaw, boom: 0, arm: 0 })
+  useFrame(({ clock }, delta) => {
     const truck = activity.current.findIndex(a => a?.kind === 'loading')
-    const swinging = truck >= 0
-    if (group.current) group.current.rotation.y = -1.35 + (swinging ? Math.sin(clock.elapsedTime * 1.6) * .35 : 0)
+    const { boom, arm, heap } = rig
+    let yaw = truckYaw, lift = -.2, curl = .35, carrying = false, dumping = -1
+    if (truck >= 0) {
+      const { phase } = loadingPass(activity.current[truck].progress)
+      const ease = (a: number, b: number) => THREE.MathUtils.smoothstep(phase, a, b)
+      if (phase < PASS.dig) {
+        // Swing back to the pile, lower the boom and crowd the bucket through the rock.
+        const k = ease(0, .12)
+        yaw = THREE.MathUtils.lerp(truckYaw, digYaw, k)
+        lift = THREE.MathUtils.lerp(.35, -.32, ease(.05, .2))
+        curl = THREE.MathUtils.lerp(.55, -.45, ease(.14, PASS.dig))
+        carrying = phase > .22
+      } else if (phase < PASS.swing) {
+        // Raise the full bucket and swing to the truck.
+        const k = ease(PASS.dig, PASS.swing)
+        yaw = THREE.MathUtils.lerp(digYaw, truckYaw, k)
+        lift = THREE.MathUtils.lerp(-.32, .38, ease(PASS.dig, PASS.dig + .12))
+        curl = -.45
+        carrying = true
+      } else if (phase < PASS.dump) {
+        // Open the bucket over the body: the rock falls in.
+        dumping = (phase - PASS.swing) / (PASS.dump - PASS.swing)
+        yaw = truckYaw
+        lift = .38
+        curl = THREE.MathUtils.lerp(-.45, .75, ease(PASS.swing, PASS.swing + .06))
+        carrying = dumping < .55
+      } else {
+        // Empty bucket, start back towards the pile.
+        yaw = THREE.MathUtils.lerp(truckYaw, (truckYaw + digYaw) / 2, ease(PASS.dump, 1))
+        lift = .38
+        curl = .55
+      }
+    }
+    // Hydraulics move smoothly towards the pose even when replay speed jumps.
+    const follow = Math.min(1, delta * 6)
+    const st = state.current
+    st.yaw += (yaw - st.yaw) * follow
+    st.boom += (lift - st.boom) * follow
+    st.arm += (curl - st.arm) * follow
+    if (group.current) group.current.rotation.y = st.yaw
+    if (boom) boom.rotation.z = rig.boomZ + st.boom
+    if (arm) arm.rotation.z = rig.armZ + st.arm
+    heap.visible = carrying
+    if (carrying && dumping >= 0) heap.scale.set(1, .7 * (1 - dumping / .55), .9)
+    else heap.scale.set(1, .7, .9)
+    // Falling rock: from the bucket lip down into the truck body.
+    rig.bucket?.getWorldPosition(bucketAt)
+    const body = truck >= 0 ? trucks.current[truck] : undefined
     rocks.current?.children.forEach((child, i) => {
-      child.visible = swinging
-      if (!swinging) return
-      const target = trucks.current[truck] ?? base
-      const t = (clock.elapsedTime * .8 + i / 6) % 1
-      child.position.copy(base).lerp(target, t).sub(base).add(new THREE.Vector3(0, 5.5 - t * 3 + Math.sin(t * Math.PI) * 1.5, 0))
+      const t = dumping - i * .07
+      child.visible = !!body && dumping >= 0 && t > 0 && t < .6
+      if (!child.visible || !body) return
+      const fall = t / .6
+      const target = body.clone().add(new THREE.Vector3(((i % 3) - 1) * .5, 1.5, ((i % 2) - .5) * .6))
+      child.position.copy(bucketAt).lerp(target, fall).sub(base)
+      child.position.y += (1 - fall) * .4 - fall * fall * .2
+      child.rotation.set(clock.elapsedTime * 3 + i, i, 0)
     })
   })
   return <group position={base}>
-    <group ref={group} rotation={[0, -1.35, 0]}><primitive object={model} scale={1.5}/></group>
-    <group ref={rocks}>{Array.from({ length: 6 }, (_, i) => <mesh key={i}><dodecahedronGeometry args={[.42, 0]}/><meshStandardMaterial color="#8a5b36" roughness={1}/></mesh>)}</group>
+    <group ref={group} rotation={[0, truckYaw, 0]}><primitive object={rig.model} scale={1.5}/></group>
+    {/* Blasted muck pile the excavator digs from. */}
+    <group position={[pile.x, -.35, pile.z]}>
+      <mesh scale={[2.4, 1.1, 1.9]}><sphereGeometry args={[1, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]}/><meshStandardMaterial color="#7d5332" roughness={1} flatShading/></mesh>
+      {[[-1.4, .3, .6], [1.1, .25, -.8], [.3, .9, .2], [-.6, .5, -1.1]].map(([x, y, z], i) =>
+        <mesh key={i} position={[x, y, z]} rotation={[i, i * 2, 0]}><dodecahedronGeometry args={[.42 + i * .06, 0]}/><meshStandardMaterial color="#6e4a2e" roughness={1}/></mesh>)}
+    </group>
+    <group ref={rocks}>{Array.from({ length: 8 }, (_, i) => <mesh key={i}><dodecahedronGeometry args={[.3 + (i % 3) * .07, 0]}/><meshStandardMaterial color="#8a5b36" roughness={1}/></mesh>)}</group>
   </group>
 }
 
@@ -432,12 +549,53 @@ const ROM_BIN = (() => {
   return DUMP_POSE.position.clone().addScaledVector(inward, 4.9).setY(centre.y + .3) // just inside the loop road
 })()
 const HOPPER = plantToWorld(-2.6, 2.4, 0)
+// Smart-dispatch standby bay: an engine-off parking pad on the free pit floor west of the face loop,
+// clear of every road (checked against the terrain carve: the floor there spans about 16 x 16 units).
+const STANDBY_BAY = (() => {
+  const face = haulRoadPoint(1)
+  const middle = new THREE.Vector3(-15.5, face.y - .25, 0)
+  const out = new THREE.Vector3(-1, 0, 0) // from the loop into the bay
+  const along = new THREE.Vector3(0, 0, 1)
+  const slots = Array.from({ length: 4 }, (_, k) => middle.clone().addScaledVector(along, (k - 1.5) * 3.7))
+  // Parked trucks face the loop, ready to drive straight out.
+  return { middle, out, along, yaw: -Math.atan2(-out.z, -out.x), slots }
+})()
+// Where the face loop passes closest to the bay, before the excavator: trucks turn off the loop here.
+const STANDBY_S = (() => {
+  let best = 2, distance = Infinity
+  for (let s = 1 + (100 - LOOP_PCT) / 100; s < 2; s += .0005) {
+    const d = circuitPose(s).position.setY(0).distanceTo(STANDBY_BAY.middle.clone().setY(0))
+    if (d < distance) { distance = d; best = s }
+  }
+  return best
+})()
+const bayOf = new Map<number, number>() // truck index -> bay, kept while it is parked
 // Crushed-ore storage sits on its own raised pad outside the pit (beyond the rim, away from the
 // mining area), fed by an elevated overland conveyor that crosses over the dump loop.
 const PAD_TOP = haulRoadPoint(0).y + .3
 const STOCKPILE = new THREE.Vector3(66, PAD_TOP, 36)
 const BELT_START = plantToWorld(1.1, 4.2, 0)
 const BELT_END = STOCKPILE.clone().add(new THREE.Vector3(0, 9.5, 0))
+
+/** The standby bay: gravel pad, bay markings, an access apron from the loop, a windrow and a sign. */
+function StandbyBay({ parked }: { parked: number }) {
+  const { middle, out, along, slots } = STANDBY_BAY
+  const yaw = -Math.atan2(along.z, along.x) // local x runs along the bay row, local +z away from the loop
+  return <group>
+    <group position={middle} rotation={[0, yaw, 0]}>
+      <mesh position={[0, -.55, 0]}><boxGeometry args={[16.6, 1.3, 8.2]}/><meshStandardMaterial color="#4a4339" roughness={1}/></mesh>
+      <mesh position={[0, -.6, -5.6]}><boxGeometry args={[12, 1.3, 3.2]}/><meshStandardMaterial color="#544c41" roughness={1}/></mesh>
+      {Array.from({ length: 5 }, (_, k) => <mesh key={k} position={[(k - 2) * 3.7, .11, .4]}><boxGeometry args={[.16, .02, 6]}/><meshBasicMaterial color="#e8e2cf"/></mesh>)}
+      <mesh position={[0, .11, -2.6]}><boxGeometry args={[15, .02, .16]}/><meshBasicMaterial color="#e8e2cf"/></mesh>
+      <mesh position={[0, .45, 4.5]}><boxGeometry args={[17, .9, 1]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>
+      {[-8.5, 8.5].map(x => <mesh key={x} position={[x, .45, .6]}><boxGeometry args={[1, .9, 8.8]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>)}
+    </group>
+    {slots.map((slot, k) => <Html key={k} center distanceFactor={110} position={slot.clone().addScaledVector(out, 3.4).add(new THREE.Vector3(0, .4, 0))} zIndexRange={[15, 0]}>
+      <div className="ig-bay-no">{k + 1}</div></Html>)}
+    <Html center distanceFactor={90} position={middle.clone().addScaledVector(out, 5).add(new THREE.Vector3(0, 3.2, 0))} zIndexRange={[20, 0]}>
+      <div className="ig-sign-label">Standby bay · engines off · {parked} parked</div></Html>
+  </group>
+}
 
 /** A straight belt between two points: a thin slab plus the moving ore on it. */
 function Belt({ from, to, flow, color = '#3d4a4a' }: { from: THREE.Vector3; to: THREE.Vector3; flow: number; color?: string }) {
@@ -1142,6 +1300,7 @@ export function IngestionLayer() {
           timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}/>)}
         <Excavator activity={activity} trucks={trucks}/>
         <OreHandling frame={frame} activity={activity}/>
+        <StandbyBay parked={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(v => v === 'standby').length}/>
         <RoadLighting/>
         {layers.has('weather') && <WeatherScene weather={weather}/>}
         {layers.has('safety') && <SafetyScene loopSpeed={reg('loop_speed_kmh')}/>}
