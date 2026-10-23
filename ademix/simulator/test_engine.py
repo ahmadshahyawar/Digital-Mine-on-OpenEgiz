@@ -1,12 +1,13 @@
 """Deterministic checks for the Ademix discrete-event haulage and crusher model."""
 
 import json
+import math
 import unittest
 
 from engine import (
     BASE_CRUSHER_TPH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
     LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS,
-    CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection,
+    CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection, trucks_required,
 )
 
 SCENARIO_NAMES = tuple(SCENARIOS)
@@ -438,6 +439,102 @@ class WhatIfScenarioTests(unittest.TestCase):
         self.assertIn("10.72", projection("road_closure")["reason"])
         self.assertIn("495", projection("crusher_slowdown")["reason"])
         self.assertEqual(projection("baseline")["limits_tph"][DUMP], CAPACITY_T * 60)
+
+
+class DispatchTests(unittest.TestCase):
+    """Scenario C: smart dispatch right-sizes the cycling fleet without losing production."""
+
+    @staticmethod
+    def steady(scenario, dispatch, warmup_h=4, transient_h=1, hours=8):
+        mine = run(MineEngine(), warmup_h)
+        mine.set_dispatch(dispatch)
+        mine.set_scenario(scenario)
+        run(mine, transient_h)
+        mine._reset_window()
+        run(mine, hours)
+        return mine, mine.kpis()
+
+    def test_required_fleet_matches_hand_calculation(self):
+        free_cycle_s = LOAD_SECONDS + DUMP_SECONDS + 2 * ROUTE_KM / 25.0 * 3600
+        loader_tph = CAPACITY_T * 3600 / LOAD_SECONDS
+        self.assertEqual(trucks_required("baseline")["trucks"], math.ceil(loader_tph * free_cycle_s / (CAPACITY_T * 3600)))
+        self.assertEqual(trucks_required("baseline")["trucks"], 4)
+        self.assertEqual(trucks_required("crusher_slowdown")["trucks"], 3)
+        self.assertEqual(trucks_required("crusher_slowdown")["server"], CRUSHER)
+        self.assertEqual(trucks_required("road_closure")["trucks"], 8)  # more than the fleet: nothing to park
+        for scenario in SCENARIO_NAMES:
+            self.assertEqual(projection(scenario, dispatch="smart")["throughput_tph"], projection(scenario)["throughput_tph"])
+
+    def test_unknown_policy_is_rejected(self):
+        with self.assertRaises(ValueError):
+            MineEngine().set_dispatch("greedy")
+        with self.assertRaises(ValueError):
+            projection("baseline", dispatch="greedy")
+
+    def test_smart_dispatch_keeps_production_with_fewer_truck_hours(self):
+        for scenario in SCENARIO_NAMES:
+            _, fixed = self.steady(scenario, "fixed")
+            mine, smart = self.steady(scenario, "smart")
+            self.assertAlmostEqual(smart["production_t"], fixed["production_t"], delta=1e-6, msg=scenario)
+            self.assertLessEqual(smart["truck_operating_h_per_kt"], fixed["truck_operating_h_per_kt"] + 1e-9, scenario)
+            self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
+        _, fixed = self.steady("baseline", "fixed")
+        _, smart = self.steady("baseline", "smart")
+        self.assertLess(smart["truck_operating_h_per_kt"], 0.7 * fixed["truck_operating_h_per_kt"])
+        self.assertAlmostEqual(smart["truck_standby_pct"], 100 * 2 / 6, delta=0.5)  # two of six trucks parked
+        self.assertLess(smart["excavator_wait_min"], fixed["excavator_wait_min"])
+
+    def test_parked_trucks_are_empty_and_stopped_at_the_face(self):
+        def check(mine):
+            for truck in mine.trucks:
+                if truck.state == "standby":
+                    self.assertEqual(truck.payload_t, 0.0)
+                    self.assertEqual(truck.progress, 0.0)
+        mine = MineEngine()
+        mine.set_dispatch("smart")
+        run(mine, 3, check=check)
+        state = mine.snapshot()
+        parked = [n for n in state if n.startswith("truck-") and state[n]["state"]["value"] == "standby"]
+        self.assertTrue(parked)
+        for name in parked:
+            self.assertEqual(state[name]["speed_kmh"]["value"], 0)
+            self.assertEqual(state[name]["route_progress_pct"]["value"], 0)
+        self.assertEqual(state["scenario-controller"]["trucks_standby"]["value"], len(parked))
+        self.assertEqual(state["scenario-controller"]["dispatch_policy"]["value"], "smart")
+        json.dumps(state)
+
+    def test_road_restriction_parks_no_truck(self):
+        mine, smart = self.steady("road_closure", "smart")
+        self.assertEqual(smart["truck_standby_pct"], 0.0)
+        self.assertNotIn("standby", {t.state for t in mine.trucks})
+
+    def test_breakdown_releases_a_parked_truck_and_never_costs_production(self):
+        mine = MineEngine()
+        mine.set_dispatch("smart")
+        run(mine, 4)
+        mine.set_scenario("truck_breakdown")
+        self.assertGreaterEqual(len(mine._in_cycle()) + sum(t.state == "blocked" for t in mine.trucks),
+                                min(mine.dispatch_need(), sum(t.state != "breakdown" for t in mine.trucks)))
+        for offset_min in (0, 24, 27, 33):  # failures on the single-lane road, the costly case
+            first_hour = {}
+            for policy in ("fixed", "smart"):
+                mine = run(MineEngine(), 4 + offset_min / 60)
+                mine.set_dispatch(policy)
+                mine.set_scenario("truck_breakdown")
+                mine._reset_window()
+                run(mine, 1)
+                first_hour[policy] = mine.kpis()["production_t"]
+            self.assertGreaterEqual(first_hour["smart"], first_hour["fixed"] - 1e-6, offset_min)
+
+    def test_switching_back_to_fixed_releases_every_parked_truck(self):
+        mine = MineEngine()
+        mine.set_dispatch("smart")
+        run(mine, 3)
+        self.assertIn("standby", {t.state for t in mine.trucks})
+        mine.set_dispatch("fixed")
+        self.assertNotIn("standby", {t.state for t in mine.trucks})
+        run(mine, 1)
+        self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
 
 
 class InterfaceTests(unittest.TestCase):

@@ -12,7 +12,7 @@ output. Output is Markdown.
 
 import sys
 
-from engine import SCENARIOS, MineEngine, projection
+from engine import DISPATCH_POLICIES, SCENARIOS, MineEngine, projection, trucks_required
 
 WARMUP_H = 4
 TRANSIENT_H = 1
@@ -40,9 +40,22 @@ def advance(mine, hours):
         mine.step(STEP_S)
 
 
-def evaluate(scenario, offset_min=0):
+DISPATCH_METRICS = [
+    ("production_t", "Production t", "{:,.0f}"),
+    ("window_throughput_tph", "Throughput t/h", "{:,.1f}"),
+    ("truck_operating_h_per_kt", "Truck operating h per kt", "{:.2f}"),
+    ("truck_standby_pct", "Truck time parked %", "{:.1f}"),
+    ("operating_fleet_utilization_pct", "Operating-truck util. %", "{:.1f}"),
+    ("excavator_wait_min", "Wait at face min", "{:.1f}"),
+    ("crusher_wait_min", "Wait at crusher min", "{:.1f}"),
+    ("excavator_utilization_pct", "Excavator util. %", "{:.1f}"),
+]
+
+
+def evaluate(scenario, offset_min=0, dispatch="fixed"):
     mine = MineEngine()
     advance(mine, WARMUP_H + offset_min / 60)
+    mine.set_dispatch(dispatch)
     mine.set_scenario(scenario)
     mine._reset_window()  # also restarts the window when "baseline" is already active
     location = mine.breakdown_location
@@ -52,7 +65,7 @@ def evaluate(scenario, offset_min=0):
     mine._reset_window()  # steady state is measured without the transition
     advance(mine, STEADY_H)
     return {
-        "plan": projection(scenario),
+        "plan": projection(scenario, dispatch=dispatch),
         "transient": transient,
         "steady": mine.kpis(),
         "live_transient": live_transient,
@@ -112,8 +125,38 @@ def main():
         print(f"| {offset} min | {r['location']} | {r['transient']['production_t']:,.0f} | "
               f"{impact(r['transient']['production_t'], b['transient']['production_t'])} |")
     print()
-    worst = max(abs(r["mass_error_t"]) for r in results.values())
-    print(f"Largest mass-balance error across the four runs: {worst:.1e} t.")
+
+    smart = {name: evaluate(name, dispatch="smart") for name in SCENARIOS}
+    print("### Scenario C: smart dispatch versus fixed fleet\n")
+    print("Same warm-up; at the switch the dispatch policy changes together with the scenario. "
+          "Each cell is fixed → smart, with the change.\n")
+    for period, hours in (("steady", STEADY_H), ("transient", TRANSIENT_H)):
+        title = (f"Steady state: hours {TRANSIENT_H + 1}–{TRANSIENT_H + STEADY_H} after the switch"
+                 if period == "steady" else f"Transient: first {TRANSIENT_H} h after the switch")
+        print(f"#### {title}\n")
+        print("| Metric | " + " | ".join(SCENARIOS.values()) + " |")
+        print("|---|" + "---:|" * len(SCENARIOS))
+        print("| Trucks needed (model) | " + " | ".join(str(trucks_required(n)["trucks"]) for n in SCENARIOS) + " |")
+        for key, label, fmt in DISPATCH_METRICS:
+            cells = []
+            for name in SCENARIOS:
+                a, b = results[name][period][key], smart[name][period][key]
+                cells.append(f"{fmt.format(a)} → {fmt.format(b)} ({impact(b, a)})")
+            print(f"| {label} | " + " | ".join(cells) + " |")
+        print()
+
+    print("#### Breakdown trigger-time sensitivity under smart dispatch\n")
+    print("| Trigger after warm-up | HT-01 location (fixed / smart) | First-hour production t, fixed | smart | smart vs fixed |")
+    print("|---:|---|---:|---:|---:|")
+    for offset in BREAKDOWN_OFFSETS_MIN:
+        f = evaluate("truck_breakdown", offset)
+        g = evaluate("truck_breakdown", offset, dispatch="smart")
+        print(f"| {offset} min | {f['location']} / {g['location']} | {f['transient']['production_t']:,.0f} | "
+              f"{g['transient']['production_t']:,.0f} | {impact(g['transient']['production_t'], f['transient']['production_t'])} |")
+    print()
+    worst = max(abs(r["mass_error_t"]) for r in list(results.values()) + list(smart.values()))
+    print(f"Largest mass-balance error across the {len(results) + len(smart)} runs: {worst:.1e} t.")
+    print(f"Dispatch policies: {', '.join(DISPATCH_POLICIES)}.")
 
 
 if __name__ == "__main__":
