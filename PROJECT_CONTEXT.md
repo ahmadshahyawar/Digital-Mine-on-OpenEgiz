@@ -237,7 +237,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ```text
 Owner: Ahmad + Codex
-Status: nonvisual truth contract complete and tested; Why trust this? UI remains deferred until B6 and C2–C3
+Status: nonvisual truth contract integrated and verified; Why trust this? UI remains deferred until B6 and C2–C3
 Branch: codex/c4-model-truth-contract (from origin/codex/ademix 8609421)
 Implementation commit: 8552566
 Exact files: ademix/data/evidence/model_truth.json; ademix/data/build_data_layer.py;
@@ -260,8 +260,10 @@ Limitations: this is a concise view of existing evidence, not new validation. Th
   crusher electricity and safety certification. It does not support measured or guaranteed claims.
 Next C4 step: after accepted B6 integration and completion of C1–C3 UI, consume `modelTruth` in the optional
   Why trust this? view. Do not begin that frontend work early.
-Integration instruction: fast-forward into codex/ademix, rerun combined suites/build and generated-bundle
-  verification, then push codex/ademix. Do not merge to main.
+Integration: fast-forwarded into codex/ademix after a final fetch found no new Professor/Claude handoff.
+  Combined results: 41 data/schema checks, 72 simulator/API tests and production build pass; rebuilt Compose
+  services are healthy; the served v1 contract has five of five live joins from Eclipse Ditto; official smoke
+  passes all 11 twins and 141 fields/units. Push codex/ademix only; do not merge to main.
 ```
 
 ### Handoff — Codex — C1 twin relationship contract — 2026-10-24
