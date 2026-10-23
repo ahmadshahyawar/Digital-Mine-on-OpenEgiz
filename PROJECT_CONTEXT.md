@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — illustrative pit-wall geometry — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat)
+Branch: claude/pit-geometry (from origin/codex/ademix d4c320c)
+Task: rebuild the 3D pit wall from the Team's illustrative design values (bench height 10 m, bench face 70°,
+  working bench width 20 m, overall slope 45°; catch berm to be set by project design) and label them as
+  "illustrative assumptions for a conceptual project — not approved Kazakhstan design values".
+Exact files: ademix/frontend/src/TerrainStage.tsx, ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css
+Interfaces consumed or changed: no twin field or simulator change. Visual pit geometry changes, so
+  ademix/data/topology/mine_topology.json (visual_pit_geometry) and its check in ademix/data/test_data_layer.py
+  (Codex-owned) need updating: handoff request below on completion.
+Expected handoff: commit SHA, files, build, screenshot, data-owner request.
+```
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
