@@ -2,3 +2,6 @@
 *.pptx binary
 *.glb binary
 *.sh text eol=lf
+ademix/data/** text eol=lf
+ademix/simulator/*.py text eol=lf
+ademix/simulator/*.json text eol=lf

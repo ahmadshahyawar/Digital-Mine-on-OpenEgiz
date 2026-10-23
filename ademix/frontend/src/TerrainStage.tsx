@@ -214,6 +214,11 @@ function terrainColors(geometry: THREE.BufferGeometry) {
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 }
 
+/** Shared road sampler used by the operational, ingestion, and safety views. */
+export function haulRoadPoint(progress: number) {
+  return new THREE.CatmullRomCurve3(haulRoadPoints()).getPointAt(THREE.MathUtils.clamp(progress, 0, 1))
+}
+
 function haulRoadPoints() {
   const pointCount = 641
   return Array.from({ length: pointCount }, (_, index) => {
@@ -845,7 +850,7 @@ function RtsCameraControls({ focusLoading }: { focusLoading: boolean }) {
   </>
 }
 
-export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [], selectedId = '', setSelectedId, focusLoading = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[]; selectedId?: string; setSelectedId?: (id: string) => void; focusLoading?: boolean }) {
+export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [], selectedId = '', setSelectedId, focusLoading = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[]; selectedId?: string; setSelectedId?: (id: string) => void; focusLoading?: boolean; hideStorage?: boolean }) {
   const roadRestricted = String(twinValue(twins.find(twin => twin.attributes?.kind === 'road'), 'state', 'open')) === 'restricted'
   const terrain = React.useMemo(() => {
     const material = createGroundMaterial()

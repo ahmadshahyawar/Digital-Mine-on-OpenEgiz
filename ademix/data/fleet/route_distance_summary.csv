@@ -1,0 +1,3 @@
+matrix,n,min,q1,median,q3,max,mean,ademix_route_km,pct_of_source_routes_at_or_below_ademix
+l2d_road_matrix,25,1.17,3.26,5.15,7.41,34.51,8.088,3.2,24.0
+d2l_road_matrix,25,2.49,3.73,5.62,19.6,34.51,12.509,3.2,12.0

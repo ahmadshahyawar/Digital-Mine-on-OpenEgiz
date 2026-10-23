@@ -110,6 +110,8 @@ A strong submission should ideally provide:
 
 **Last updated:** 2026-10-22
 
+- The latest `claude/data-asset-layer` work is integrated with the Codex large-world scene: its replay-driven fleet, FIFO loading/dumping workflow, turning-loop behavior, sensor/topology/data-flow, fleet/ESG, weather, and safety views now consume the shared enlarged haul-road geometry at `?stage=ingestion`. The large pit, RTS camera, zoom, terrain, facilities, and primary live OpenEgiz view remain intact.
+
 - The team has registered for the competition.
 - The submitted registration records team name **Ademix** with GitHub users `ahmadshahyawar` and `TurkenGulzat`.
 - The organizer invitation was received and the official Team Repository is <https://github.com/openegiz-contest/team-111>.

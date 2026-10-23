@@ -6,41 +6,30 @@
       "production_t": {"properties": {"value": 0, "unit": "t"}},
       "throughput_tph": {"properties": {"value": 0, "unit": "t/h"}},
       "fleet_utilization": {"properties": {"value": 0, "unit": "%"}},
-      "excavator_utilization": {"properties": {"value": 0, "unit": "%"}},
-      "dump_point_utilization": {"properties": {"value": 0, "unit": "%"}},
-      "crusher_utilization": {"properties": {"value": 0, "unit": "%"}},
-      "average_loading_queue": {"properties": {"value": 0, "unit": "trucks"}},
-      "average_crusher_queue": {"properties": {"value": 0, "unit": "trucks"}},
-      "trips_per_hour": {"properties": {"value": 0, "unit": "trips/h"}},
       "average_cycle_min": {"properties": {"value": 0, "unit": "min"}},
-      "average_loading_wait_min": {"properties": {"value": 0, "unit": "min"}},
-      "average_crusher_wait_min": {"properties": {"value": 0, "unit": "min"}},
-      "extracted_total_t": {"properties": {"value": 462, "unit": "t"}},
-      "truck_payload_total_t": {"properties": {"value": 462, "unit": "t"}},
-      "mass_balance_error_t": {"properties": {"value": 0, "unit": "t"}},
       "active_scenario": {"properties": {"value": "baseline"}},
       "sim_time_s": {"properties": {"value": 0, "unit": "s"}}
     }
   },
   "org.openegiz.ademix:excavator-01": {
     "policyId": "default:basic_policy",
-    "attributes": {"name": "Excavator EX-01", "team": "Ademix", "kind": "excavator", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "bucket_t": 22},
-    "features": {"state": {"properties": {"value": "idle"}}, "resource_busy": {"properties": {"value": false}}, "queue_length": {"properties": {"value": 0}}, "position_x": {"properties": {"value": -25}}, "position_z": {"properties": {"value": -18}}}
+    "attributes": {"name": "Excavator EX-01", "team": "Ademix", "kind": "excavator", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "bucket_t": 20.32},
+    "features": {"state": {"properties": {"value": "ready"}}, "queue_length": {"properties": {"value": 0}}, "position_x": {"properties": {"value": -25}}, "position_z": {"properties": {"value": -18}}}
   },
   "org.openegiz.ademix:crusher-01": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Primary Crusher CR-01", "team": "Ademix", "kind": "crusher", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "rated_tph": 900},
-    "features": {"state": {"properties": {"value": "idle"}}, "dump_point_busy": {"properties": {"value": false}}, "capacity_tph": {"properties": {"value": 900, "unit": "t/h"}}, "queue_length": {"properties": {"value": 0}}, "rom_inventory_t": {"properties": {"value": 250, "unit": "t"}}, "processed_total_t": {"properties": {"value": 0, "unit": "t"}}, "position_x": {"properties": {"value": 27}}, "position_z": {"properties": {"value": 18}}}
+    "features": {"state": {"properties": {"value": "operating"}}, "capacity_tph": {"properties": {"value": 900, "unit": "t/h"}}, "queue_length": {"properties": {"value": 0}}, "rom_inventory_t": {"properties": {"value": 250, "unit": "t"}}, "processed_total_t": {"properties": {"value": 0, "unit": "t"}}, "position_x": {"properties": {"value": 27}}, "position_z": {"properties": {"value": 18}}}
   },
   "org.openegiz.ademix:road-main": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Main Haul Road", "team": "Ademix", "kind": "road", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "length_km": 3.2},
-    "features": {"state": {"properties": {"value": "open"}}, "speed_limit_kmh": {"properties": {"value": 35, "unit": "km/h"}}, "traffic_count": {"properties": {"value": 0}}}
+    "features": {"state": {"properties": {"value": "open"}}, "speed_limit_kmh": {"properties": {"value": 25, "unit": "km/h"}}, "traffic_count": {"properties": {"value": 0}}}
   },
   "org.openegiz.ademix:scenario-controller": {
     "policyId": "default:basic_policy",
     "attributes": {"name": "Scenario Controller", "team": "Ademix", "kind": "scenario", "_isType": false, "_parents": "org.openegiz.ademix:mine-01"},
-    "features": {"active": {"properties": {"value": "baseline"}}, "description": {"properties": {"value": "Normal operations"}}, "affected_assets": {"properties": {"value": "none"}}, "elapsed_min": {"properties": {"value": 0, "unit": "min"}}, "impact_pct": {"properties": {"value": 0, "unit": "%"}}, "baseline_throughput_tph": {"properties": {"value": 770, "unit": "t/h"}}, "projected_throughput_tph": {"properties": {"value": 770, "unit": "t/h"}}}
+    "features": {"active": {"properties": {"value": "baseline"}}, "description": {"properties": {"value": "Normal operations"}}, "impact_pct": {"properties": {"value": 0, "unit": "%"}}, "baseline_throughput_tph": {"properties": {"value": 900, "unit": "t/h"}}, "projected_throughput_tph": {"properties": {"value": 900, "unit": "t/h"}}}
   },
   "org.openegiz.ademix:truck-01": {"policyId": "default:basic_policy", "attributes": {"name": "Haul Truck HT-01", "team": "Ademix", "kind": "haul-truck", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "capacity_t": 77}, "features": {}},
   "org.openegiz.ademix:truck-02": {"policyId": "default:basic_policy", "attributes": {"name": "Haul Truck HT-02", "team": "Ademix", "kind": "haul-truck", "_isType": false, "_parents": "org.openegiz.ademix:mine-01", "capacity_t": 77}, "features": {}},

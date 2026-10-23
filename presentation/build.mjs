@@ -1,12 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
-const ROOT = "E:\\Digital Mine on OpenEgiz";
-const SKILL = "C:\\Users\\R C S\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1020.11127\\skills\\presentations";
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(HERE, "..");
+const SKILL = "C:\\Users\\turke\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1020.11127\\skills\\Presentations";
 const BUILD = path.join(ROOT, ".presentation-build");
-const FINAL = path.join(ROOT, "presentation", "output", "presentation-v2.pptx");
+const FINAL = path.join(ROOT, "presentation", "output", "presentation-scenarios-final.pptx");
+const RUNTIME_PYTHON = "C:\\Users\\turke\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
 const FONT = "Aptos";
 const C = { ink: "#F4F7F8", muted: "#A9B6BC", bg: "#071116", panel: "#101F26", panel2: "#162A32", orange: "#FF8A35", cyan: "#32D6C5", green: "#7DDA8A", red: "#FF6B5F", line: "#31505B", white: "#FFFFFF" };
 
@@ -69,7 +71,7 @@ function connector(slide, x1, y1, x2, y2, color = C.orange) {
   const items = [
     ["01", "Observe", "Live state for trucks, excavator, road, ROM pad and crusher", C.cyan],
     ["02", "Intervene", "Trigger breakdown, road closure or crusher slowdown", C.orange],
-    ["03", "Compare", "Read projected throughput against the 900 t/h baseline", C.green],
+    ["03", "Compare", "Read projected throughput against the 770 t/h baseline", C.green],
   ];
   items.forEach(([n, h, b, col], i) => { const y = 205 + i * 135; text(s, n, 76, y, 70, 50, 26, col, true); box(s, 154, y - 5, 2, 85, col, "none"); text(s, h, 184, y - 5, 190, 38, 25, C.ink, true); text(s, b, 385, y - 5, 745, 70, 18, C.muted); });
   pill(s, "DECISION LOOP", 1000, 610, 190, C.panel2, C.orange);
@@ -130,30 +132,37 @@ function connector(slide, x1, y1, x2, y2, color = C.orange) {
   text(s, "Truck cycles deliver ore to the ROM pad. The crusher consumes inventory continuously, so material is never deleted at dump time.", 64, 108, 1110, 58, 20, C.muted);
   metric(s, "77 t", "truck payload", 64, 205, 245, C.orange);
   metric(s, "250 t", "initial ROM inventory", 330, 205, 265, C.cyan);
-  metric(s, "900 t/h", "baseline crusher rate", 616, 205, 275, C.green);
-  metric(s, "15.5 km/h", "closed-road speed", 912, 205, 304, C.red);
+  metric(s, "770 t/h", "baseline throughput", 616, 205, 275, C.green);
+  metric(s, "10.72 km/h", "restricted-road speed", 912, 205, 304, C.red);
   box(s, 64, 365, 1152, 180, C.panel2);
   text(s, "Material accounting", 94, 390, 280, 32, 22, C.ink, true);
   text(s, "initial ROM + delivered ore = current ROM + processed ore", 94, 445, 860, 44, 25, C.orange, true);
   text(s, "Scenario parameters are explicit, testable and visible to the jury.", 94, 500, 920, 28, 16, C.muted);
 }
 
-// 7 Scenarios chart
+// 7 What-if scenario engine
 {
-  const s = base("What-if modes quantify operational impact", 7);
-  text(s, "Projected throughput uses the same baseline across four deterministic modes.", 64, 108, 1000, 44, 20, C.muted);
+  const s = base("What-if scenario engine", 7);
+  text(s, "Compare normal operations with injected failures and capacity constraints. Bars show analytical steady-state throughput.", 64, 108, 1110, 48, 19, C.muted);
   s.charts.add("bar", {
-    position: { left: 70, top: 180, width: 780, height: 420 },
-    categories: ["Baseline", "Truck breakdown", "Road closure", "Crusher slowdown"],
-    series: [{ name: "Projected throughput (t/h)", values: [900, 747, 648, 495], fill: C.orange }],
+    position: { left: 60, top: 175, width: 735, height: 410 },
+    categories: ["Normal ops", "Truck fault", "Road restriction", "Crusher −45%"],
+    series: [{ name: "Projected throughput (t/h)", values: [770, 770, 647.3, 495], fill: C.orange }],
     hasLegend: false,
-    dataLabels: { showValue: true, position: "outEnd" },
-    xAxis: { minimumScale: 0, maximumScale: 1000, majorUnit: 200, majorGridlines: { style: "solid", fill: C.line, width: 1 } },
-    yAxis: {},
+    dataLabels: { showValue: true, position: "outEnd", textStyle: { fill: C.ink, fontSize: 14, bold: true } },
+    xAxis: { minimumScale: 0, maximumScale: 900, majorUnit: 150, textStyle: { fill: C.muted, fontSize: 13 }, majorGridlines: { style: "solid", fill: C.line, width: 1 } },
+    yAxis: { textStyle: { fill: C.muted, fontSize: 13 } },
   });
-  box(s, 900, 188, 310, 388, C.panel);
-  text(s, "Impact from baseline", 928, 218, 260, 32, 21, C.ink, true);
-  [["Truck breakdown","−17%",C.orange],["Road closure","−28%",C.red],["Crusher slowdown","−45%",C.red]].forEach(([l,v,c],i)=>{const y=295+i*85;text(s,l,928,y,170,28,15,C.muted);text(s,v,1090,y-3,90,34,23,c,true,"right");});
+  box(s, 820, 168, 396, 438, C.panel);
+  text(s, "Scenario readout", 846, 188, 340, 34, 22, C.ink, true);
+  text(s, "A  Normal operations", 846, 232, 340, 26, 17, C.green, true);
+  text(s, "770 t/h. The excavator sets the baseline limit.", 846, 261, 340, 42, 15, C.muted);
+  text(s, "B  Fault injection", 846, 310, 340, 26, 17, C.orange, true);
+  text(s, "HT-01 can block the single lane for 20 min. First-hour output is 581.6 t/h, then the five-truck fleet recovers.", 846, 339, 340, 62, 14, C.muted);
+  text(s, "Dynamic bottleneck", 846, 411, 340, 26, 17, C.cyan, true);
+  text(s, "Road restriction shifts the limit to haulage at 647 t/h. Crusher slowdown makes the crusher the limit at 495 t/h.", 846, 440, 340, 58, 14, C.muted);
+  text(s, "C  Smart dispatch", 846, 510, 340, 26, 17, C.red, true);
+  text(s, "Future work. Automatic dispatch and alternate-route rerouting are not implemented.", 846, 539, 340, 50, 14, C.muted);
 }
 
 // 8 Validation
@@ -161,8 +170,8 @@ function connector(slide, x1, y1, x2, y2, color = C.orange) {
   const s = base("Evidence is separated from release gates", 8);
   text(s, "What is already verified is stated plainly. Remaining environment checks stay visible until they pass.", 64, 108, 1100, 46, 20, C.muted);
   const cols = [
-    [64, "Verified", C.green, ["8 simulation unit tests pass", "Frontend production build passes", "Python compile and JSON validation pass", "Compose configuration parses"]],
-    [652, "Before submission", C.orange, ["Run clean end-to-end stack", "Capture real 3D interface evidence", "Record demo and rehearse jury flow", "Confirm final commit on official main"]],
+    [64, "Verified", C.green, ["21 deterministic engine tests pass", "Frontend production build passes", "Python compile and twin JSON validation pass", "Compose configuration parses"]],
+    [652, "Before submission", C.orange, ["Rerun DES scenarios through Docker and Ditto", "Capture real 3D interface evidence", "Record demo and rehearse jury flow", "Confirm final commit on official main"]],
   ];
   cols.forEach(([x,h,c,rows])=>{box(s,x,190,564,350,C.panel);text(s,h,x+30,218,500,38,25,c,true);rows.forEach((r,i)=>{box(s,x+30,282+i*56,18,18,c,"rounded-xl");text(s,r,x+64,270+i*56,455,42,17,C.ink,i===0);});});
   pill(s, "NO FABRICATED TELEMETRY • NO HIDDEN CLAIMS", 365, 585, 550, C.panel2, C.cyan);
@@ -191,16 +200,15 @@ await fs.writeFile(path.join(BUILD, "montage.webp"), new Uint8Array(await montag
 const requirements = { explicitTotalSlideCount: 9, requiredNativeTableOwnerSlides: [], requiredNativeChartOwnerSlides: [7], materializeLiteralChartWorkbooks: true };
 const fontPolicy = { basis: "design", families: [FONT] };
 const { finalizePresentation } = await import(pathToFileURL(path.join(SKILL, "container_tools/artifact_tool_utils.mjs")).href);
-const candidatePath = path.join(BUILD, "candidate.pptx");
+const candidatePath = path.join(BUILD, "candidate-scenarios-final.pptx");
 await (await PresentationFile.exportPptx(p)).save(candidatePath);
 await fs.mkdir(path.dirname(FINAL), { recursive: true });
 await finalizePresentation({
   ...requirements, workspaceDir: ROOT, candidatePath, finalPath: FINAL,
-  pythonExecutable: "C:\\Users\\R C S\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+  pythonExecutable: RUNTIME_PYTHON,
   integrityValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_package_integrity.py"),
   layoutValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_layout_geometry.py"),
   layoutArgs: ["--expected-slide-size-emu", "12192000,6858000", "--validate-bullet-geometry", "--validate-heading-fit"],
   requiredNativeTableOwnerSlides: [], fontPolicy, verifyArtifactToolImport: true,
-  receiptPath: path.join(BUILD, "presentation-v2.validation.json"),
+  receiptPath: path.join(BUILD, "presentation-scenarios-final.validation.json"),
 });
-await fs.copyFile(FINAL, path.join(ROOT, "presentation.pptx"));

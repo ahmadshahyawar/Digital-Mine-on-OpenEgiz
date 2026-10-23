@@ -5,7 +5,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / ".presentation-build"
-OUTPUT = ROOT / "output" / "pdf" / "presentation.pdf"
+OUTPUT = ROOT / "presentation" / "output" / "presentation-scenarios-final.pdf"
 
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 slides = sorted(BUILD.glob("slide-*.png"))
@@ -20,5 +20,3 @@ for slide in slides:
     canvas.showPage()
 canvas.save()
 
-# The competition requires this stable repository-root filename.
-(ROOT / "presentation.pdf").write_bytes(OUTPUT.read_bytes())

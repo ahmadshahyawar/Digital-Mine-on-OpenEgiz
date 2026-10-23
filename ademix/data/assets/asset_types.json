@@ -1,0 +1,57 @@
+{
+  "description": "Ademix twin types: what each Eclipse Ditto thing represents, its static attributes and how it relates to the mine. Live features are defined in telemetry/telemetry_dictionary.csv. Instances are in ademix/simulator/twins.json.",
+  "namespace": "org.openegiz.ademix",
+  "telemetry_topic": "telemetry/<thing-name>",
+  "common_attributes": {
+    "name": {"type": "string", "required": true, "description": "Display name shown in the 3D interface."},
+    "team": {"type": "string", "required": true, "description": "Owning team; always Ademix."},
+    "kind": {"type": "string", "required": true, "description": "One of the kinds below."},
+    "_isType": {"type": "boolean", "required": true, "description": "OpenEgiz flag; false for physical instances."}
+  },
+  "kinds": {
+    "mine": {
+      "description": "Aggregate of the loading, haulage and crushing system; carries production KPIs.",
+      "parent_kind": null,
+      "instances": 1,
+      "attributes": {}
+    },
+    "excavator": {
+      "description": "Single loading face; serves one truck at a time (FIFO queue).",
+      "parent_kind": "mine",
+      "instances": 1,
+      "attributes": {
+        "bucket_t": {"type": "number", "unit": "t", "required": true, "register": "shovel_pass_t", "description": "Payload per shovel pass."}
+      }
+    },
+    "crusher": {
+      "description": "Primary crusher with its ROM bin and single dump bay.",
+      "parent_kind": "mine",
+      "instances": 1,
+      "attributes": {
+        "rated_tph": {"type": "number", "unit": "t/h", "required": true, "register": "crusher_capacity_tph", "description": "Planning capacity (team assumption)."}
+      }
+    },
+    "road": {
+      "description": "Single-lane haul road between the loading face and the crusher.",
+      "parent_kind": "mine",
+      "instances": 1,
+      "attributes": {
+        "length_km": {"type": "number", "unit": "km", "required": true, "register": "route_length_km", "description": "One-way length."}
+      }
+    },
+    "scenario": {
+      "description": "Active what-if condition and its analytical projection.",
+      "parent_kind": "mine",
+      "instances": 1,
+      "attributes": {}
+    },
+    "haul-truck": {
+      "description": "Rigid haul truck cycling face → crusher → face.",
+      "parent_kind": "mine",
+      "instances": 6,
+      "attributes": {
+        "capacity_t": {"type": "number", "unit": "t", "required": true, "register": "truck_payload_t", "description": "Rated payload."}
+      }
+    }
+  }
+}

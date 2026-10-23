@@ -12,11 +12,19 @@ This file records every external dataset, code reference, model, texture, and vi
 - License: MIT
 - Copyright: Copyright (c) 2023 stone meng
 - License copy: `ademix/data/openmines/LICENSE`
-- Local SHA-256: `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`
+- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. This has not been re-checked against the upstream repository. `ademix/data/test_data_layer.py` verifies the stored file.
+- Derived data: `ademix/data/fleet/` (equipment and route-distance tables extracted from this file) and `ademix/data/registry/parameters.csv` (field-level traceability). See `ademix/data/DATA_CARD.md`.
 - Use: calibration reference for fleet size, truck capacity, truck speed, shovel capacity/cycle time, dump time, route distances, and road-repair event parameters.
 - Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for judge-environment performance. It does not claim to reproduce the full OpenMines simulation.
 
 The competition organizer explicitly lists this dataset as a recommended MIT-licensed source for open-pit haulage.
+
+### Caterpillar Performance Handbook — fuel consumption tables (referenced, not redistributed)
+
+- Source: Caterpillar Performance Handbook fuel-consumption extract, © Caterpillar 2022, dated 9 December 2022, hosted by Wheeler Cat: <https://wheelercat.com/wp-content/uploads/2023/01/Cat-Performance-Handbook-from-VST-fuel-consumption-2022-12-09T21-20-09.pdf>
+- Use: six published fuel-rate figures (low/medium/high US gal/h for the Cat 775G, 777G and 6020B, pages 11 and 15) recorded as facts with citation in `ademix/data/registry/fuel_references.csv`. The PDF itself is not included in the repository.
+- Payload references: Peterson Cat 775G listing (64.00 t), Caterpillar 777G brochure (90.8 t), Caterpillar 6020B launch release (22 t bucket payload); URLs in the same file.
+- Status: comparable-machine reference, not data for the Ademix demonstration fleet.
 
 ## Included Visual Assets
 

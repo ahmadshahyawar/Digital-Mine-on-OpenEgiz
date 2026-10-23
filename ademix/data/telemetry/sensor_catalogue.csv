@@ -1,0 +1,17 @@
+sensor_id,asset_kind,sensor_type,real_world_equivalent,features,unit,publish_interval_s_wall,publish_interval_s_simulated,transport,implementation
+TRK-GNSS,haul-truck,Position,GNSS receiver on each truck,position_x|position_z|route_progress_pct|heading,scene units / %,1,20,MQTT telemetry/truck-NN → Ditto features,Simulated by engine.py from the event schedule
+TRK-SPD,haul-truck,Speed,GNSS or wheel-speed sensor,speed_kmh,km/h,1,20,MQTT telemetry/truck-NN → Ditto features,Simulated: road speed limit while travelling; 0 otherwise
+TRK-PLD,haul-truck,Payload,On-board payload weighing system,payload_t,t,1,20,MQTT telemetry/truck-NN → Ditto features,Simulated: 0 or a full 77 t load
+TRK-FUEL,haul-truck,Fuel level,Fuel-tank level sensor,fuel_pct,%,1,20,MQTT telemetry/truck-NN → Ditto features,Synthetic display signal; not calibrated (fuel consumption is a required input)
+TRK-STATE,haul-truck,Operating state,Fleet-management system activity code,state,,1,20,MQTT telemetry/truck-NN → Ditto features,Simulated truck-cycle state
+TRK-CYCLE,haul-truck,Cycle counter,Fleet-management dump event counter,trips_total|cycle_time_min|queue_wait_min,count / min,1,20,MQTT telemetry/truck-NN → Ditto features,Simulated from dump events
+EXC-STATE,excavator,Loading state,Excavator payload or swing-cycle monitor,state|loading_truck,,1,20,MQTT telemetry/excavator-01 → Ditto features,Simulated
+EXC-QUEUE,excavator,Queue at face,Fleet-management queue detection,queue_length|average_queue|average_wait_min|utilization_pct,trucks / min / %,1,20,MQTT telemetry/excavator-01 → Ditto features,Simulated and derived KPIs
+CRU-RATE,crusher,Processing rate,Belt scale after the crusher,capacity_tph|processed_total_t|utilization_pct|state,t/h / t / %,1,20,MQTT telemetry/crusher-01 → Ditto features,Simulated
+CRU-BIN,crusher,ROM bin level,Radar or ultrasonic bin-level sensor,rom_inventory_t|rom_average_t|rom_bin_capacity_t,t,1,20,MQTT telemetry/crusher-01 → Ditto features,Simulated mass balance
+CRU-DUMP,crusher,Dump bay,Dump-pocket presence detection,queue_length|average_queue|average_wait_min|delivered_total_t,trucks / min / t,1,20,MQTT telemetry/crusher-01 → Ditto features,Simulated
+RD-COND,road,Road condition,Dispatcher road status and traffic counter,state|speed_limit_kmh|traffic_count|blockage|blocked_trucks,km/h / trucks,1,20,MQTT telemetry/road-main → Ditto features,Simulated
+MINE-KPI,mine,Production KPIs,Mine production reporting,production_t|throughput_tph|throughput_avg_tph|fleet_utilization|average_cycle_min|truck_queue_pct|truck_trips_total|excavated_t|delivered_t|ore_in_trucks_t|mass_balance_error_t|bottleneck|bottleneck_live|bottleneck_live_reason|active_scenario|sim_time_s,various,1,20,MQTT telemetry/mine-01 → Ditto features,Derived from simulated state
+SCN-CTRL,scenario,Scenario projection,Planning model output,active|description|impact_pct|baseline_throughput_tph|projected_throughput_tph|bottleneck|match_factor|fleet_supply_tph|excavator_capacity_tph|crusher_capacity_tph|bottleneck_reason|breakdown_location,various,1,20,MQTT telemetry/scenario-controller → Ditto features,Analytical model output
+EXC-POS,excavator,Fixed location,Surveyed asset location,position_x|position_z,scene units,1,20,MQTT telemetry/excavator-01 → Ditto features,Static configuration; not a measured signal
+CRU-POS,crusher,Fixed location,Surveyed asset location,position_x|position_z,scene units,1,20,MQTT telemetry/crusher-01 → Ditto features,Static configuration; not a measured signal
