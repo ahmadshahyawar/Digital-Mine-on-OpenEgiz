@@ -79,3 +79,4 @@
 @media (max-width: 760px) {
   .ig-left, .ig-right { position: absolute; left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 45vh; }
 }
+.ig-lane b { font-size: 10px; margin-right: 3px; }

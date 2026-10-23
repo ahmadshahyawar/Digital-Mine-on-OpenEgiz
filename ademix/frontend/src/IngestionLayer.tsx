@@ -62,26 +62,59 @@ function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
   </div>
 }
 
-function LoggedTruck({ index, frame, layers, positions }: { index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]> }) {
+// Right-hand traffic: every truck keeps right of its direction of travel, so empty trucks entering the
+// pit use the inner lane and loaded trucks leaving use the outer lane; they never meet head-on.
+const LANE_OFFSET = 2.1
+const SHOULDER_OFFSET = 4.6
+const QUEUE_SPACING_PCT = 3.6 // about one truck length plus a gap along the ramp
+const LOAD_SPOT = new THREE.Vector3(-2.3, 0, 2.8) // beside the excavator on the loading pad
+const DUMP_SPOT = new THREE.Vector3(4.2, 0, 1.4) // on the marked tipping ring at the hopper
+
+/** Where a truck stands and which way it faces, for a route position (engine %: 0 face, 100 crusher). */
+function lanePose(enginePct: number, heading: 1 | -1, sideOffset: number) {
+  const t = 1 - THREE.MathUtils.clamp(enginePct, 0, 100) / 100
+  const point = haulRoadPoint(t)
+  const ahead = haulRoadPoint(THREE.MathUtils.clamp(t + (heading > 0 ? -0.004 : 0.004), 0, 1))
+  let forward = ahead.clone().sub(point).setY(0)
+  if (forward.lengthSq() < 1e-8) forward = point.clone().sub(haulRoadPoint(THREE.MathUtils.clamp(t + (heading > 0 ? 0.004 : -0.004), 0, 1))).setY(0)
+  forward.normalize()
+  const right = new THREE.Vector3(-forward.z, 0, forward.x)
+  return { position: point.addScaledVector(right, sideOffset), yaw: -Math.atan2(forward.z, forward.x) }
+}
+
+function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: {
+  index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; rank: number; blockageActive: boolean
+}) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
   const group = React.useRef<THREE.Group>(null)
   const id = `truck-${String(index + 1).padStart(2, '0')}`
   const state = String(frame.at(`${id}.state`) ?? 'hauling')
-  const heading = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
-  const lane = heading > 0 ? 1.75 : -1.75
+  const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   useFrame(() => {
     if (!group.current) return
-    // Trucks waiting at a server stand one behind another instead of on the same spot.
-    const waiting = state === 'queued_at_excavator' ? 1 : state === 'queued_at_crusher' ? -1 : 0
-    const pct = frame.atMix(`${id}.route_progress_pct`) + waiting * (3 + index * 2.2)
-    const t = 1 - THREE.MathUtils.clamp(pct, 0, 100) / 100
-    const point = haulRoadPoint(t)
-    const ahead = haulRoadPoint(THREE.MathUtils.clamp(t + (heading > 0 ? -0.004 : 0.004), 0, 1))
-    const tangent = ahead.clone().sub(point).setY(0).normalize()
-    const across = new THREE.Vector3(-tangent.z, 0, tangent.x).multiplyScalar(lane)
-    group.current.position.copy(point).add(across).add(new THREE.Vector3(0, .38, 0))
-    if (tangent.lengthSq() > 0) group.current.rotation.y = -Math.atan2(tangent.z, tangent.x)
+    let pose
+    if (state === 'loading') {
+      const at = lanePose(0, -1, 0)
+      pose = { position: haulRoadPoint(1).add(LOAD_SPOT), yaw: at.yaw }
+    } else if (state === 'dumping') {
+      const at = lanePose(100, 1, 0)
+      pose = { position: haulRoadPoint(0).add(DUMP_SPOT), yaw: at.yaw + Math.PI }
+    } else if (state === 'queued_at_excavator') {
+      pose = lanePose(6 + rank * QUEUE_SPACING_PCT, -1, LANE_OFFSET) // nose to tail in the inbound lane
+    } else if (state === 'queued_at_crusher') {
+      pose = lanePose(94 - rank * QUEUE_SPACING_PCT, 1, LANE_OFFSET) // nose to tail in the outbound lane
+    } else if (state === 'blocked') {
+      const pct = frame.atMix(`${id}.route_progress_pct`) - heading * QUEUE_SPACING_PCT * (rank + .6)
+      pose = lanePose(pct, heading, LANE_OFFSET) // stopped behind the broken-down truck
+    } else if (state === 'breakdown') {
+      // Stops in its lane while it blocks the road, then is towed onto the shoulder.
+      pose = lanePose(frame.atMix(`${id}.route_progress_pct`), heading, blockageActive ? LANE_OFFSET : SHOULDER_OFFSET)
+    } else {
+      pose = lanePose(frame.atMix(`${id}.route_progress_pct`), heading, LANE_OFFSET)
+    }
+    group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
+    group.current.rotation.y = pose.yaw
     positions.current[index] = group.current.position.clone()
   })
   const color = TRUCK_COLOR[state] ?? '#38ef9d'
@@ -93,6 +126,26 @@ function LoggedTruck({ index, frame, layers, positions }: { index: number; frame
       <div className="ig-chip" style={{ borderColor: color, color }}>HT-{String(index + 1).padStart(2, '0')}</div>
     </Html>}
   </group>
+}
+
+/** Arrows painted in each lane: blue for empty trucks entering the pit, amber for loaded trucks leaving. */
+function LaneArrows() {
+  const arrows = React.useMemo(() => {
+    const list: { position: THREE.Vector3; yaw: number; color: string }[] = []
+    for (let pct = 8; pct <= 92; pct += 4.2) {
+      const inbound = lanePose(pct, -1, LANE_OFFSET)
+      const outbound = lanePose(pct + 2.1, 1, LANE_OFFSET)
+      list.push({ ...inbound, color: '#5ec8f2' }, { ...outbound, color: '#f0b85a' })
+    }
+    return list
+  }, [])
+  const shape = React.useMemo(() => {
+    const s = new THREE.Shape()
+    s.moveTo(.9, 0); s.lineTo(-.6, .55); s.lineTo(-.25, 0); s.lineTo(-.6, -.55); s.closePath()
+    return new THREE.ShapeGeometry(s)
+  }, [])
+  return <group>{arrows.map((a, i) => <mesh key={i} geometry={shape} position={a.position.clone().add(new THREE.Vector3(0, .28, 0))}
+    rotation={[-Math.PI / 2, 0, a.yaw]}><meshBasicMaterial color={a.color} transparent opacity={.85}/></mesh>)}</group>
 }
 
 function Excavator({ frame }: { frame: Frame }) {
@@ -168,7 +221,7 @@ function Topology({ specs }: { specs: Spec[] }) {
     Array.from({ length: 60 }, (_, i) => haulRoadPoint(i / 59).add(new THREE.Vector3(0, 1.2, 0)))), 240, .35, 6, false), [])
   const nodes: [string, THREE.Vector3, string][] = [
     ['Loading face', haulRoadPoint(1), '1 server · 6 min per truck'],
-    ['Haul road', haulRoadPoint(.5), `${specs.find(s => s.parameter_id === 'route_length_km')?.value ?? 3.2} km · single lane`],
+    ['Haul road', haulRoadPoint(.5), `${specs.find(s => s.parameter_id === 'route_length_km')?.value ?? 3.2} km · two-way, keep right`],
     ['Dump bay', haulRoadPoint(0), '1 server · 1 min'],
     ['ROM bin → crusher', haulRoadPoint(0).add(new THREE.Vector3(-9, 0, 9)), '600 t buffer · 900 t/h'],
   ]
@@ -287,6 +340,11 @@ export function IngestionLayer() {
     const all = bundle.equipment.flatMap(e => e.specs)
     return SPEC_PICK[asset].map(id => all.find(s => s.parameter_id === id)!).filter(Boolean)
   }
+  // Position of a truck among the trucks sharing its waiting state (and direction), so they line up.
+  const queueRank = (i: number) => {
+    const key = (n: number) => `${frame.at(`truck-0${n + 1}.state`)}|${num(frame.at(`truck-0${n + 1}.heading`)) >= 0}`
+    return Array.from({ length: i }, (_, n) => n).filter(n => key(n) === key(i)).length
+  }
   const toggle = (layer: Layer) => setLayers(prev => { const next = new Set(prev); next.has(layer) ? next.delete(layer) : next.add(layer); return next })
   const seek = (value: number) => { head.current = value; setRow(value) }
   const hours = (live ? num(frame.at('mine-01.sim_time_s')) : num(current[0])) / 3600
@@ -297,7 +355,9 @@ export function IngestionLayer() {
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
         <TerrainStage showRoads showPlant moving twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
-        {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}/>)}
+        <LaneArrows/>
+        {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
+          rank={queueRank(i)} blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
         <Excavator frame={frame}/>
         <RomBin frame={frame}/>
         {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
@@ -322,6 +382,8 @@ export function IngestionLayer() {
     <div className="ig-key" aria-label="Value status">
       {[['sourced', 'OpenMines'], ['external_reference', 'Cat handbook'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic']].map(([s, l]) =>
         <span key={s}><i style={{ background: STATUS_COLOR[s] }}/>{l}</span>)}
+      <span className="ig-lane"><b style={{ color: '#5ec8f2' }}>▲</b>empty in · inner lane</span>
+      <span className="ig-lane"><b style={{ color: '#f0b85a' }}>▲</b>loaded out · outer lane</span>
     </div>
 
     <footer className="ig-bar">
