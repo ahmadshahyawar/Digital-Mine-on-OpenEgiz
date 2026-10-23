@@ -204,7 +204,9 @@ EQUIPMENT = [
     ("Main haul road", "road", ["route_length_km", "truck_speed_kmh", "road_restriction_speed_kmh", "breakdown_blockage_min"]),
 ]
 LOG_THINGS = {
-    "mine-01": ["throughput_tph", "production_t", "bottleneck_live", "average_cycle_min", "truck_queue_pct", "fleet_utilization"],
+    "mine-01": ["throughput_tph", "production_t", "bottleneck_live", "average_cycle_min", "truck_queue_pct", "fleet_utilization",
+                "shift_fuel_l", "shift_co2_kg", "current_fuel_rate_lph", "operating_trucks_fuel_count",
+                "shift_start_sim_s", "shift_elapsed_s", "shift_id", "fuel_estimate_basis"],
     "excavator-01": ["state", "queue_length", "average_wait_min", "utilization_pct"],
     "crusher-01": ["state", "rom_inventory_t", "queue_length", "average_wait_min"],
     "scenario-controller": ["projected_throughput_tph", "bottleneck", "match_factor"],

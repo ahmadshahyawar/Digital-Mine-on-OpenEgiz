@@ -48,6 +48,9 @@ There are two exception states:
 | Crusher slowdown | 55 % of 900 = 495 | t/h | **Scenario input** chosen by the team |
 | Breakdown lane blockage | 20 | min | **Scenario input**: time to tow HT-01 off the single lane |
 | Fuel burn | 1.4 % loaded / 0.8 % empty per 3.2 km | % | **Synthetic display signal**, not calibrated; no refuelling is modelled |
+| Truck fuel rate | 49.6 | L/h per operating truck | **Comparable-equipment estimate**, Caterpillar handbook interpolation; not measured telemetry |
+| Excavator fuel rate | 83.5 | L/h | **Comparable-equipment estimate**, Caterpillar handbook; modelled continuously during the demonstration shift |
+| Diesel CO2 factor | 2.677 | kg CO2/L | Derived from IPCC fuel factors and the documented diesel-density assumption; tank-to-wheel only |
 
 ## 3. Formulas
 
@@ -76,8 +79,19 @@ Symbols:
 | Utilization, excavator / crusher | busy time ÷ elapsed time since the current scenario started | % |
 | Fleet utilization | truck-time in loading, hauling, dumping or returning ÷ total truck-time, over the same window | % |
 | Queue wait | mean time from joining a queue to service start, over the same window | min |
+| Current fuel rate | R = 83.5 + 49.6 · N_operating; `standby` and `breakdown` trucks do not accrue the truck rate | L/h |
+| Shift fuel | F(t + Δt) = F(t) + R(t) · Δt / 3600, integrated between every discrete event | L |
+| Shift CO2 | E = F · 2.677 | kg CO2 |
 
 The opening stock is 250 t of ROM plus six loaded trucks (462 t), because the demonstration starts mid-shift with all trucks loaded.
+
+Fuel and CO2 totals start at engine initialization and are reset only by the explicit
+`POST /api/shift/reset` operation. Scenario and dispatch changes reset their own KPI windows but
+do not rewrite shift history. The excavator rate is included continuously as a documented
+demonstration assumption. All truck states except `standby` and `breakdown` accrue the comparable
+operating rate; queued and blocked trucks are treated as engine-on. The cumulative litre and CO2
+values are estimates, not sensor measurements. They are independent of each truck's synthetic
+`fuel_pct`, and they exclude crusher electricity, upstream diesel emissions, CH4 and N2O.
 
 The minimum rule X = min(·) is the long-run throughput of a closed, deterministic cyclic system. The DES reproduces it in every scenario (see §5). The analytical projection is shown on the scenario-controller twin. The DES output is shown on the mine, crusher, excavator and truck twins.
 

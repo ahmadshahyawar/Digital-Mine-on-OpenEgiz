@@ -152,3 +152,14 @@ def dispatch(request: DispatchRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"dispatch": engine.dispatch, "status": "activated"}
 
+
+@app.post("/api/shift/reset")
+def reset_shift():
+    """Explicitly start a new cumulative fuel/CO2 reporting shift."""
+    engine.reset_shift_totals()
+    return {
+        "status": "reset",
+        "shift_id": engine.shift_id,
+        "shift_start_sim_s": engine.shift_start_sim_s,
+    }
+

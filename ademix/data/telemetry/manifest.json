@@ -3,8 +3,8 @@
   "generator": "ademix/data/build_data_layer.py",
   "inputs_sha256": {
     "ademix/data/openmines/north_pit_mine.json": "271134d6bbb46bc00162fad87d0e10510b0bf4d1fec4a2860f9784d663a7bbd8",
-    "ademix/data/registry/parameters.csv": "1de6e6a2283467bdcc6d6fb7a7ff8dcdabf3d4d36313ebc6e450eee6fa2be6f0",
-    "ademix/simulator/engine.py": "52c5b6bd3988525895d81726bbff363b9f712bb5983a96030ad8e07856f426c2"
+    "ademix/data/registry/parameters.csv": "a1935be8a1e980a04e654e1804a6f992e0d2a0b6e20c489e54bab04e9ef7b8f1",
+    "ademix/simulator/engine.py": "6cfc5118723cf26cf8d5a6adc5fc46e2f5c8d42301e9c2e5dc7f1c5f850ffc74"
   },
   "telemetry_settings": {
     "seed": 42,
@@ -31,24 +31,24 @@
       "columns": 10
     },
     "telemetry/logs/baseline.csv": {
-      "sha256": "d7588a9d41660ffb30d01f9eec0577e5371bc72709c7171bcc0a5ebb8cf9e736",
+      "sha256": "dfa82d5916a5c1f92ef115054008312e5c4427358424fdfedba39bd2ff289dbb",
       "rows": 157,
-      "columns": 130
+      "columns": 138
     },
     "telemetry/logs/truck_breakdown.csv": {
-      "sha256": "a84be91c4160c66a8aefe8c504a5b02b66f95db8f1068c8a532e4bdec6000aa1",
+      "sha256": "90e3005d2c4933277914265800ec045bd7eedb4f143c564615d0f4f73b6ec243",
       "rows": 157,
-      "columns": 130
+      "columns": 138
     },
     "telemetry/logs/road_closure.csv": {
-      "sha256": "2a5dab08141c61ae9c8513f13d39bfbabb5394765abe7d8fe83c865c011a1a20",
+      "sha256": "3923a812d633e5e5eab3efb0ad79f1bbcbf96d00f137c04dc8cc14c44e8a65f6",
       "rows": 157,
-      "columns": 130
+      "columns": 138
     },
     "telemetry/logs/crusher_slowdown.csv": {
-      "sha256": "ad9d6053c3e911d12dbf918126ef9726c77b5203f9f67c5d8f8f3b30084b02a4",
+      "sha256": "5290bb86e833d446c94ea37671345c9cf6237b3f440558b92aedde74ad73bc62",
       "rows": 157,
-      "columns": 130
+      "columns": 138
     },
     "telemetry/logs/weather_station.csv": {
       "sha256": "caa957da70621506daead4a7223594c1602b84faed5d45f66a682c031dcb1483",

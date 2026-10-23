@@ -233,6 +233,27 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a1-fuel-co2 (from origin/codex/ademix 8143940)
+Task: implement interval-based shift fuel and tank-to-wheel CO2 totals, define reset semantics,
+  publish and test the backend/data contract, and provide a fixture to Professor + Claude.
+Exact files: ademix/simulator/engine.py, ademix/simulator/test_engine.py,
+  ademix/simulator/app.py, ademix/simulator/test_reliability.py,
+  ademix/simulator/MODEL.md, ademix/simulator/FUEL_CO2_CONTRACT.md,
+  ademix/data/registry/parameters.csv, ademix/data/telemetry/telemetry_dictionary.csv,
+  ademix/data/telemetry/sensor_catalogue.csv, ademix/data/build_data_layer.py,
+  ademix/data/test_data_layer.py, ademix/data/telemetry/logs/*.csv,
+  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
+  PROJECT_CONTEXT.md.
+Frontend ownership: no React/3D/ESG panel source will be edited. The generated ingestion bundle is
+  updated only as the recorded data handoff.
+Expected handoff: frozen field contract with types/units/allowed values/examples/reset behavior,
+  two-hour 381.1 + 281.9 L/h fixture = 663.0 L, CO2 calculation, tests, commit SHA and integration instruction.
+```
+
 ### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23
 
 ```text

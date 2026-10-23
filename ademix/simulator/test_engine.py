@@ -6,7 +6,8 @@ import unittest
 
 from engine import (
     BASE_CRUSHER_TPH, BASE_SPEED_KMH, BREAKDOWN_RECOVERY_S, CAPACITY_T, CRUSHER_SLOWDOWN_FACTOR, DUMP_SECONDS,
-    LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH, ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS,
+    DIESEL_CO2_KG_PER_L, EXCAVATOR_FUEL_LPH, LOAD_SECONDS, ROAD_RESTRICTION_SPEED_KMH,
+    ROM_BIN_CAPACITY_T, ROUTE_KM, SCENARIOS, TRUCK_FUEL_LPH,
     CRUSHER, DUMP, FLEET, LOADING, ROAD, MineEngine, projection, trucks_required,
 )
 
@@ -44,6 +45,60 @@ class DeterminismTests(unittest.TestCase):
             MineEngine().set_scenario("magic_output")
         with self.assertRaises(ValueError):
             MineEngine().step(0)
+
+
+class FuelAndEmissionsTests(unittest.TestCase):
+    def smart_engine_with_two_parked_trucks(self):
+        mine = MineEngine()
+        mine.set_dispatch("smart")
+        while mine.operating_trucks_fuel_count() != 4:
+            mine.step(10)
+        self.assertEqual(sum(t.state == "standby" for t in mine.trucks), 2)
+        return mine
+
+    def test_two_hour_rate_fixture_totals_663_litres(self):
+        mine = self.smart_engine_with_two_parked_trucks()
+        mine.reset_shift_totals()
+        self.assertAlmostEqual(mine.current_fuel_rate_lph(), 281.9, places=9)
+        mine.step(3600)
+        smart_hour = mine.shift_fuel_l
+        mine.set_dispatch("fixed")
+        self.assertAlmostEqual(mine.current_fuel_rate_lph(), 381.1, places=9)
+        mine.step(3600)
+        self.assertAlmostEqual(smart_hour, 281.9, places=6)
+        self.assertAlmostEqual(mine.shift_fuel_l - smart_hour, 381.1, places=6)
+        self.assertAlmostEqual(mine.shift_fuel_l, 663.0, places=6)
+
+    def test_co2_is_fuel_times_configured_factor(self):
+        mine = MineEngine()
+        mine.step(1733)
+        self.assertAlmostEqual(mine.shift_co2_kg, mine.shift_fuel_l * DIESEL_CO2_KG_PER_L, places=9)
+
+    def test_parked_trucks_do_not_accrue_operating_rate(self):
+        mine = self.smart_engine_with_two_parked_trucks()
+        expected = EXCAVATOR_FUEL_LPH + 4 * TRUCK_FUEL_LPH
+        self.assertAlmostEqual(mine.current_fuel_rate_lph(), expected, places=9)
+
+    def test_current_fleet_change_does_not_rewrite_history(self):
+        mine = self.smart_engine_with_two_parked_trucks()
+        mine.reset_shift_totals()
+        mine.step(3600)
+        prior = mine.shift_fuel_l
+        mine.set_dispatch("fixed")
+        self.assertAlmostEqual(mine.shift_fuel_l, prior, places=9)
+        self.assertAlmostEqual(mine.current_fuel_rate_lph(), 381.1, places=9)
+
+    def test_scenario_switch_preserves_totals_and_explicit_reset_starts_new_shift(self):
+        mine = MineEngine()
+        mine.step(900)
+        prior_fuel, prior_co2 = mine.shift_fuel_l, mine.shift_co2_kg
+        mine.set_scenario("road_closure")
+        self.assertEqual((mine.shift_fuel_l, mine.shift_co2_kg), (prior_fuel, prior_co2))
+        previous_id = mine.shift_id
+        mine.reset_shift_totals()
+        self.assertEqual(mine.shift_id, previous_id + 1)
+        self.assertEqual(mine.shift_start_sim_s, mine.sim_time_s)
+        self.assertEqual((mine.shift_fuel_l, mine.shift_co2_kg), (0.0, 0.0))
 
 
 class MassConservationTests(unittest.TestCase):

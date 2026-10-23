@@ -17,6 +17,14 @@ mine,bottleneck_live,string,,,,loading resource|haul-road travel|available truck
 mine,bottleneck_live_reason,text,,,,,kpi,Plain-language explanation of the live constraint.
 mine,truck_operating_h_per_kt,number,h/kt,0,,,kpi,Truck operating hours consumed per thousand tonnes processed during the KPI window.
 mine,operating_fleet_utilization,number,%,0,100,,kpi,Productive share of time for trucks that Smart Dispatch keeps in cycle.
+mine,shift_fuel_l,number,L,0,,,kpi,Cumulative comparable-equipment fuel estimate since the latest explicit shift reset.
+mine,shift_co2_kg,number,kg CO2,0,,,kpi,Cumulative tank-to-wheel CO2 estimate: shift_fuel_l × diesel_co2_kg_per_l.
+mine,current_fuel_rate_lph,number,L/h,83.5,381.1,,analytical,Current excavator plus operating-truck comparable-equipment fuel rate; standby and breakdown trucks are excluded.
+mine,operating_trucks_fuel_count,integer,trucks,0,6,,simulated_state,Trucks currently accruing the comparable operating fuel rate; excludes standby and breakdown.
+mine,shift_start_sim_s,number,s,0,,,simulated_state,Simulation time at the latest explicit shift reset.
+mine,shift_elapsed_s,number,s,0,,,kpi,Simulation time elapsed since the latest explicit shift reset.
+mine,shift_id,integer,,1,,,simulated_state,Monotonic reporting-shift identifier; increments only on explicit shift reset.
+mine,fuel_estimate_basis,string,,,,comparable-equipment medium-load rates,configuration,Fixed label distinguishing estimated fuel and CO2 from measured telemetry and synthetic tank percentage.
 excavator,state,string,,,,ready|loading,simulated_state,Whether a truck is under the excavator.
 excavator,queue_length,integer,trucks,0,6,,simulated_state,Trucks waiting to be loaded.
 excavator,position_x,number,scene units,-25,-25,,static,Scene coordinate of the loading face.

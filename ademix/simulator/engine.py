@@ -48,6 +48,12 @@ BREAKDOWN_RECOVERY_S = 1200.0
 # Fuel is a synthetic visual signal: % of tank per full route length travelled.
 FUEL_PCT_PER_ROUTE_LOADED = 1.4
 FUEL_PCT_PER_ROUTE_EMPTY = 0.8
+# Comparable-equipment estimates used for cumulative shift reporting. These are
+# deliberately separate from the synthetic tank-percentage display signal above.
+TRUCK_FUEL_LPH = 49.6
+EXCAVATOR_FUEL_LPH = 83.5
+DIESEL_CO2_KG_PER_L = 2.677
+NON_OPERATING_FUEL_STATES = {"standby", "breakdown"}
 KPI_WINDOW_S = 3600.0
 # Dynamic bottleneck detection: measured over the last 30 simulated minutes; a
 # server is saturated when busy at least 95 % of that time.
@@ -218,6 +224,10 @@ class MineEngine:
         self.rom_inventory_t = INITIAL_ROM_T
         self.scenario = "baseline"
         self.dispatch = "fixed"
+        self.shift_id = 1
+        self.shift_start_sim_s = 0.0
+        self.shift_fuel_l = 0.0
+        self.shift_co2_kg = 0.0
         self.scenario_started_s = 0.0
         self.blockage: tuple[float, float] | None = None
         self._events: list = []
@@ -274,6 +284,18 @@ class MineEngine:
             # Releasing is immediate; surplus trucks are parked one by one as they finish dumping.
             self._release_standby()
 
+    def reset_shift_totals(self):
+        """Start a new reporting shift without changing simulation state.
+
+        Scenario and dispatch changes intentionally do not reset these totals;
+        only this explicit operation starts a new accounting interval.
+        """
+        with self.lock:
+            self.shift_id += 1
+            self.shift_start_sim_s = self.sim_time_s
+            self.shift_fuel_l = 0.0
+            self.shift_co2_kg = 0.0
+
     def step(self, dt: float):
         if dt <= 0:
             raise ValueError("step duration must be positive")
@@ -325,6 +347,9 @@ class MineEngine:
         counts = {state: 0 for state in TRUCK_STATES}
         for truck in self.trucks:
             counts[truck.state] += 1
+        fuel_l = self.current_fuel_rate_lph(counts) * span / 3600.0
+        self.shift_fuel_l += fuel_l
+        self.shift_co2_kg += fuel_l * DIESEL_CO2_KG_PER_L
         cum["truck_s"] += span * len(self.trucks)
         cum["productive_s"] += span * sum(counts[s] for s in PRODUCTIVE_STATES)
         cum["travel_s"] += span * (counts["hauling"] + counts["returning"])
@@ -346,6 +371,16 @@ class MineEngine:
             self.production_t += processed
             cum["production_t"] += processed
             cum["crusher_busy_s"] += run
+
+    def operating_trucks_fuel_count(self) -> int:
+        return sum(truck.state not in NON_OPERATING_FUEL_STATES for truck in self.trucks)
+
+    def current_fuel_rate_lph(self, counts: dict[str, int] | None = None) -> float:
+        operating = (
+            len(self.trucks) - sum(counts[state] for state in NON_OPERATING_FUEL_STATES)
+            if counts is not None else self.operating_trucks_fuel_count()
+        )
+        return EXCAVATOR_FUEL_LPH + operating * TRUCK_FUEL_LPH
 
     def _handle(self, kind: str, truck: Truck | None, token: int):
         if kind == "bin_space":
@@ -781,6 +816,14 @@ class MineEngine:
                     "bottleneck_live_reason": self.metric(live["reason"]),
                     "truck_operating_h_per_kt": self.metric(kpi["truck_operating_h_per_kt"], "h/kt"),
                     "operating_fleet_utilization": self.metric(kpi["operating_fleet_utilization_pct"], "%"),
+                    "shift_fuel_l": self.metric(self.shift_fuel_l, "L"),
+                    "shift_co2_kg": self.metric(self.shift_co2_kg, "kg CO2"),
+                    "current_fuel_rate_lph": self.metric(self.current_fuel_rate_lph(), "L/h"),
+                    "operating_trucks_fuel_count": self.metric(self.operating_trucks_fuel_count(), "trucks"),
+                    "shift_start_sim_s": self.metric(self.shift_start_sim_s, "s"),
+                    "shift_elapsed_s": self.metric(self.sim_time_s - self.shift_start_sim_s, "s"),
+                    "shift_id": self.metric(self.shift_id),
+                    "fuel_estimate_basis": self.metric("comparable-equipment medium-load rates"),
                 },
                 "excavator-01": {
                     "state": self.metric("loading" if self.excavator_truck else "ready"),
