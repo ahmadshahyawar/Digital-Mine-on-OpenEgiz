@@ -233,21 +233,35 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — C1 twin relationship contract — 2026-10-24
+### Handoff — Codex — C1 twin relationship contract — 2026-10-24
 
 ```text
 Owner: Ahmad + Codex
+Status: contract implementation complete and tested; ready for Professor + Claude explorer UI
 Branch: codex/c1-twin-relationships (from origin/codex/ademix cfb4ec9)
-Task: define and validate the machine-readable relationship contract for the 11 existing Eclipse Ditto twins.
+Implementation commit: d903498
 Exact files: ademix/data/topology/twin_relationships.json; ademix/data/build_data_layer.py;
   ademix/data/test_data_layer.py; ademix/simulator/TWIN_RELATIONSHIP_CONTRACT.md;
   ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
 Contract: additive static schema `ademix.twin-relationships.v1`; no new twin, telemetry field, API route,
   simulation behavior or OpenEgiz delivery change. Every node joins to live `/api/state` by exact thing ID.
-Frontend ownership: no React, CSS, 3D scene or presentation source will be edited during this contract step.
-  Ahmad + Codex own the later C1 UI, but begin it only after Professor + Claude's B6 is accepted and integrated.
-Expected handoff: schema, relationship direction/category rules, deterministic generated bundle, tests,
-  limitations, commit SHA and exact integration instruction.
+Contract contents: exactly 11 nodes and 38 directed edges: 10 hierarchy, 13 material, 6 movement and
+  9 control. Every `_parents` value and relationship endpoint resolves to a seeded twin. Each truck has
+  excavator loading, road travel, crusher delivery and dispatch-policy links; the crusher processes mine ore;
+  scenario condition links target the excavator, road and crusher. Control links are not material flow.
+Live join: select by full `thing_id`; read `features.<state_feature>.properties.value`; display state unavailable
+  rather than inventing a value when absent. The generated ingestion bundle exposes `twinRelationships`.
+Tests actually run: 38 data/schema/regeneration checks pass, including exact twin coverage, parent/target
+  resolution, operational paths and bundled-fixture equality; all 72 simulator/API tests pass; TypeScript/Vite
+  production build passes with the existing non-fatal >500 kB chunk warning. No React/CSS/3D source changed.
+Limitations: static relationship metadata is team-authored conceptual topology, not field validation; one road
+  twin represents both separated directions; the crusher twin combines dump bay, ROM bin and crusher; the
+  scenario controller is software, not physical equipment. Current state remains authoritative only from Ditto.
+Request to Professor + Claude: consume `twinRelationships` for the optional C1 Mine model explorer, join node
+  selection to returned live twins by exact `thing_id`, keep control links visually distinct, and do not add
+  invented twins or relationships. Build only after the Team accepts the prerequisite B-task state.
+Integration instruction: merge this branch into codex/ademix after review, rerun combined tests/build/smoke,
+  then push codex/ademix. Do not merge to main.
 ```
 
 ### Handoff — Codex — A5 combined release verification — 2026-10-23
@@ -643,6 +657,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed A3 production and recovery history | Versioned five-minute history separates observed rolling throughput from projection and marks breakdown, 20-minute tow, recovery threshold and reset into a new comparison period |
 | 2026-10-23 | Codex | Completed A4 two-way-road breakdown consistency | Same-direction followers stop behind HT-01 while opposing traffic continues; directional Ditto fields, hauling/returning tests, tow/reset behavior and regenerated evidence are ready for integration |
 | 2026-10-23 | Codex | Completed A5 combined release verification | Full fixed/smart four-condition live matrix, clean reset, 107 automated checks, production build, clean Docker start and judge smoke all pass; Ubuntu and human visual approval remain explicit gates |
+| 2026-10-24 | Codex | Completed C1 twin relationship contract | Exactly 11 existing twins and 38 truthful hierarchy/material/movement/control links are validated and bundled for the optional Mine model explorer; no live behavior or frontend source changed |
 
 ## Decisions
 
