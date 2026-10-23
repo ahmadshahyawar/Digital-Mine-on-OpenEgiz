@@ -160,4 +160,4 @@ Request to Ahmad + Codex:
 Integration instruction: merge | cherry-pick | reject
 ```
 
-Start now with **B1 only**. B2 begins after the Codex A1 contract is available.
+Start now with **B1 only** from the latest `origin/codex/ademix`. A1–A5 contracts are available, so continue B2–B6 one accepted and integrated task at a time. After B6 is integrated, use `03_HIGH_SCORE_IMPROVEMENTS.md`; do not begin J1–J8 before the required C tasks pass.

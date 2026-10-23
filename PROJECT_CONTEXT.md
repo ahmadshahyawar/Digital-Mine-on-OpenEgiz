@@ -754,12 +754,20 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ### AI judge readiness tasks — 2026-10-24
 
-- Added `03_AI_JUDGE_READINESS.md` as a shared final verification layer, based on the official evaluation path: literal README build, build report, source, SUBMISSION, presentation and runtime inspection.
+- Added `04_AI_JUDGE_READINESS.md` as a shared final verification layer, based on the official evaluation path: literal README build, build report, source, SUBMISSION, presentation and runtime inspection.
 - Defined eight numbered tasks with owners and pass tests: frozen Ubuntu candidate, claim-to-evidence index, three-minute decision route, candidate-accurate presentation, software-rendering evidence, adversarial truth/integrity audit, independent rubric rehearsal and verified submission on official `main`.
 - Kept workstream boundaries explicit: Ahmad + Codex own release/evidence/integrity work; Professor + Claude own the opening experience, presentation and visual-performance acceptance; both reconcile a strict rubric rehearsal.
 - These tasks add no new runtime claim and do not mark any release gate complete. The latest local/Windows verification remains 107 automated checks, 11 Ditto twins and 141 required fields/units; native Ubuntu, final frontend acceptance, presentation reconciliation and official `main` are still open.
 - `git fetch origin` succeeded at the start of this session. No missing `origin/main` commit was reported, and no organizer update was found in the fetched commit range.
-- Team sequencing clarification: J1–J8 examine the finished combined application. They run last, after all required A and B tasks are completed and integrated; they do not replace or interrupt the remaining implementation work.
+- Team sequencing clarification: J1–J8 examine the finished combined application. They run last, after all required A, B and C tasks are completed and integrated; they do not replace or interrupt the remaining implementation work.
+
+### High-score improvement plan — 2026-10-24
+
+- Owner/branch: Ahmad + Codex planning on `codex/high-score-improvements`; no application source is changed by this planning task.
+- Added `03_HIGH_SCORE_IMPROVEMENTS.md` between the A/B implementation streams and the final J examination. Required C1–C5 target visible twin relationships, one dispatcher decision board, spatial scenario cause/effect, model trust/limitations and combined acceptance. Optional C6 adds reproducible sensitivity evidence only if release safety and time permit.
+- The plan is based on the current verified strengths: 11 Ditto twins, deterministic constrained material flow, matched fixed/Smart evidence, production/recovery evidence, and three live disruptions. It avoids a second face, alternate route, new service or unrelated dashboard because those would add more release risk than score evidence at this stage.
+- Ownership remains separated: Codex freezes data/relationship/truth contracts and integrates; Claude owns the frontend/3D experience. Each cross-layer task requires a contract-first handoff and combined regression checks.
+- J1–J8 were renumbered into `04_AI_JUDGE_READINESS.md` and remain the final phase after required C work is complete. No score, runtime result or completed task is claimed by this plan.
 
 ## Handoff Template
 

@@ -142,4 +142,4 @@ Request to Professor + Claude:
 Integration instruction: merge | cherry-pick | reject
 ```
 
-Start now with **A1 only**. Do not begin A2 until A1's contract and tests are complete enough for Claude to consume.
+**Current status:** A1–A5 are completed and integrated on `origin/codex/ademix`. While Professor + Claude complete B1–B6, Ahmad + Codex review and integrate their handoffs rather than starting an unrelated backend feature. After all B tasks are accepted, continue with Codex-owned C work in `03_HIGH_SCORE_IMPROVEMENTS.md`; J1–J8 remain last.
