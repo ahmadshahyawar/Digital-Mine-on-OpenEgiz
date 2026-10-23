@@ -233,6 +233,26 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Handoff — Codex — A6–A11 score-focused work definition — 2026-10-24
+
+```text
+Owner: Ahmad + Codex
+Status: planning document prepared; no A6–A11 application behavior is claimed complete
+Branch: codex/a6-a11-work-plan
+Exact files: A6_A11_SCORE_FOCUSED_IMPROVEMENTS.md; START_HERE.md;
+  01_AHMAD_CODEX_WORK.md; TEAM_WORK_PLAN.md; PROJECT_CONTEXT.md.
+Decision: A6 is recommended. A7–A11 are optional and must yield to required B/C integration and release safety.
+Score focus: authoritative simulation time, live event evidence, fleet right-sizing, bounded sensitivity,
+  scenario-specific recommendations and a reproducible decision export.
+Rejected scope before submission: a longer map, decorative workers, extra buildings, a second route/loading
+  face or scene density without a scored operational purpose.
+Ownership: Professor + Claude continue B1–B6 only. Ahmad + Codex may implement backend/data portions without
+  touching their frontend paths; frontend consumption waits for accepted B6 integration and ownership transfer.
+Verification: documentation consistency and repository diff review only. No implementation, runtime test,
+  scenario mutation, visual change or completion claim is part of this planning branch.
+Next action: give Codex the copyable prompt in the new document and execute A6 first on its own fresh branch.
+```
+
 ### Handoff — Codex — C4 model-truth contract — 2026-10-24
 
 ```text
