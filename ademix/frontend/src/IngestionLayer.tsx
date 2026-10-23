@@ -1,280 +1,253 @@
 import React from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Html } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
-import type { Twin } from './MineScene'
 import { TerrainStage, haulRoadPoint } from './TerrainStage'
 import './ingestion.css'
 
-type Row = Record<string, string>
-type Spec = { parameter_id: string; value: number | null; unit: string; status: string; source: string; notes: string }
+// Layer 1 · Data & Asset Ingestion: a full-screen 3D scene. Equipment specifications sit on the
+// assets, simulated sensors report live values from the replayed telemetry logs, the haulage
+// topology glows over the road, and data packets flow from every asset into the OpenEgiz hub.
+
+type Spec = { parameter_id: string; value: number | null; unit: string; status: string }
 type Log = { label: string; columns: string[]; rows: (string | number | null)[][] }
-type Bundle = {
-  note: string
-  sources: { id: Tab; title: string; origin: string; records: number; unit: string; kind: string }[]
-  equipment: { asset: string; kind: string; specs: Spec[] }[]
-  source_fleet: Row[]
-  sensors: Row[]
-  topology: {
-    status: string
-    nodes: { id: string; label: string; type: string; twin: string }[]
-    traffic_rules: string[]
-    visual_pit_geometry: Record<string, string | number | number[]>
-    not_available: string[]
-  }
-  route_summary: Row[]
-  route_distances: number[]
-  logs: Record<string, Log>
-  provenance: { generator: string; inputs_sha256: Record<string, string>; outputs: Record<string, { sha256: string; rows: number }> }
-}
-type Tab = 'specs' | 'logs' | 'sensors' | 'topology'
+type Bundle = { equipment: { asset: string; specs: Spec[] }[]; logs: Record<string, Log> }
+type Layer = 'specs' | 'sensors' | 'topology' | 'flow'
+type Frame = { at: (key: string) => string | number | null; atMix: (key: string) => number }
 
-const STATUS_LABEL: Record<string, string> = {
-  sourced: 'Sourced', derived: 'Derived', assumption: 'Team assumption', scenario_input: 'Scenario input',
-  synthetic: 'Synthetic', model_setting: 'Model setting', required_input: 'Required input',
+const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow']]
+const STATUS_COLOR: Record<string, string> = {
+  sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
+  synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b',
 }
-const SIGNALS = [
-  { key: 'mine-01.throughput_tph', label: 'Crusher throughput (rolling hour)', unit: 't/h' },
-  { key: 'crusher-01.rom_inventory_t', label: 'ROM bin level', unit: 't' },
-  { key: 'excavator-01.queue_length', label: 'Trucks queued at the face', unit: 'trucks' },
-  { key: 'truck-01.speed_kmh', label: 'HT-01 speed', unit: 'km/h' },
-  { key: 'truck-01.payload_t', label: 'HT-01 payload', unit: 't' },
-  { key: 'truck-01.fuel_pct', label: 'HT-01 fuel level (synthetic)', unit: '%' },
-]
-// Scene anchors: road progress 0 = crusher at the rim, 1 = loading face on the pit floor.
-const ANCHORS: Record<string, { progress: number; lift: number; tab: Tab; asset?: string }> = {
-  loading_face: { progress: 1, lift: 7, tab: 'specs', asset: 'Excavator EX-01' },
-  haul_road: { progress: .5, lift: 5, tab: 'topology' },
-  dump_bay: { progress: 0, lift: 9, tab: 'specs', asset: 'Crusher dump bay' },
+const TRUCK_COLOR: Record<string, string> = {
+  hauling: '#38ef9d', returning: '#4fd1c5', loading: '#ffc246', dumping: '#ffc246',
+  queued_at_excavator: '#f0b85a', queued_at_crusher: '#f0b85a', blocked: '#ff9f2e', breakdown: '#ff5149',
 }
-const fmt = (value: number | null, digits = 2) => value === null ? '—' : Number(value.toFixed(digits)).toLocaleString()
-const titleCase = (id: string) => id.replace(/_/g, ' ').replace(/\b(t|tph|kmh|lph|pct|min)\b/g, '').replace(/\s+/g, ' ').trim()
+const HUB = new THREE.Vector3(0, 40, 0)
+const SPEC_PICK: Record<string, string[]> = {
+  'Haul truck HT-01…06': ['truck_payload_t', 'truck_speed_kmh', 'truck_fuel_consumption_lph', 'truck_fleet_size'],
+  'Excavator EX-01': ['shovel_pass_t', 'shovel_cycle_min', 'load_time_min', 'excavator_fuel_consumption_lph'],
+  'Primary crusher CR-01': ['crusher_capacity_tph', 'rom_bin_capacity_t', 'dump_time_min'],
+  'Main haul road': ['route_length_km', 'truck_speed_kmh'],
+}
+const LABEL: Record<string, string> = {
+  truck_payload_t: 'Payload', truck_speed_kmh: 'Speed', truck_fuel_consumption_lph: 'Fuel use', truck_fleet_size: 'Fleet',
+  shovel_pass_t: 'Bucket pass', shovel_cycle_min: 'Pass cycle', load_time_min: 'Load time', excavator_fuel_consumption_lph: 'Fuel use',
+  crusher_capacity_tph: 'Capacity', rom_bin_capacity_t: 'ROM bin', dump_time_min: 'Dump time', route_length_km: 'Length', dump_capacity_tph: 'Dump bay',
+}
+const num = (v: unknown) => Number(v ?? 0)
+const roadAt = (enginePct: number) => haulRoadPoint(1 - THREE.MathUtils.clamp(enginePct, 0, 100) / 100)
 
-function rowToTwins(log: Log, row: (string | number | null)[]): Twin[] {
-  const things: Record<string, Twin> = {}
-  log.columns.forEach((column, index) => {
-    if (column === 'time_s') return
-    const [name, feature] = column.split('.')
-    const kind = name.startsWith('truck') ? 'haul-truck' : name.split('-')[0]
-    things[name] ??= { thingId: `org.openegiz.ademix:${name}`, attributes: { kind, name }, features: {} } as Twin
-    things[name].features![feature] = { properties: { value: row[index] as string | number } }
+function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
+  return <div className="ig-card">
+    <b>{title}</b>
+    {specs.map(s => <span key={s.parameter_id + title}>
+      <i style={{ background: STATUS_COLOR[s.status] }}/>{LABEL[s.parameter_id] ?? s.parameter_id}
+      <em className={s.value === null ? 'ig-missing' : ''}>{s.value === null ? 'required input' : `${Number(s.value.toFixed(2)).toLocaleString()} ${s.unit}`}</em>
+    </span>)}
+  </div>
+}
+
+function LoggedTruck({ index, frame, layers, positions }: { index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]> }) {
+  const { scene } = useGLTF('/models/hauler.glb')
+  const model = React.useMemo(() => scene.clone(), [scene])
+  const group = React.useRef<THREE.Group>(null)
+  const id = `truck-${String(index + 1).padStart(2, '0')}`
+  const state = String(frame.at(`${id}.state`) ?? 'hauling')
+  const heading = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
+  const lane = heading > 0 ? 1.75 : -1.75
+  useFrame(() => {
+    if (!group.current) return
+    // Trucks waiting at a server stand one behind another instead of on the same spot.
+    const waiting = state === 'queued_at_excavator' ? 1 : state === 'queued_at_crusher' ? -1 : 0
+    const pct = frame.atMix(`${id}.route_progress_pct`) + waiting * (3 + index * 2.2)
+    const t = 1 - THREE.MathUtils.clamp(pct, 0, 100) / 100
+    const point = haulRoadPoint(t)
+    const ahead = haulRoadPoint(THREE.MathUtils.clamp(t + (heading > 0 ? -0.004 : 0.004), 0, 1))
+    const tangent = ahead.clone().sub(point).setY(0).normalize()
+    const across = new THREE.Vector3(-tangent.z, 0, tangent.x).multiplyScalar(lane)
+    group.current.position.copy(point).add(across).add(new THREE.Vector3(0, .38, 0))
+    if (tangent.lengthSq() > 0) group.current.rotation.y = -Math.atan2(tangent.z, tangent.x)
+    positions.current[index] = group.current.position.clone()
   })
-  return Object.values(things).sort((a, b) => a.thingId.localeCompare(b.thingId))
+  const color = TRUCK_COLOR[state] ?? '#38ef9d'
+  return <group ref={group}>
+    <primitive object={model} scale={1.22}/>
+    <mesh position={[0, 4.4, 0]}><sphereGeometry args={[.32, 12, 10]}/><meshBasicMaterial color={color}/></mesh>
+    {state === 'breakdown' && <mesh position={[0, 5.4, 0]}><octahedronGeometry args={[.55]}/><meshBasicMaterial color="#ff5149"/></mesh>}
+    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 7, 0]} zIndexRange={[20, 0]}>
+      {index === 0
+        ? <div className="ig-tag" style={{ borderColor: color }}>
+          <b>HT-01</b> {state.replace(/_/g, ' ')}
+          <span>GNSS {num(frame.at(`${id}.route_progress_pct`)).toFixed(0)}% of route · {num(frame.at(`${id}.speed_kmh`)).toFixed(1)} km/h</span>
+          <span>payload {num(frame.at(`${id}.payload_t`)).toFixed(0)} t · fuel {num(frame.at(`${id}.fuel_pct`)).toFixed(0)}% (synthetic)</span>
+        </div>
+        : <div className="ig-chip" style={{ borderColor: color }}>HT-{String(index + 1).padStart(2, '0')} · {num(frame.at(`${id}.speed_kmh`)).toFixed(0)} km/h</div>}
+    </Html>}
+  </group>
 }
 
-function Chip({ status }: { status: string }) {
-  return <span className={`ig-chip ig-${status}`}>{STATUS_LABEL[status] || status}</span>
+function Excavator({ frame, layers, specs }: { frame: Frame; layers: Set<Layer>; specs: Spec[] }) {
+  const { scene } = useGLTF('/models/excavator.glb')
+  const model = React.useMemo(() => scene.clone(), [scene])
+  const group = React.useRef<THREE.Group>(null)
+  const loading = frame.at('excavator-01.state') === 'loading'
+  useFrame(({ clock }) => { if (group.current) group.current.rotation.y = -1.35 + (loading ? Math.sin(clock.elapsedTime * 1.8) * .2 : 0) })
+  const base = haulRoadPoint(1).add(new THREE.Vector3(1.2, .35, -1.5))
+  return <group position={base}>
+    <group ref={group} rotation={[0, -1.35, 0]}><primitive object={model} scale={1.5}/></group>
+    {layers.has('specs') && <Html center distanceFactor={115} position={[0, 13, 0]}><SpecCard title="Excavator EX-01" specs={specs}/></Html>}
+    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 7.5, 0]}>
+      <div className="ig-tag"><b>EX-01</b> {String(frame.at('excavator-01.state'))}<span>queue {String(frame.at('excavator-01.queue_length'))} trucks</span></div>
+    </Html>}
+  </group>
 }
 
-function TopologyMarkers({ onSelect, active }: { onSelect: (tab: Tab, asset?: string) => void; active: string }) {
-  const markers = React.useMemo(() => Object.entries(ANCHORS).map(([id, anchor]) => ({
-    id, anchor, point: haulRoadPoint(anchor.progress).add(new THREE.Vector3(0, anchor.lift, 0)),
-  })), [])
-  const labels: Record<string, string> = { loading_face: 'Loading face · EX-01', haul_road: 'Haul road · 3.2 km single lane', dump_bay: 'Dump bay → ROM bin → Crusher' }
+function RomBin({ frame, layers, specs }: { frame: Frame; layers: Set<Layer>; specs: Spec[] }) {
+  const fill = THREE.MathUtils.clamp(frame.atMix('crusher-01.rom_inventory_t') / 600, 0, 1)
+  const position = haulRoadPoint(0).add(new THREE.Vector3(-9, .3, 9))
+  return <group position={position}>
+    <mesh position={[0, 3, 0]}><cylinderGeometry args={[3, 2.4, 6, 24, 1, true]}/><meshStandardMaterial color="#8fa3a6" transparent opacity={.35} side={THREE.DoubleSide}/></mesh>
+    <mesh position={[0, .05 + fill * 3, 0]} scale={[1, Math.max(fill, .02), 1]}><cylinderGeometry args={[2.85, 2.35, 6, 24]}/><meshStandardMaterial color="#9b6a3f" roughness={1}/></mesh>
+    {layers.has('specs') && <Html center distanceFactor={115} position={[0, 15, 0]}><SpecCard title="Primary crusher CR-01" specs={specs}/></Html>}
+    {layers.has('sensors') && <Html center distanceFactor={115} position={[0, 8.5, 0]}>
+      <div className="ig-tag"><b>Bin level</b> {frame.atMix('crusher-01.rom_inventory_t').toFixed(0)} / 600 t
+        <span>belt scale {num(frame.at('mine-01.throughput_tph')).toFixed(0)} t/h · {String(frame.at('crusher-01.state'))}</span></div>
+    </Html>}
+  </group>
+}
+
+function Topology({ specs }: { specs: Spec[] }) {
+  const tube = React.useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(
+    Array.from({ length: 60 }, (_, i) => haulRoadPoint(i / 59).add(new THREE.Vector3(0, 1.2, 0)))), 240, .35, 6, false), [])
+  const nodes: [string, THREE.Vector3, string][] = [
+    ['Loading face', haulRoadPoint(1), '1 server · 6 min per truck'],
+    ['Haul road', haulRoadPoint(.5), `${specs.find(s => s.parameter_id === 'route_length_km')?.value ?? 3.2} km · single lane`],
+    ['Dump bay', haulRoadPoint(0), '1 server · 1 min'],
+    ['ROM bin → crusher', haulRoadPoint(0).add(new THREE.Vector3(-9, 0, 9)), '600 t buffer · 900 t/h'],
+  ]
   return <group>
-    {markers.map(({ id, anchor, point }) => <group key={id} position={point}>
-      <mesh><sphereGeometry args={[.7, 16, 12]}/><meshBasicMaterial color={active === id ? '#ffe36e' : '#4fd1c5'}/></mesh>
-      <mesh position={[0, -anchor.lift / 2, 0]}><cylinderGeometry args={[.07, .07, anchor.lift, 6]}/><meshBasicMaterial color="#4fd1c5"/></mesh>
-      <Html center distanceFactor={70} position={[0, 2.2, 0]}>
-        <button className={`ig-node ${active === id ? 'on' : ''}`} onClick={() => onSelect(anchor.tab, anchor.asset ?? id)}>{labels[id]}</button>
-      </Html>
+    <mesh geometry={tube}><meshBasicMaterial color="#4fd1c5" transparent opacity={.75}/></mesh>
+    {nodes.map(([name, at, detail]) => <group key={name} position={at.clone().add(new THREE.Vector3(0, 2.2, 0))}>
+      <mesh><sphereGeometry args={[1, 16, 12]}/><meshBasicMaterial color="#4fd1c5"/></mesh>
+      <Html center distanceFactor={115} position={[0, 3.2, 0]}><div className="ig-node"><b>{name}</b><span>{detail}</span></div></Html>
     </group>)}
   </group>
 }
 
-function Sparkline({ log, signal, cursor }: { log: Log; signal: string; cursor: number }) {
-  const index = log.columns.indexOf(signal)
-  const values = log.rows.map(row => Number(row[index]))
-  const times = log.rows.map(row => Number(row[0]) / 3600)
-  const width = 320, height = 120, left = 34, bottom = 18
-  const max = Math.max(1, ...values) * 1.08
-  const x = (t: number) => left + (t / times[times.length - 1]) * (width - left - 6)
-  const y = (v: number) => (height - bottom) - (v / max) * (height - bottom - 8)
-  const path = values.map((v, i) => `${i ? 'L' : 'M'}${x(times[i]).toFixed(1)},${y(v).toFixed(1)}`).join('')
-  const switchX = x(4)
-  return <svg className="ig-spark" viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={`${signal} over time`}>
-    {[0, .5, 1].map(f => <g key={f}><line x1={left} x2={width - 6} y1={y(max * f / 1.08)} y2={y(max * f / 1.08)} className="ig-grid"/>
-      <text x={left - 4} y={y(max * f / 1.08) + 3} textAnchor="end" className="ig-tick">{fmt(max * f / 1.08, 0)}</text></g>)}
-    <line x1={switchX} x2={switchX} y1={6} y2={height - bottom} className="ig-switch"/>
-    <text x={switchX + 3} y={14} className="ig-tick">scenario starts</text>
-    <path d={path} className="ig-line"/>
-    <line x1={x(times[cursor])} x2={x(times[cursor])} y1={6} y2={height - bottom} className="ig-cursor"/>
-    <circle cx={x(times[cursor])} cy={y(values[cursor])} r={3.2} className="ig-dot"/>
-    {[0, 4, 8, 13].map(h => <text key={h} x={x(h)} y={height - 4} textAnchor="middle" className="ig-tick">{h} h</text>)}
-  </svg>
+function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> }) {
+  const packets = React.useRef<THREE.Group>(null)
+  const fixed = React.useMemo(() => [haulRoadPoint(1), haulRoadPoint(0).add(new THREE.Vector3(-9, 6, 9)), haulRoadPoint(.5)], [])
+  const colors = ['#c497f5', '#7fb4ff', '#4fd1c5', '#f0b85a']
+  const seeds = React.useMemo(() => Array.from({ length: 40 }, (_, i) => ({ source: i % 9, phase: (i * .137) % 1, color: colors[i % 4] })), [])
+  useFrame(({ clock }) => {
+    packets.current?.children.forEach((child, i) => {
+      const seed = seeds[i]
+      const from = seed.source < 6 ? trucks.current[seed.source] : fixed[seed.source - 6]
+      if (!from) return
+      const t = (clock.elapsedTime * .22 + seed.phase) % 1
+      const mid = from.clone().lerp(HUB, .5).add(new THREE.Vector3(0, 14, 0))
+      child.position.copy(new THREE.QuadraticBezierCurve3(from, mid, HUB).getPoint(t))
+      child.scale.setScalar(.5 + Math.sin(t * Math.PI) * .6)
+    })
+  })
+  return <group>
+    <group ref={packets}>{seeds.map((s, i) => <mesh key={i}><sphereGeometry args={[.45, 8, 6]}/><meshBasicMaterial color={s.color}/></mesh>)}</group>
+    <group position={HUB}>
+      <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[5, .35, 10, 48]}/><meshBasicMaterial color="#4fd1c5"/></mesh>
+      <mesh><icosahedronGeometry args={[2.4, 1]}/><meshStandardMaterial color="#123a33" emissive="#4fd1c5" emissiveIntensity={.6} wireframe/></mesh>
+      <Html center distanceFactor={120} position={[0, 6.5, 0]}><div className="ig-node ig-hub"><b>OpenEgiz ingestion</b><span>MQTT telemetry/&lt;asset&gt; → Eclipse Ditto twins</span></div></Html>
+    </group>
+  </group>
 }
 
-function RouteHistogram({ distances, route }: { distances: number[]; route: number }) {
-  const bins = [0, 2.5, 5, 7.5, 10, 15, 20, 36]
-  const counts = bins.slice(0, -1).map((b, i) => distances.filter(d => d >= b && d < bins[i + 1]).length)
-  const width = 320, height = 110, max = Math.max(...counts)
-  const bw = (width - 20) / counts.length
-  const routeBin = bins.findIndex((b, i) => route >= b && route < bins[i + 1])
-  return <svg className="ig-spark" viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label="OpenMines load-to-dump distance distribution">
-    {counts.map((c, i) => <g key={i}>
-      <rect x={10 + i * bw + 3} y={86 - (c / max) * 66} width={bw - 6} height={(c / max) * 66} rx={3} className={i === routeBin ? 'ig-bar-on' : 'ig-bar'}/>
-      <text x={10 + i * bw + bw / 2} y={86 - (c / max) * 66 - 4} textAnchor="middle" className="ig-tick">{c}</text>
-      <text x={10 + i * bw + bw / 2} y={100} textAnchor="middle" className="ig-tick">{bins[i]}–{bins[i + 1]}</text>
-    </g>)}
-    <text x={width - 10} y={10} textAnchor="end" className="ig-tick">km · highlighted bin holds the 3.2 km model route</text>
-  </svg>
+function Playhead({ playing, rows, head, onRow }: { playing: boolean; rows: number; head: React.MutableRefObject<number>; onRow: (row: number) => void }) {
+  useFrame((_, delta) => {
+    if (!playing) return
+    head.current = (head.current + delta / 1.1) % (rows - 1)
+    onRow(Math.floor(head.current))
+  })
+  return null
 }
 
 export function IngestionLayer() {
   const [bundle, setBundle] = React.useState<Bundle | null>(null)
   const [error, setError] = React.useState('')
-  const [tab, setTab] = React.useState<Tab>('specs')
-  const [asset, setAsset] = React.useState('Haul truck HT-01…06')
   const [scenario, setScenario] = React.useState('truck_breakdown')
-  const [cursor, setCursor] = React.useState(48)
-  const [playing, setPlaying] = React.useState(false)
-  const [signal, setSignal] = React.useState(SIGNALS[0].key)
+  const [row, setRow] = React.useState(46)
+  const [playing, setPlaying] = React.useState(true)
+  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['specs', 'sensors', 'topology', 'flow']))
+  const head = React.useRef(46)
+  const trucks = React.useRef<THREE.Vector3[]>([])
 
   React.useEffect(() => {
     fetch('/data/ingestion.json').then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then(setBundle).catch(reason => setError(String(reason)))
   }, [])
   const log = bundle?.logs[scenario]
-  React.useEffect(() => {
-    if (!playing || !log) return
-    const timer = window.setInterval(() => setCursor(c => (c + 1) % log.rows.length), 700)
-    return () => window.clearInterval(timer)
-  }, [playing, log])
+  if (error) return <div className="ig-shell ig-msg">Could not load the ingestion data ({error}).</div>
+  if (!bundle || !log) return <div className="ig-shell ig-msg">Loading the North Pit data layer…</div>
 
-  if (error) return <div className="ig-root ig-center">Could not load the ingestion data ({error}). Run <code>python ademix/data/build_data_layer.py</code>.</div>
-  if (!bundle || !log) return <div className="ig-root ig-center">Loading data & asset sources…</div>
+  const index = (key: string) => log.columns.indexOf(key)
+  const current = log.rows[Math.min(row, log.rows.length - 1)]
+  const frame: Frame = {
+    at: key => current[index(key)],
+    atMix: key => {
+      const i = Math.floor(head.current), f = head.current - i
+      const a = num(log.rows[i]?.[index(key)]), b = num(log.rows[Math.min(i + 1, log.rows.length - 1)]?.[index(key)])
+      return Math.abs(b - a) > 60 ? (f < .5 ? a : b) : a + (b - a) * f
+    },
+  }
+  const specsOf = (asset: string) => {
+    const all = bundle.equipment.flatMap(e => e.specs)
+    return SPEC_PICK[asset].map(id => all.find(s => s.parameter_id === id)!).filter(Boolean)
+  }
+  const toggle = (layer: Layer) => setLayers(prev => { const next = new Set(prev); next.has(layer) ? next.delete(layer) : next.add(layer); return next })
+  const seek = (value: number) => { head.current = value; setRow(value) }
+  const hours = num(current[0]) / 3600
 
-  const row = log.rows[cursor]
-  const at = (key: string) => row[log.columns.indexOf(key)]
-  const twins = rowToTwins(log, row)
-  const hours = Number(row[0]) / 3600
-  const select = (next: Tab, nextAsset?: string) => { setTab(next); if (nextAsset && bundle.equipment.some(e => e.asset === nextAsset)) setAsset(nextAsset) }
-  const equipment = bundle.equipment.find(e => e.asset === asset) ?? bundle.equipment[0]
-  const route = bundle.route_summary.find(r => r.matrix === 'l2d_road_matrix')!
-  const activeAnchor = Object.entries(ANCHORS).find(([, a]) => a.asset === asset)?.[0] ?? (tab === 'topology' ? 'haul_road' : '')
+  return <main className="ig-shell">
+    <div className="ig-stage">
+      <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
+        <TerrainStage showRoads showPlant moving twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
+        <Playhead playing={playing} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
+        {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}/>)}
+        <Excavator frame={frame} layers={layers} specs={specsOf('Excavator EX-01')}/>
+        <RomBin frame={frame} layers={layers} specs={specsOf('Primary crusher CR-01')}/>
+        {layers.has('specs') && <Html center distanceFactor={115} position={roadAt(70).add(new THREE.Vector3(0, 12, 0))}><SpecCard title="Haul trucks HT-01…06" specs={specsOf('Haul truck HT-01…06')}/></Html>}
+        {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
+        {layers.has('flow') && <DataFlow trucks={trucks}/>}
+      </Canvas>
+    </div>
 
-  return <main className="ig-root">
-    <header className="ig-head">
-      <div>
-        <span className="ig-eyebrow">LAYER 1 · DATA &amp; ASSET INGESTION</span>
-        <h1>North Pit data foundation</h1>
-        <p>{bundle.note}</p>
-      </div>
-      <div className="ig-legend" aria-label="Value status legend">
-        {['sourced', 'derived', 'assumption', 'synthetic', 'required_input'].map(s => <Chip key={s} status={s}/>)}
-      </div>
+    <header className="ig-title">
+      <span>LAYER 1 · DATA &amp; ASSET INGESTION</span>
+      <h1>North Pit</h1>
     </header>
 
-    <section className="ig-sources" aria-label="Ingested sources">
-      {bundle.sources.map(source => <button key={source.id} className={`ig-source ${tab === source.id ? 'on' : ''}`} onClick={() => setTab(source.id)}>
-        <span className="ig-source-kind"><Chip status={source.kind === 'mixed' ? 'derived' : source.kind}/></span>
-        <b>{source.title}</b>
-        <span className="ig-big">{source.records.toLocaleString()} <small>{source.unit}</small></span>
-        <small>{source.origin}</small>
-      </button>)}
-    </section>
+    <nav className="ig-layers" aria-label="Scene layers">
+      {LAYERS.map(([id, label]) => <button key={id} id={`ig-layer-${id}`} aria-pressed={layers.has(id)} className={layers.has(id) ? 'on' : ''} onClick={() => toggle(id)}>{label}</button>)}
+    </nav>
 
-    <section className="ig-work">
-      <div className="ig-viewport">
-        <Canvas camera={{ position: [92, 72, 98], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
-          <TerrainStage showRoads showEquipment showPlant moving twins={twins}/>
-          <TopologyMarkers onSelect={select} active={activeAnchor}/>
-        </Canvas>
-        <div className="ig-replay">
-          <div className="ig-replay-row">
-            <button className="ig-play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? '❚❚' : '▶'}</button>
-            <label className="ig-select">Log
-              <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
-                {Object.entries(bundle.logs).map(([id, l]) => <option key={id} value={id}>{l.label}</option>)}
-              </select>
-            </label>
-            <span className="ig-clock">t = {hours.toFixed(2)} h · {hours < 4 ? 'normal operations' : log.label}</span>
-          </div>
-          <input id="ig-time" type="range" min={0} max={log.rows.length - 1} value={cursor} onChange={e => setCursor(Number(e.target.value))} aria-label="Replay time"/>
-          <div className="ig-readouts">
-            <span>Throughput <b>{fmt(Number(at('mine-01.throughput_tph')), 0)}</b> t/h</span>
-            <span>ROM bin <b>{fmt(Number(at('crusher-01.rom_inventory_t')), 0)}</b> t</span>
-            <span>Face queue <b>{String(at('excavator-01.queue_length'))}</b></span>
-            <span>Road <b>{String(at('road-main.state'))}</b></span>
-            <span>HT-01 <b>{String(at('truck-01.state')).replace(/_/g, ' ')}</b></span>
-          </div>
-        </div>
-        <div className="ig-hint">Historical telemetry replay drives the 3D fleet · click a marker for its data · drag to orbit</div>
-      </div>
+    <div className="ig-key" aria-label="Value status">
+      {[['sourced', 'OpenMines'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic'], ['required_input', 'required input']].map(([s, l]) =>
+        <span key={s}><i style={{ background: STATUS_COLOR[s] }}/>{l}</span>)}
+    </div>
 
-      <section className="ig-panel">
-        <nav className="ig-tabs" aria-label="Ingestion data views">
-          {([['specs', 'Specifications'], ['logs', 'Telemetry logs'], ['sensors', 'IoT sensors'], ['topology', 'Topology']] as [Tab, string][]).map(([id, label]) =>
-            <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>)}
-        </nav>
-
-        {tab === 'specs' && <div className="ig-body">
-          <div className="ig-assets">{bundle.equipment.map(e => <button key={e.asset} className={e.asset === asset ? 'on' : ''} onClick={() => setAsset(e.asset)}>{e.asset}</button>)}</div>
-          <table className="ig-table">
-            <thead><tr><th>Parameter</th><th>Value</th><th>Status</th></tr></thead>
-            <tbody>{equipment.specs.map(spec => <tr key={spec.parameter_id} title={spec.notes}>
-              <td>{titleCase(spec.parameter_id)}<small>{spec.source}</small></td>
-              <td className="ig-num">{spec.value === null ? <em>not available</em> : <>{fmt(spec.value)} <small>{spec.unit}</small></>}</td>
-              <td><Chip status={spec.status}/></td>
-            </tr>)}</tbody>
-          </table>
-          {equipment.specs.some(s => s.status === 'required_input') && <p className="ig-callout">Fuel consumption is not in any source the team holds. The formula is ready (power × load factor × specific fuel consumption ÷ fuel density); a manufacturer or site figure is needed before fuel can be used in results.</p>}
-          <h3>OpenMines source fleet</h3>
-          <div className="ig-scroll"><table className="ig-table">
-            <thead><tr><th>Class</th><th>Unit</th><th>Count</th><th>Capacity t</th><th>Cycle min</th></tr></thead>
-            <tbody>{bundle.source_fleet.map(r => <tr key={r.unit} className={r.used_by_ademix === 'yes' ? 'ig-used' : ''}>
-              <td>{r.equipment_class.replace('_', ' ')}</td><td>{r.unit.replace('NorthPitMine-', '')}</td><td className="ig-num">{r.count}</td>
-              <td className="ig-num">{r.capacity_t || '—'}</td><td className="ig-num">{r.cycle_time_min || '—'}</td>
-            </tr>)}</tbody>
-          </table></div>
-          <small className="ig-foot">Highlighted rows are the units the Ademix model uses.</small>
-        </div>}
-
-        {tab === 'logs' && <div className="ig-body">
-          <label className="ig-select">Signal
-            <select id="ig-signal" value={signal} onChange={e => setSignal(e.target.value)}>
-              {SIGNALS.map(s => <option key={s.key} value={s.key}>{s.label} ({s.unit})</option>)}
-            </select>
-          </label>
-          <Sparkline log={log} signal={signal} cursor={cursor}/>
-          <p className="ig-muted">{log.rows.length} samples every 5 simulated minutes · {log.columns.length - 1} signals in this view · 120 in the full CSV. Synthetic output of the deterministic simulator (seed 42), regenerated byte for byte by the build script.</p>
-          <table className="ig-table">
-            <thead><tr><th>Log file</th><th>Rows</th><th>SHA-256</th></tr></thead>
-            <tbody>{Object.entries(bundle.provenance.outputs).filter(([p]) => p.startsWith('telemetry/logs/')).map(([p, info]) =>
-              <tr key={p}><td>{p.replace('telemetry/logs/', '')}</td><td className="ig-num">{info.rows}</td><td><code>{info.sha256.slice(0, 12)}…</code></td></tr>)}</tbody>
-          </table>
-        </div>}
-
-        {tab === 'sensors' && <div className="ig-body">
-          <p className="ig-muted">Each simulated sensor publishes every second (20 simulated seconds) to MQTT <code>telemetry/&lt;thing&gt;</code>; OpenEgiz maps the message into the Eclipse Ditto twin's features.</p>
-          <ul className="ig-sensors">{bundle.sensors.map(s => <li key={s.sensor_id}>
-            <div><b>{s.sensor_type}</b> <span className="ig-tag">{s.asset_kind}</span></div>
-            <small>{s.real_world_equivalent}</small>
-            <code>{s.features.split('|').slice(0, 4).join(', ')}{s.features.split('|').length > 4 ? ' …' : ''}</code>
-            <small className="ig-impl">{s.implementation}</small>
-          </li>)}</ul>
-        </div>}
-
-        {tab === 'topology' && <div className="ig-body">
-          <svg className="ig-flow" viewBox="0 0 330 92" width="100%" role="img" aria-label="Haulage network">
-            {[['Loading face', '1 server · 6 min', 4], ['Haul road', '3.2 km · 1 lane', 88], ['Dump bay', '1 server · 1 min', 172], ['ROM → crusher', '600 t · 900 t/h', 256]].map(([label, sub, x]) =>
-              <g key={label as string}><rect x={x as number} y={20} width={70} height={46} rx={7} className="ig-box"/>
-                <text x={(x as number) + 35} y={40} textAnchor="middle" className="ig-box-t">{label}</text>
-                <text x={(x as number) + 35} y={56} textAnchor="middle" className="ig-tick">{sub}</text></g>)}
-            {[74, 158, 242].map(x => <path key={x} d={`M${x},43 L${x + 14},43`} className="ig-arrow"/>)}
-            <text x={165} y={84} textAnchor="middle" className="ig-tick">empty trucks return along the same lane</text>
-          </svg>
-          <ul className="ig-rules">{bundle.topology.traffic_rules.map(r => <li key={r}>{r}</li>)}</ul>
-          <h3>Route length against the source</h3>
-          <RouteHistogram distances={bundle.route_distances} route={3.2}/>
-          <p className="ig-muted">OpenMines load-to-dump distances: median {route.median} km, interquartile {route.q1}–{route.q3} km. The 3.2 km model route is at or below only {route.pct_of_source_routes_at_or_below_ademix} % of them.</p>
-          <h3>3D pit geometry <small>(scene units, not survey)</small></h3>
-          <table className="ig-table"><tbody>{Object.entries(bundle.topology.visual_pit_geometry).filter(([k]) => !['units', 'source'].includes(k)).map(([k, v]) =>
-            <tr key={k}><td>{k.replace(/_/g, ' ')}</td><td className="ig-num">{Array.isArray(v) ? v.join(' × ') : String(v)}</td></tr>)}</tbody></table>
-          <h3>Not available</h3>
-          <ul className="ig-rules">{bundle.topology.not_available.map(r => <li key={r}>{r}</li>)}</ul>
-        </div>}
-      </section>
-    </section>
+    <footer className="ig-bar">
+      <button id="ig-play" className="ig-play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? '❚❚' : '▶'}</button>
+      <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)} aria-label="Telemetry log">
+        {Object.entries(bundle.logs).map(([id, l]) => <option key={id} value={id}>{l.label}</option>)}
+      </select>
+      <input id="ig-time" type="range" min={0} max={log.rows.length - 1} value={row} onChange={e => seek(Number(e.target.value))} aria-label="Replay time"/>
+      <span className="ig-clock">{hours.toFixed(2)} h · {hours < 4 ? 'normal operations' : log.label}</span>
+      <span className="ig-read">{num(frame.at('mine-01.throughput_tph')).toFixed(0)} <small>t/h</small></span>
+      <span className="ig-read">{num(frame.at('crusher-01.rom_inventory_t')).toFixed(0)} <small>t ROM</small></span>
+      <span className="ig-read">{String(frame.at('road-main.state'))} <small>road</small></span>
+    </footer>
   </main>
 }
+
+useGLTF.preload('/models/hauler.glb')
+useGLTF.preload('/models/excavator.glb')
