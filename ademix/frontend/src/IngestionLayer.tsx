@@ -13,7 +13,8 @@ type Spec = { parameter_id: string; value: number | null; unit: string; status: 
 type Log = { label: string; columns: string[]; rows: (string | number | null)[][] }
 type Bundle = { equipment: { asset: string; specs: Spec[] }[]; logs: Record<string, Log> }
 type Layer = 'specs' | 'sensors' | 'topology' | 'flow'
-type Frame = { at: (key: string) => string | number | null; atMix: (key: string) => number }
+type Frame = { at: (key: string) => string | number | null; atMix: (key: string) => number; circuit: (truck: number) => number }
+type Getter = (key: string) => unknown
 
 const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow']]
 const STATUS_COLOR: Record<string, string> = {
@@ -117,8 +118,57 @@ function loopPose(end: 'face' | 'crusher', phase: number) {
   return { position: point, yaw: -Math.atan2(forward.z, forward.x) }
 }
 
-function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: {
-  index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; rank: number; blockageActive: boolean
+// The haul cycle as one closed, one-way circuit. Circuit position s runs 0 → 2:
+// 0 loading spot → face loop exit → outer lane → crusher loop → 1 tipping point → crusher loop exit →
+// inner lane → face loop → 2 (= 0) loading spot. Trucks only ever move forward along it.
+function circuitPosition(state: string, pct: number, heading: number, rank: number) {
+  if (state === 'loading') return 0
+  if (state === 'dumping') return 1
+  if (state === 'queued_at_crusher') return (100 - LOOP_PCT - rank * QUEUE_SPACING_PCT) / 100
+  if (state === 'queued_at_excavator') return 1 + (100 - (LOOP_PCT + rank * QUEUE_SPACING_PCT)) / 100
+  const held = state === 'blocked' ? pct - heading * QUEUE_SPACING_PCT * (rank + .6) : pct
+  return heading > 0 ? held / 100 : 1 + (100 - held) / 100
+}
+
+function circuitPose(s: number) {
+  const at = ((s % 2) + 2) % 2
+  if (at <= 1) {
+    const pct = at * 100
+    if (pct <= LOOP_PCT) return loopPose('face', .5 + pct / LOOP_PCT * .5) // loaded, finishing the face loop
+    if (pct >= 100 - LOOP_PCT) return loopPose('crusher', (pct - (100 - LOOP_PCT)) / LOOP_PCT * .5) // into the dump loop
+    return lanePose(pct, 1, LANE_OFFSET) // outer lane, loaded
+  }
+  const pct = 100 - (at - 1) * 100
+  if (pct >= 100 - LOOP_PCT) return loopPose('crusher', .5 + (100 - pct) / LOOP_PCT * .5) // round the storage area
+  if (pct <= LOOP_PCT) return loopPose('face', (LOOP_PCT - pct) / LOOP_PCT * .5) // into the loading loop
+  return lanePose(pct, -1, LANE_OFFSET) // inner lane, empty
+}
+
+const WAITING = new Set(['queued_at_excavator', 'queued_at_crusher', 'blocked'])
+type Queues = Record<string, number[]>
+
+/** Updates first-come-first-served queues from one snapshot and returns each truck's place in its queue. */
+function advanceQueues(queues: Queues, get: Getter): number[] {
+  const keyOf = (i: number) => {
+    const state = String(get(`truck-0${i + 1}.state`))
+    return WAITING.has(state) ? `${state}|${num(get(`truck-0${i + 1}.heading`)) >= 0}` : ''
+  }
+  const keys = Array.from({ length: 6 }, (_, i) => keyOf(i))
+  for (const key of Object.keys(queues)) queues[key] = queues[key].filter(i => keys[i] === key)
+  keys.forEach((key, i) => { if (key && !(queues[key] ??= []).includes(i)) queues[key].push(i) })
+  return keys.map((key, i) => key ? queues[key].indexOf(i) : 0)
+}
+
+/** Moves forward from one circuit position to the next; a small apparent step back means "wait". */
+function forwardBlend(from: number, to: number, f: number) {
+  let delta = to - from
+  while (delta < 0) delta += 2
+  if (delta > 1.5) delta = 0
+  return from + delta * THREE.MathUtils.clamp(f, 0, 1)
+}
+
+function LoggedTruck({ index, frame, layers, positions, blockageActive }: {
+  index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; blockageActive: boolean
 }) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
@@ -126,34 +176,20 @@ function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: 
   const id = `truck-${String(index + 1).padStart(2, '0')}`
   const state = String(frame.at(`${id}.state`) ?? 'hauling')
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
+  const shown = React.useRef<number | null>(null)
   useFrame(() => {
     if (!group.current) return
-    const pct = frame.atMix(`${id}.route_progress_pct`)
-    let pose
-    if (state === 'loading') {
-      pose = loopPose('face', .5) // half-way round the loop, beside the excavator
-    } else if (state === 'dumping') {
-      pose = loopPose('crusher', .5) // half-way round the loop, at the tipping point
-    } else if (state === 'returning' && pct <= LOOP_PCT) {
-      pose = loopPose('face', (LOOP_PCT - pct) / LOOP_PCT * .5) // driving into the loading loop
-    } else if (state === 'hauling' && pct <= LOOP_PCT) {
-      pose = loopPose('face', .5 + pct / LOOP_PCT * .5) // loaded, finishing the loop forwards
-    } else if (state === 'hauling' && pct >= 100 - LOOP_PCT) {
-      pose = loopPose('crusher', (pct - (100 - LOOP_PCT)) / LOOP_PCT * .5) // driving into the dump loop
-    } else if (state === 'returning' && pct >= 100 - LOOP_PCT) {
-      pose = loopPose('crusher', .5 + (100 - pct) / LOOP_PCT * .5) // empty, finishing the loop forwards
-    } else if (state === 'queued_at_excavator') {
-      pose = lanePose(LOOP_PCT + 3 + rank * QUEUE_SPACING_PCT, -1, LANE_OFFSET) // nose to tail before the loop
-    } else if (state === 'queued_at_crusher') {
-      pose = lanePose(100 - LOOP_PCT - 3 - rank * QUEUE_SPACING_PCT, 1, LANE_OFFSET) // nose to tail before the loop
-    } else if (state === 'blocked') {
-      pose = lanePose(pct - heading * QUEUE_SPACING_PCT * (rank + .6), heading, LANE_OFFSET) // stopped behind the broken-down truck
-    } else if (state === 'breakdown') {
-      // Stops in its lane while it blocks the road, then is towed onto the shoulder.
-      pose = lanePose(pct, heading, blockageActive ? LANE_OFFSET : SHOULDER_OFFSET)
-    } else {
-      pose = lanePose(pct, heading, LANE_OFFSET)
-    }
+    // The displayed position only ever advances: if the data places the truck slightly behind
+    // where it is drawn, it waits there instead of reversing.
+    const target = frame.circuit(index)
+    if (shown.current === null) shown.current = target
+    let ahead = target - shown.current
+    while (ahead < 0) ahead += 2
+    if (ahead <= 1.5) shown.current = (shown.current + ahead) % 2
+    // Stops in its lane while it blocks the road, then is towed onto the shoulder.
+    const pose = state === 'breakdown' && !blockageActive
+      ? lanePose(frame.atMix(`${id}.route_progress_pct`), heading, SHOULDER_OFFSET)
+      : circuitPose(shown.current)
     group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
     group.current.rotation.y = pose.yaw
     positions.current[index] = group.current.position.clone()
@@ -409,7 +445,10 @@ export function IngestionLayer() {
   // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
   const [live, setLive] = React.useState(false)
   const [, setTick] = React.useState(0)
-  const liveState = React.useRef<{ prev: Record<string, unknown>; curr: Record<string, unknown>; at: number }>({ prev: {}, curr: {}, at: 0 })
+  const liveState = React.useRef<{ prev: Record<string, unknown>; curr: Record<string, unknown>; at: number; prevRanks: number[]; currRanks: number[] }>(
+    { prev: {}, curr: {}, at: 0, prevRanks: [], currRanks: [] })
+  const liveQueues = React.useRef<Queues>({})
+  const replayQueues = React.useRef<{ log?: Log; ranks: number[][] }>({ ranks: [] })
 
   React.useEffect(() => {
     let stopped = false
@@ -426,7 +465,9 @@ export function IngestionLayer() {
         }
         if (stopped) return
         const previous = liveState.current.curr
-        liveState.current = { prev: Object.keys(previous).length ? previous : flat, curr: flat, at: performance.now() }
+        const prevRanks = liveState.current.currRanks
+        const currRanks = advanceQueues(liveQueues.current, k => flat[k])
+        liveState.current = { prev: Object.keys(previous).length ? previous : flat, curr: flat, at: performance.now(), prevRanks: prevRanks.length ? prevRanks : currRanks, currRanks }
         setLive(true)
         setTick(t => t + 1)
       } catch {
@@ -447,14 +488,31 @@ export function IngestionLayer() {
   if (!bundle || !log) return <div className="ig-shell ig-msg">Loading the North Pit data layer…</div>
 
   const index = (key: string) => log.columns.indexOf(key)
+  if (replayQueues.current.log !== log) {
+    // Replay queue order is the order in which trucks joined each queue, walked through the whole log.
+    const queues: Queues = {}
+    replayQueues.current = { log, ranks: log.rows.map(r => advanceQueues(queues, key => r[log.columns.indexOf(key)])) }
+  }
   const current = log.rows[Math.min(row, log.rows.length - 1)]
   const mix = (a: number, b: number, f: number) => Math.abs(b - a) > 60 ? (f < .5 ? a : b) : a + (b - a) * f
+  // Circuit position of truck i in one snapshot; trucks sharing a waiting state line up by rank.
+  const circuitIn = (get: Getter, i: number, rank: number) => {
+    const t = `truck-0${i + 1}`
+    return circuitPosition(String(get(`${t}.state`) ?? 'hauling'), num(get(`${t}.route_progress_pct`)), num(get(`${t}.heading`)) >= 0 ? 1 : -1, rank)
+  }
+  const replayRanks = replayQueues.current.ranks
+  const rowGetter = (r: number): Getter => key => log.rows[Math.min(Math.max(r, 0), log.rows.length - 1)]?.[index(key)]
   const frame: Frame = live
     ? {
       at: key => (liveState.current.curr[key] ?? null) as string | number | null,
       atMix: key => {
         const { prev, curr, at } = liveState.current
         return mix(num(prev[key] ?? curr[key]), num(curr[key]), Math.min(1, (performance.now() - at) / 2000))
+      },
+      circuit: i => {
+        const { prev, curr, at } = liveState.current
+        const ranks = liveState.current
+        return forwardBlend(circuitIn(k => prev[k] ?? curr[k], i, ranks.prevRanks[i] ?? 0), circuitIn(k => curr[k], i, ranks.currRanks[i] ?? 0), (performance.now() - at) / 2000)
       },
     }
     : {
@@ -463,15 +521,15 @@ export function IngestionLayer() {
         const i = Math.floor(head.current), f = head.current - i
         return mix(num(log.rows[i]?.[index(key)]), num(log.rows[Math.min(i + 1, log.rows.length - 1)]?.[index(key)]), f)
       },
+      circuit: t => {
+        const i = Math.floor(head.current)
+        const next = Math.min(i + 1, log.rows.length - 1)
+        return forwardBlend(circuitIn(rowGetter(i), t, replayRanks[i]?.[t] ?? 0), circuitIn(rowGetter(next), t, replayRanks[next]?.[t] ?? 0), head.current - i)
+      },
     }
   const specsOf = (asset: string) => {
     const all = bundle.equipment.flatMap(e => e.specs)
     return SPEC_PICK[asset].map(id => all.find(s => s.parameter_id === id)!).filter(Boolean)
-  }
-  // Position of a truck among the trucks sharing its waiting state (and direction), so they line up.
-  const queueRank = (i: number) => {
-    const key = (n: number) => `${frame.at(`truck-0${n + 1}.state`)}|${num(frame.at(`truck-0${n + 1}.heading`)) >= 0}`
-    return Array.from({ length: i }, (_, n) => n).filter(n => key(n) === key(i)).length
   }
   const toggle = (layer: Layer) => setLayers(prev => { const next = new Set(prev); next.has(layer) ? next.delete(layer) : next.add(layer); return next })
   const seek = (value: number) => { head.current = value; setRow(value) }
@@ -485,7 +543,7 @@ export function IngestionLayer() {
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
         <LaneArrows/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
-          rank={queueRank(i)} blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
+          blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
         <Excavator frame={frame}/>
         <OreHandling frame={frame} dumping={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).includes('dumping')}/>
         <LightTowers/>
