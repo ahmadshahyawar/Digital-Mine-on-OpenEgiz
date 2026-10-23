@@ -67,8 +67,7 @@ function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
 const LANE_OFFSET = 2.1
 const SHOULDER_OFFSET = 4.6
 const QUEUE_SPACING_PCT = 3.6 // about one truck length plus a gap along the ramp
-const LOAD_SPOT = new THREE.Vector3(-2.3, 0, 2.8) // beside the excavator on the loading pad
-const DUMP_SPOT = new THREE.Vector3(4.2, 0, 1.4) // on the marked tipping ring at the hopper
+const LOOP_PCT = 8 // the last 8 % of the route at each end runs through the turning loop
 
 /** Where a truck stands and which way it faces, for a route position (engine %: 0 face, 100 crusher). */
 function lanePose(enginePct: number, heading: 1 | -1, sideOffset: number) {
@@ -82,6 +81,42 @@ function lanePose(enginePct: number, heading: 1 | -1, sideOffset: number) {
   return { position: point.addScaledVector(right, sideOffset), yaw: -Math.atan2(forward.z, forward.x) }
 }
 
+/**
+ * Turning loop around a pad (the painted yellow ring). A truck arrives in its right-hand lane, drives
+ * round the ring keeping the pad on its left, stops half-way to load or dump, then carries on forward
+ * and leaves in the opposite lane: it never reverses or turns on the spot.
+ */
+function turningLoop(end: 'face' | 'crusher') {
+  const atFace = end === 'face'
+  const centre = haulRoadPoint(atFace ? 1 : 0)
+  const radius = atFace ? 7.3 : 9.6
+  const approach = lanePose(atFace ? LOOP_PCT : 100 - LOOP_PCT, atFace ? -1 : 1, LANE_OFFSET)
+  const exit = lanePose(atFace ? LOOP_PCT : 100 - LOOP_PCT, atFace ? 1 : -1, LANE_OFFSET)
+  const angleOf = (p: THREE.Vector3) => Math.atan2(p.z - centre.z, p.x - centre.x)
+  const onRing = (a: number) => new THREE.Vector3(centre.x + Math.cos(a) * radius, centre.y, centre.z + Math.sin(a) * radius)
+  const start = angleOf(approach.position), finish = angleOf(exit.position)
+  // Pick the sweep direction that keeps the pad on the driver's left (right-hand traffic).
+  const forwardAt = (a: number, s: number) => new THREE.Vector3(-Math.sin(a) * s, 0, Math.cos(a) * s)
+  const leftOf = (f: THREE.Vector3) => new THREE.Vector3(f.z, 0, -f.x)
+  const towardCentre = centre.clone().sub(onRing(start)).setY(0)
+  const sign = leftOf(forwardAt(start, 1)).dot(towardCentre) > 0 ? 1 : -1
+  let sweep = (finish - start) * sign
+  while (sweep <= 0) sweep += Math.PI * 2
+  const points = [approach.position.clone()]
+  for (let k = 0; k <= 24; k++) points.push(onRing(start + sign * sweep * k / 24))
+  points.push(exit.position.clone())
+  return new THREE.CatmullRomCurve3(points)
+}
+const LOOPS = { face: turningLoop('face'), crusher: turningLoop('crusher') }
+
+function loopPose(end: 'face' | 'crusher', phase: number) {
+  const curve = LOOPS[end]
+  const p = THREE.MathUtils.clamp(phase, 0, 1)
+  const point = curve.getPointAt(p)
+  const forward = curve.getTangentAt(p).setY(0).normalize()
+  return { position: point, yaw: -Math.atan2(forward.z, forward.x) }
+}
+
 function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: {
   index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>; rank: number; blockageActive: boolean
 }) {
@@ -93,25 +128,31 @@ function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: 
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   useFrame(() => {
     if (!group.current) return
+    const pct = frame.atMix(`${id}.route_progress_pct`)
     let pose
     if (state === 'loading') {
-      const at = lanePose(0, -1, 0)
-      pose = { position: haulRoadPoint(1).add(LOAD_SPOT), yaw: at.yaw }
+      pose = loopPose('face', .5) // half-way round the loop, beside the excavator
     } else if (state === 'dumping') {
-      const at = lanePose(100, 1, 0)
-      pose = { position: haulRoadPoint(0).add(DUMP_SPOT), yaw: at.yaw + Math.PI }
+      pose = loopPose('crusher', .5) // half-way round the loop, at the tipping point
+    } else if (state === 'returning' && pct <= LOOP_PCT) {
+      pose = loopPose('face', (LOOP_PCT - pct) / LOOP_PCT * .5) // driving into the loading loop
+    } else if (state === 'hauling' && pct <= LOOP_PCT) {
+      pose = loopPose('face', .5 + pct / LOOP_PCT * .5) // loaded, finishing the loop forwards
+    } else if (state === 'hauling' && pct >= 100 - LOOP_PCT) {
+      pose = loopPose('crusher', (pct - (100 - LOOP_PCT)) / LOOP_PCT * .5) // driving into the dump loop
+    } else if (state === 'returning' && pct >= 100 - LOOP_PCT) {
+      pose = loopPose('crusher', .5 + (100 - pct) / LOOP_PCT * .5) // empty, finishing the loop forwards
     } else if (state === 'queued_at_excavator') {
-      pose = lanePose(6 + rank * QUEUE_SPACING_PCT, -1, LANE_OFFSET) // nose to tail in the inbound lane
+      pose = lanePose(LOOP_PCT + 3 + rank * QUEUE_SPACING_PCT, -1, LANE_OFFSET) // nose to tail before the loop
     } else if (state === 'queued_at_crusher') {
-      pose = lanePose(94 - rank * QUEUE_SPACING_PCT, 1, LANE_OFFSET) // nose to tail in the outbound lane
+      pose = lanePose(100 - LOOP_PCT - 3 - rank * QUEUE_SPACING_PCT, 1, LANE_OFFSET) // nose to tail before the loop
     } else if (state === 'blocked') {
-      const pct = frame.atMix(`${id}.route_progress_pct`) - heading * QUEUE_SPACING_PCT * (rank + .6)
-      pose = lanePose(pct, heading, LANE_OFFSET) // stopped behind the broken-down truck
+      pose = lanePose(pct - heading * QUEUE_SPACING_PCT * (rank + .6), heading, LANE_OFFSET) // stopped behind the broken-down truck
     } else if (state === 'breakdown') {
       // Stops in its lane while it blocks the road, then is towed onto the shoulder.
-      pose = lanePose(frame.atMix(`${id}.route_progress_pct`), heading, blockageActive ? LANE_OFFSET : SHOULDER_OFFSET)
+      pose = lanePose(pct, heading, blockageActive ? LANE_OFFSET : SHOULDER_OFFSET)
     } else {
-      pose = lanePose(frame.atMix(`${id}.route_progress_pct`), heading, LANE_OFFSET)
+      pose = lanePose(pct, heading, LANE_OFFSET)
     }
     group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
     group.current.rotation.y = pose.yaw
@@ -132,10 +173,15 @@ function LoggedTruck({ index, frame, layers, positions, rank, blockageActive }: 
 function LaneArrows() {
   const arrows = React.useMemo(() => {
     const list: { position: THREE.Vector3; yaw: number; color: string }[] = []
-    for (let pct = 8; pct <= 92; pct += 4.2) {
+    for (let pct = LOOP_PCT + 2; pct <= 100 - LOOP_PCT - 4; pct += 4.2) {
       const inbound = lanePose(pct, -1, LANE_OFFSET)
       const outbound = lanePose(pct + 2.1, 1, LANE_OFFSET)
       list.push({ ...inbound, color: '#5ec8f2' }, { ...outbound, color: '#f0b85a' })
+    }
+    // Around each turning loop: arriving half in the arriving lane's colour, leaving half in the other.
+    for (let phase = .08; phase < .95; phase += .07) {
+      list.push({ ...loopPose('face', phase), color: phase < .5 ? '#5ec8f2' : '#f0b85a' })
+      list.push({ ...loopPose('crusher', phase), color: phase < .5 ? '#f0b85a' : '#5ec8f2' })
     }
     return list
   }, [])
@@ -160,13 +206,93 @@ function Excavator({ frame }: { frame: Frame }) {
   </group>
 }
 
-function RomBin({ frame }: { frame: Frame }) {
-  const fill = THREE.MathUtils.clamp(frame.atMix('crusher-01.rom_inventory_t') / 600, 0, 1)
-  const position = haulRoadPoint(0).add(new THREE.Vector3(-9, .3, 9))
-  return <group position={position}>
-    <mesh position={[0, 3, 0]}><cylinderGeometry args={[3, 2.4, 6, 24, 1, true]}/><meshStandardMaterial color="#8fa3a6" transparent opacity={.35} side={THREE.DoubleSide}/></mesh>
-    <mesh position={[0, .05 + fill * 3, 0]} scale={[1, Math.max(fill, .02), 1]}><cylinderGeometry args={[2.85, 2.35, 6, 24]}/><meshStandardMaterial color="#9b6a3f" roughness={1}/></mesh>
+// Ore handling chain: truck tips into the ROM bin beside the dump loop → feeder → primary crusher →
+// main conveyor → crushed-ore stockpile. Positions follow the plant layout drawn by TerrainStage.
+const PLANT_YAW = 2.76
+function plantToWorld(x: number, y: number, z: number) {
+  const origin = haulRoadPoint(0).add(new THREE.Vector3(-1.2, .3, -.8))
+  const c = Math.cos(PLANT_YAW), s = Math.sin(PLANT_YAW)
+  return new THREE.Vector3(origin.x + x * c + z * s, origin.y + y, origin.z - x * s + z * c)
+}
+const DUMP_POSE = loopPose('crusher', .5)
+const ROM_BIN = (() => {
+  const centre = haulRoadPoint(0)
+  const inward = centre.clone().sub(DUMP_POSE.position).setY(0).normalize()
+  return DUMP_POSE.position.clone().addScaledVector(inward, 4.3).setY(centre.y + .3)
+})()
+const HOPPER = plantToWorld(-2.6, 2.4, 0)
+const BELT_START = plantToWorld(4.6, 3.05, .1)
+const BELT_END = plantToWorld(20.6, 3.1, .1)
+const STOCKPILE = plantToWorld(24.6, 0, .1)
+
+/** A straight belt between two points: a thin slab plus the moving ore on it. */
+function Belt({ from, to, flow, color = '#3d4a4a' }: { from: THREE.Vector3; to: THREE.Vector3; flow: number; color?: string }) {
+  const chunks = React.useRef<THREE.Group>(null)
+  const { mid, length, quaternion } = React.useMemo(() => {
+    const dir = to.clone().sub(from)
+    return {
+      mid: from.clone().add(to).multiplyScalar(.5),
+      length: dir.length(),
+      quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir.normalize()),
+    }
+  }, [from, to])
+  const count = 12
+  useFrame((_, delta) => {
+    chunks.current?.children.forEach((child, i) => {
+      const visible = flow > .02 && i < Math.ceil(count * Math.min(1, flow))
+      child.visible = visible
+      if (!visible) return
+      child.userData.t = ((child.userData.t ?? i / count) + delta * (.12 + .25 * flow)) % 1
+      child.position.copy(from).lerp(to, child.userData.t).add(new THREE.Vector3(0, .45, 0))
+    })
+  })
+  return <group>
+    <mesh position={mid} quaternion={quaternion}><boxGeometry args={[length, .25, 1.3]}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
+    <group ref={chunks}>{Array.from({ length: count }, (_, i) => <mesh key={i}><dodecahedronGeometry args={[.32, 0]}/><meshStandardMaterial color="#9c6b43" roughness={1}/></mesh>)}</group>
   </group>
+}
+
+function OreHandling({ frame, dumping }: { frame: Frame; dumping: boolean }) {
+  const rom = frame.atMix('crusher-01.rom_inventory_t')
+  const fill = THREE.MathUtils.clamp(rom / 600, 0, 1)
+  const throughput = num(frame.at('mine-01.throughput_tph'))
+  const received = num(frame.at('mine-01.production_t'))
+  const falling = React.useRef<THREE.Group>(null)
+  const pile = React.useRef<THREE.Mesh>(null)
+  // Pile radius grows with the cube root of tonnes received, so its volume tracks the tonnage.
+  const pileScale = Math.cbrt(1 + received / 2500)
+  useFrame(({ clock }) => {
+    falling.current?.children.forEach((child, i) => {
+      child.visible = dumping
+      if (!dumping) return
+      const t = (clock.elapsedTime * .9 + i / 8) % 1
+      child.position.copy(DUMP_POSE.position).lerp(ROM_BIN, t).add(new THREE.Vector3(0, 3.2 - t * 2.4 + Math.sin(t * Math.PI) * .8, 0))
+    })
+    if (pile.current) pile.current.scale.lerp(new THREE.Vector3(pileScale, pileScale, pileScale), .05)
+  })
+  return <group>
+    {/* ROM bin: concrete pocket whose ore level is the live bin level */}
+    <group position={ROM_BIN}>
+      <mesh position={[0, 1.6, 0]}><cylinderGeometry args={[2.7, 2.1, 3.2, 20, 1, true]}/><meshStandardMaterial color="#9aa3a0" side={THREE.DoubleSide} roughness={.9}/></mesh>
+      <mesh position={[0, .05 + fill * 1.55, 0]} scale={[1, Math.max(fill, .03), 1]}><cylinderGeometry args={[2.55, 2.05, 3.1, 20]}/><meshStandardMaterial color="#9b6a3f" roughness={1}/></mesh>
+      <mesh position={[0, 3.25, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[2.7, 3.1, 24]}/><meshBasicMaterial color="#e2c14f"/></mesh>
+    </group>
+    <group ref={falling}>{Array.from({ length: 8 }, (_, i) => <mesh key={i}><dodecahedronGeometry args={[.38, 0]}/><meshStandardMaterial color="#9c6b43" roughness={1}/></mesh>)}</group>
+    {/* Feeder from the bin into the crusher hopper, then the main conveyor to the stockpile */}
+    <Belt from={ROM_BIN.clone().add(new THREE.Vector3(0, 1.2, 0))} to={HOPPER} flow={rom > 1 && throughput > 0 ? Math.min(1, throughput / 900) : 0}/>
+    <Belt from={BELT_START} to={BELT_END} flow={Math.min(1, throughput / 900)} color="#2f3a3a"/>
+    <mesh ref={pile} position={STOCKPILE.clone().add(new THREE.Vector3(0, 2.6, 0))}><coneGeometry args={[6.2, 5.6, 32]}/><meshStandardMaterial color="#7d5b3f" roughness={1}/></mesh>
+  </group>
+}
+
+/** Mast light towers along the outer edge of the haul road, as on a night-shift mine. */
+function LightTowers() {
+  const towers = React.useMemo(() => [14, 30, 46, 62, 78].map(pct => lanePose(pct, 1, 5.6)), [])
+  return <group>{towers.map((t, i) => <group key={i} position={t.position} rotation={[0, t.yaw, 0]}>
+    <mesh position={[0, 3.6, 0]}><cylinderGeometry args={[.12, .18, 7.2, 6]}/><meshStandardMaterial color="#c9cfcc"/></mesh>
+    <mesh position={[0, 7.4, 0]}><boxGeometry args={[1.6, .5, .3]}/><meshStandardMaterial color="#2d3436" emissive="#fff6c8" emissiveIntensity={.8}/></mesh>
+    <mesh position={[0, .4, 0]}><boxGeometry args={[1.4, .8, 1]}/><meshStandardMaterial color="#e2c14f"/></mesh>
+  </group>)}</group>
 }
 
 function SpecsPanel({ specsOf }: { specsOf: (asset: string) => Spec[] }) {
@@ -206,6 +332,7 @@ function SensorPanel({ frame, live }: { frame: Frame; live: boolean }) {
     <div className="ig-gauges">
       <div><span>ROM bin level</span><Flash value={rom}>{rom.toFixed(0)} <small>/ 600 t</small></Flash>
         <div className="ig-meter"><i style={{ width: `${Math.min(100, rom / 6)}%` }}/></div></div>
+      <div><span>Stockpile received</span><Flash value={Math.round(num(frame.at('mine-01.production_t')) / 10)}>{num(frame.at('mine-01.production_t')).toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>t</small></Flash></div>
       <div><span>Crusher belt scale</span><Flash value={frame.at('mine-01.throughput_tph')}>{reading('mine-01.throughput_tph')} <small>t/h</small></Flash></div>
       <div><span>Excavator</span><Flash value={frame.at('excavator-01.state')}>{reading('excavator-01.state')}</Flash></div>
       <div><span>Queue at face</span><Flash value={frame.at('excavator-01.queue_length')}>{reading('excavator-01.queue_length')} <small>trucks</small></Flash></div>
@@ -223,7 +350,8 @@ function Topology({ specs }: { specs: Spec[] }) {
     ['Loading face', haulRoadPoint(1), '1 server · 6 min per truck'],
     ['Haul road', haulRoadPoint(.5), `${specs.find(s => s.parameter_id === 'route_length_km')?.value ?? 3.2} km · two-way, keep right`],
     ['Dump bay', haulRoadPoint(0), '1 server · 1 min'],
-    ['ROM bin → crusher', haulRoadPoint(0).add(new THREE.Vector3(-9, 0, 9)), '600 t buffer · 900 t/h'],
+    ['ROM bin → crusher', ROM_BIN.clone(), '600 t buffer · 900 t/h'],
+    ['Crushed-ore stockpile', STOCKPILE.clone().add(new THREE.Vector3(0, 6, 0)), 'conveyor from the crusher'],
   ]
   return <group>
     <mesh geometry={tube}><meshBasicMaterial color="#4fd1c5" transparent opacity={.75}/></mesh>
@@ -236,7 +364,7 @@ function Topology({ specs }: { specs: Spec[] }) {
 
 function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> }) {
   const packets = React.useRef<THREE.Group>(null)
-  const fixed = React.useMemo(() => [haulRoadPoint(1), haulRoadPoint(0).add(new THREE.Vector3(-9, 6, 9)), haulRoadPoint(.5)], [])
+  const fixed = React.useMemo(() => [haulRoadPoint(1), ROM_BIN.clone().add(new THREE.Vector3(0, 4, 0)), haulRoadPoint(.5)], [])
   const colors = ['#c497f5', '#7fb4ff', '#4fd1c5', '#f0b85a']
   const seeds = React.useMemo(() => Array.from({ length: 40 }, (_, i) => ({ source: i % 9, phase: (i * .137) % 1, color: colors[i % 4] })), [])
   useFrame(({ clock }) => {
@@ -359,7 +487,8 @@ export function IngestionLayer() {
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}
           rank={queueRank(i)} blockageActive={frame.at('road-main.state') === 'restricted'}/>)}
         <Excavator frame={frame}/>
-        <RomBin frame={frame}/>
+        <OreHandling frame={frame} dumping={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).includes('dumping')}/>
+        <LightTowers/>
         {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
