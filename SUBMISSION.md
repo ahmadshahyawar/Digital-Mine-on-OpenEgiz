@@ -93,7 +93,7 @@ Exact provenance, checksum, license, modifications, and rejected asset sources a
 
 ## Mine visualization
 
-Open <http://localhost:4173> after following `README.md`. The command center shows a terraced pit, haul route, loading face, primary crusher, stockpile, and six production trucks. Production-truck state, payload, route progress, KPIs and scenario comparison come from Eclipse Ditto; paint schemes are fixed identifiers. Left-drag pans, right-drag rotates, the wheel zooms toward the pointer, and double-click inspects equipment. Balanced graphics is the default; High raises resolution and shadow quality. Models and soil textures are bundled locally. The latest rendering changes still require software-WebGL performance and visual acceptance testing.
+Open <http://localhost:4173> after following `README.md`. The command center shows a terraced pit, haul route, loading face, primary crusher, stockpile, and six production trucks. Production-truck state, payload, route progress, KPIs and scenario comparison come from Eclipse Ditto; paint schemes are fixed identifiers. Left-drag pans, right-drag rotates, the wheel zooms toward the pointer, and double-click inspects equipment. Balanced graphics is the default; High raises resolution and shadow quality. Models and soil textures are bundled locally. The authoritative Layer 1 scene is the default route; `?stage=ingestion` is retained as an equivalent explicit inspection URL.
 
 ## Limitations
 

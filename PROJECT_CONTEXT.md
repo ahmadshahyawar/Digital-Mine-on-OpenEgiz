@@ -522,6 +522,15 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Runtime frontend assets are Git-tracked and total 2.94 MiB. A targeted source/public scan found no HTTP/CDN references for models, textures, fonts, scripts, or runtime data.
 - `evidence/docker-clean-start-2026-10-23.md` records the commands and results. This was a Windows 10 Docker Desktop Linux-container rehearsal with host MQTT mapped to 1884; a native clean Ubuntu 24.04 AMD64 run remains an explicit release gate.
 
+### P2 documentation and release-candidate integration handoff — 2026-10-23
+
+- Fetched and integrated `origin/claude/smart-dispatch` twice: first the Smart Dispatch simulator/frontend handoff, then the professor's follow-up standby-bay, loading-pass animation, queue spacing, truck-length separation, and turning-loop berm-clearance commits. The follow-up changed only professor-owned frontend files plus this shared handoff.
+- Updated the authoritative telemetry dictionary and sensor catalogue for all eight Smart Dispatch fields, widened the documented visual ramp to 13.6 scene units, regenerated all four deterministic replay logs and `frontend/public/data/ingestion.json`, and extended `verify_scenarios.py` to exercise Smart Dispatch through Ditto and restore fixed/baseline state.
+- Preserved the Team-written Concept section verbatim. README and SUBMISSION now explain Scenario A/B/C activation and reset, list Smart Dispatch as a working module, distinguish its synthetic modeled savings from fuel or site claims, and report the current 88-check total and 128-field live contract. DATA_LICENSES now records exact SHA-256 values for the bundled Poly Haven textures.
+- The professor's authoritative Layer 1 scene is now the default `http://localhost:4173` entry point; explicit legacy review-stage query strings remain available. This prevents judges from landing on the obsolete minimal command-center scene.
+- Final integrated checks after the professor update: 56 simulator-package tests pass, 32 data-layer tests pass, TypeScript/Vite production build passes, all Docker images rebuild and services become healthy, the read-only live smoke test passes 11 twins and 128 fields/units, and the mutating verifier passes baseline, Smart Dispatch (4 cycling/2 standby), breakdown, restriction, slowdown, and fixed/baseline reset through Eclipse Ditto.
+- Browser-control access to localhost was disabled in the current Work settings, and headless screenshot attempts were not reliable, so final human visual acceptance of the rebuilt default route remains required before merging to `main`. Native Ubuntu 24.04 clean-start and presentation reconciliation also remain release gates.
+
 ## Handoff Template
 
 Copy and complete this block after each work session:

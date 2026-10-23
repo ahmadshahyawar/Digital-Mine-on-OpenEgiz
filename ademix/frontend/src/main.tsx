@@ -66,5 +66,6 @@ function App() {
 }
 
 function Kpi({ label, value, unit }: { label: string; value: string; unit: string }) { return <div><span>{label}</span><strong>{value}</strong><small>{unit}</small></div> }
-const ingestionView = new URLSearchParams(window.location.search).get('stage') === 'ingestion'
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{ingestionView ? <IngestionLayer/> : <App/>}</React.StrictMode>)
+const requestedStage = new URLSearchParams(window.location.search).get('stage')
+const legacyReview = requestedStage !== null && requestedStage !== 'ingestion'
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{legacyReview ? <App/> : <IngestionLayer/>}</React.StrictMode>)
