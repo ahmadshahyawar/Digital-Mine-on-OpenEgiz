@@ -233,6 +233,25 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A3 production and recovery history — 2026-10-23
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a3-recovery-history (from origin/codex/ademix ff16548)
+Task: generate a minimal, versioned simulator timeline with simulated timestamps for baseline,
+  breakdown, tow/road-clear, recovery and reset; keep observed throughput distinct from projection.
+Exact files: ademix/simulator/history_evidence.py, ademix/simulator/test_history_evidence.py,
+  ademix/simulator/HISTORY_CONTRACT.md, ademix/data/build_data_layer.py,
+  ademix/data/test_data_layer.py, ademix/data/evidence/production_recovery.json,
+  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
+  PROJECT_CONTEXT.md.
+Contract: no live twin/API field change. Generated ingestion.json gains productionRecovery schema v1,
+  with ordered events and 5-minute samples whose source keys map exactly to existing Ditto twin fields.
+Frontend ownership: no React/3D source will be edited; Professor + Claude consume the generated contract.
+Expected handoff: history schema, baseline/breakdown fixtures, event-label rules, reset behavior,
+  reproduction command, tests, commit SHA, limitations and integration instructions.
+```
+
 ### Handoff — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
 
 ```text

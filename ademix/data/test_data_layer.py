@@ -418,6 +418,22 @@ class SensorTopologyBundleTests(unittest.TestCase):
         bundle = json.loads(outputs[build.BUNDLE_PATH])
         self.assertEqual(bundle["dispatchComparison"], evidence)
 
+    def test_production_recovery_history_is_reproducible_and_bundled(self):
+        outputs = build.build(write=False)
+        path = "evidence/production_recovery.json"
+        generated = outputs[path]
+        self.assertEqual((DATA / path).read_bytes(), generated.encode("utf-8"))
+        history = json.loads(generated)
+        self.assertEqual(history["schema_version"], "ademix.production-recovery.v1")
+        self.assertTrue(history["synthetic"])
+        events = history["breakdown_recovery"]["events"]
+        self.assertEqual([e["sim_time_s"] for e in events], sorted(e["sim_time_s"] for e in events))
+        self.assertEqual({e["kind"] for e in events}, {
+            "period_started", "breakdown_started", "road_cleared", "throughput_recovered", "reset"
+        })
+        bundle = json.loads(outputs[build.BUNDLE_PATH])
+        self.assertEqual(bundle["productionRecovery"], history)
+
 
 if __name__ == "__main__":
     unittest.main()

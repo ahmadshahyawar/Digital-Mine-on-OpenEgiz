@@ -29,6 +29,7 @@ sys.path.insert(0, str(SIMULATOR))
 
 from compare_scenarios import comparison_json  # noqa: E402
 from engine import SCENARIOS, MineEngine  # noqa: E402
+from history_evidence import history_json  # noqa: E402
 
 USED_TRUCK, USED_SHOVEL, USED_DUMP = "OfficalTruck", "NorthPitMine-LoadSite2-Shovel-1", "NorthPitMine-DumpSite1"
 LOG_SEED = 42
@@ -161,6 +162,7 @@ def build(write: bool = True) -> dict:
         outputs[f"telemetry/logs/{scenario}.csv"] = telemetry_log(scenario)
     outputs["telemetry/logs/weather_station.csv"] = weather_log()
     outputs["evidence/fixed_vs_smart.json"] = comparison_json()
+    outputs["evidence/production_recovery.json"] = history_json()
     manifest = {
         "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
         "generator": "ademix/data/build_data_layer.py",
@@ -169,6 +171,7 @@ def build(write: bool = True) -> dict:
             "ademix/data/registry/parameters.csv": sha256(REGISTER.read_bytes()),
             "ademix/simulator/engine.py": sha256((SIMULATOR / "engine.py").read_bytes()),
             "ademix/simulator/compare_scenarios.py": sha256((SIMULATOR / "compare_scenarios.py").read_bytes()),
+            "ademix/simulator/history_evidence.py": sha256((SIMULATOR / "history_evidence.py").read_bytes()),
         },
         "telemetry_settings": {
             "seed": LOG_SEED, "step_s": LOG_STEP_S, "sample_s": LOG_SAMPLE_S,
@@ -180,7 +183,8 @@ def build(write: bool = True) -> dict:
     for path, text in outputs.items():
         if path.endswith(".json"):
             document = json.loads(text)
-            records, columns = len(document["scenarios"]), len(document)
+            records = len(document.get("scenarios", document.get("breakdown_recovery", {}).get("events", [])))
+            columns = len(document)
         else:
             lines = text.splitlines()
             records, columns = len(lines) - 1, len(next(csv.reader([lines[0]])))
@@ -287,6 +291,7 @@ def ingestion_bundle(outputs: dict, manifest: dict) -> str:
             "columns": next(csv.reader([outputs["telemetry/logs/weather_station.csv"].splitlines()[0]])),
         },
         "dispatchComparison": json.loads(outputs["evidence/fixed_vs_smart.json"]),
+        "productionRecovery": json.loads(outputs["evidence/production_recovery.json"]),
         "emission_references": read_rows((DATA / "registry" / "emission_references.csv").read_text(encoding="utf-8")),
         "provenance": manifest,
     }
