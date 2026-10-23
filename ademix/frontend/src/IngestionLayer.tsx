@@ -79,7 +79,10 @@ function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
 // Right-hand traffic: every truck keeps right of its direction of travel, so empty trucks entering the
 // pit use the inner lane and loaded trucks leaving use the outer lane; they never meet head-on.
 const LANE_OFFSET = 2.1
-const SHOULDER_OFFSET = 4.6
+const SHOULDER_OFFSET = 5.1 // centre of a truck parked on the shoulder, clear of its lane
+const PULLED_OVER_OFFSET = 3.7 // pulled to the edge but still over the lane line while the road is restricted
+const ROAD_HALF_WIDTH = 6.8
+const LOOP_HALF_WIDTH = 4.4
 const QUEUE_SPACING_PCT = 3.6 // about one truck length plus a gap along the ramp
 const LOOP_PCT = 8 // the last 8 % of the route at each end runs through the turning loop
 
@@ -215,6 +218,7 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   const shown = React.useRef<number | null>(null)
   const velocity = React.useRef(0) // circuit units per real second
+  const pullOver = React.useRef(0) // extra sideways offset towards the shoulder while broken down
   useFrame((_, delta) => {
     if (!group.current) return
     const dt = Math.min(delta, .1)
@@ -266,10 +270,14 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
       load.current.position.copy(at)
       load.current.rotation.z = tilt
     }
-    // Stops in its lane while it blocks the road, then is towed onto the shoulder.
-    const pose = state === 'breakdown' && !blockageActive
-      ? lanePose(frame.atMix(`${id}.route_progress_pct`), heading, SHOULDER_OFFSET)
-      : circuitPose(shown.current)
+    // A broken-down truck pulls to the right-hand edge. While the simulator reports the road restricted it
+    // still overhangs its lane; once the road reopens it sits fully on the shoulder.
+    const pose = circuitPose(shown.current)
+    if (state === 'breakdown') {
+      const wanted = (blockageActive ? PULLED_OVER_OFFSET : SHOULDER_OFFSET) - LANE_OFFSET
+      pullOver.current += (wanted - pullOver.current) * Math.min(1, dt * 1.2)
+    } else pullOver.current += (0 - pullOver.current) * Math.min(1, dt * 1.2)
+    if (Math.abs(pullOver.current) > 1e-3) pose.position.add(new THREE.Vector3(Math.sin(pose.yaw), 0, Math.cos(pose.yaw)).multiplyScalar(pullOver.current))
     group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
     group.current.rotation.y = pose.yaw
     positions.current[index] = group.current.position.clone()
@@ -316,14 +324,14 @@ function LoopRoads() {
       geometry.computeVertexNormals()
       return geometry
     }
-    return { surface: build(3.4, .26), edge: build(3.55, .24) }
+    return { surface: build(LOOP_HALF_WIDTH, .26), edge: build(LOOP_HALF_WIDTH + .15, .24) }
   }), [])
   const rings = React.useMemo(() => [{ centre: haulRoadPoint(1), radius: 7.3 }, { centre: haulRoadPoint(0), radius: 9.6 }], [])
   return <group>
     {rings.map(({ centre, radius }, i) => <group key={`ring-${i}`} position={centre.clone().add(new THREE.Vector3(0, .3, 0))} rotation={[-Math.PI / 2, 0, 0]}>
-      <mesh><ringGeometry args={[radius - 3.55, radius + 3.55, 72]}/><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}
+      <mesh><ringGeometry args={[radius - LOOP_HALF_WIDTH - .15, radius + LOOP_HALF_WIDTH + .15, 72]}/><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}
         polygonOffset polygonOffsetFactor={-1}/></mesh>
-      <mesh position={[0, 0, .01]}><ringGeometry args={[radius - 3.35, radius + 3.35, 72]}/><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}
+      <mesh position={[0, 0, .01]}><ringGeometry args={[radius - LOOP_HALF_WIDTH, radius + LOOP_HALF_WIDTH, 72]}/><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}
         polygonOffset polygonOffsetFactor={-2}/></mesh>
     </group>)}
     {parts.map((p, i) => <group key={i}>
@@ -339,7 +347,7 @@ function SafetyBerms() {
     const along = (points: THREE.Vector3[]) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(40, points.length * 3), .5, 6, false)
     const road = (side: 1 | -1) => {
       const points: THREE.Vector3[] = []
-      for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * 4.5).position.add(new THREE.Vector3(0, .35, 0)))
+      for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * (ROAD_HALF_WIDTH + .5)).position.add(new THREE.Vector3(0, .35, 0)))
       return along(points)
     }
     const loop = (end: 'face' | 'crusher', side: 1 | -1) => {
@@ -348,7 +356,7 @@ function SafetyBerms() {
       for (let k = 4; k <= 76; k++) {
         const t = k / 80
         const forward = curve.getTangentAt(t).setY(0).normalize()
-        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * 4.2).add(new THREE.Vector3(0, .35, 0)))
+        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * (LOOP_HALF_WIDTH + .9)).add(new THREE.Vector3(0, .35, 0)))
       }
       return along(points)
     }
@@ -524,8 +532,8 @@ function RoadLighting() {
       aimAt(face.clone().add(new THREE.Vector3(-9, 0, 6)), face),
       aimAt(crusher.clone().addScaledVector(crusher.clone().setY(0).normalize(), 13), crusher),
       aimAt(STOCKPILE.clone().add(crusher.clone().sub(STOCKPILE).setY(0).normalize().multiplyScalar(11)), STOCKPILE),
-      aimAt(lanePose(35, 1, 6.4).position, rampA),
-      aimAt(lanePose(68, 1, 6.4).position, rampB),
+      aimAt(lanePose(35, 1, ROAD_HALF_WIDTH + 2.2).position, rampA),
+      aimAt(lanePose(68, 1, ROAD_HALF_WIDTH + 2.2).position, rampB),
     ]
   }, [])
   return <group>{towers.map((t, i) => {
@@ -597,12 +605,12 @@ function WeatherScene({ weather }: { weather: Weather }) {
 /** Safety furniture: excavator swing exclusion zone, loop speed signs, dump bund and a runaway escape lane. */
 function SafetyScene({ loopSpeed }: { loopSpeed: number }) {
   const excavator = haulRoadPoint(1).add(new THREE.Vector3(1.2, .45, -1.5))
-  const signs = React.useMemo(() => [lanePose(LOOP_PCT + 2, -1, 4.4), lanePose(100 - LOOP_PCT - 2, 1, 4.4)], [])
+  const signs = React.useMemo(() => [lanePose(LOOP_PCT + 2, -1, ROAD_HALF_WIDTH + 1.4), lanePose(100 - LOOP_PCT - 2, 1, ROAD_HALF_WIDTH + 1.4)], [])
   const bund = React.useMemo(() => {
     const toTruck = DUMP_POSE.position.clone().sub(ROM_BIN).setY(0).normalize()
     return { position: ROM_BIN.clone().addScaledVector(toTruck, 3.3), yaw: -Math.atan2(toTruck.z, toTruck.x) }
   }, [])
-  const escape = React.useMemo(() => lanePose(50, -1, 6.6), [])
+  const escape = React.useMemo(() => lanePose(50, -1, ROAD_HALF_WIDTH + 2.6), [])
   return <group>
     <mesh position={excavator.clone().add(new THREE.Vector3(0, -.2, 0))} rotation={[-Math.PI / 2, 0, 0]}>
       <ringGeometry args={[6.1, 6.5, 48]}/><meshBasicMaterial color="#ff4d4d" transparent opacity={.85} side={THREE.DoubleSide}/></mesh>

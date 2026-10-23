@@ -314,6 +314,25 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 - Data tests: 3 failures that come from the `codex/ademix` base, not this change: bundle/log reproducibility float rounding (35.65 vs 35.66) and the manifest input hash for `north_pit_mine.json` (expects CRLF `271134…`, file is LF `a966…`).
 - Request to Codex (data owner): `ademix/data/topology/mine_topology.json` `visual_pit_geometry` still says 6 benches × 4.35; update it to the values above, and update the geometry token check in `ademix/data/test_data_layer.py` (≈line 374: "4.35", "-23.5", "Math.PI * 2.35") to the new `PIT_DESIGN` constants. Claude has not edited these files.
 
+### Lock — Claude — wider haul road, broken trucks on the shoulder — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat)
+Branch: claude/road-shoulder (from claude/pit-geometry 21078a8, PR #2)
+Task: widen the drawn haul road and its loops so each direction has a lane plus a shoulder, and show a truck
+  whose twin state is `breakdown` pulled to the right-hand edge (still encroaching its lane while
+  road-main.state is `restricted`), then fully on the shoulder once the road reopens.
+Exact files: ademix/frontend/src/TerrainStage.tsx, ademix/frontend/src/IngestionLayer.tsx
+Interfaces consumed or changed: consumes truck-0N.state, road-main.state (unchanged); no simulator change.
+Expected handoff: commit SHA, files, build, browser check.
+```
+
+Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
+
+- Commit `4be2758` on `claude/road-shoulder`. Files: `ademix/frontend/src/TerrainStage.tsx`, `ademix/frontend/src/IngestionLayer.tsx`.
+- Road ribbon 7.2→13.6 units, terrain shelf flattened to 7.2 (blend to 10.6), outer berm 4.2→7.3, loop half-width 3.35→4.4, loop berms, loop speed signs, ramp lights and escape lane moved out to match. Broken-down truck eases to offset 3.7 (over its lane line) while `road-main.state` is `restricted`, then 5.1 (shoulder) once open.
+- Checks: `tsc -b` passes; overview canvas captured in the browser shows the wider ramp shelf. Not done: a breakdown observed on the wider road, and the crusher-loop junction, where loop berm tubes cross the paved pad (may predate this change; needs a close review).
+
 ### Collaboration ownership — 2026-10-23
 
 - `COLLABORATION.md` is the working protocol. Codex owns the current 3D terrain/equipment/camera/material paths; Claude owns simulator, scenarios, data ingestion and evidence generation. Shared entry points, documentation, presentation and Compose are edited by one designated integrator at a time.
