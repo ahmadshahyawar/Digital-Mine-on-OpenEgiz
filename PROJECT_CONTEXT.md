@@ -236,7 +236,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 ### Handoff — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
 
 ```text
-Status: ready for integration; A2 work lock released
+Status: integrated and verified on codex/ademix; A2 work lock released
 Owner: Ahmad + Codex
 Branch: codex/a2-dispatch-evidence
 Implementation commit: 284259c
@@ -259,14 +259,18 @@ Reproduction: `python ademix/data/build_data_layer.py` regenerates the JSON evid
   frontend ingestion bundle byte-for-byte.
 Tests actually run: 65 simulator/API tests pass; 33 data tests pass, including identical hashes,
   matched windows, all four scenarios and exact regeneration; frontend tsc + Vite build passes
-  (existing >500 kB bundle warning only).
+  (existing >500 kB bundle warning only). After fast-forward integration, a clean Docker rebuild/start
+  reached healthy status; the judge smoke command passed 11 twins and all 136 live fields/units; all
+  65 tests passed inside the built image; live baseline, Smart Dispatch, three disruptions and reset passed.
+  The built UI served schema v1 with the common start hash and the exact 770/770 t/h, 6→4 cycling,
+  0→2 parked, -33.333338% operating-hours and -26.029913% estimated-fuel baseline fixture.
 Frontend handoff: Professor + Claude may build the fixed/smart comparison card solely from
   `dispatchComparison`. Display `percent: null` as `—` or `new`; label results as synthetic modeled
   estimates. Do not recompute metrics, change window definitions or claim measured/guaranteed savings.
 Limitations: deterministic conceptual model, one seed and one parameter set; fuel uses A1 comparable
   rates; the evidence does not quantify uncertainty and is not a field validation.
-Integration instruction: merge this feature branch into codex/ademix, run combined Python/data/build
-  and live Docker/OpenEgiz gates, then push codex/ademix only. Do not merge to main.
+Integration: codex/a2-dispatch-evidence was fast-forwarded onto codex/ademix after confirming the latest
+  Claude branch was already contained. Push this tested codex/ademix branch only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
