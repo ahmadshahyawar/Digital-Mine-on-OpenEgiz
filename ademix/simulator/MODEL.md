@@ -111,7 +111,7 @@ How to read these results:
 
 ## 6. Verification performed
 
-`python -m unittest test_engine` runs 41 deterministic tests (the What-If tests are described in `SCENARIOS.md`). Together with the three simulator-package data-contract checks, `python -m unittest discover -s ademix/simulator -p "test_*.py"` runs 44 checks. They cover:
+`python -m unittest test_engine` runs 41 deterministic tests (the What-If tests are described in `SCENARIOS.md`). Together with three data-contract checks and five OpenEgiz/API reliability checks, `python -m unittest discover -s ademix/simulator -p "test_*.py"` runs 49 checks. They cover:
 
 - reproducibility with the same seed;
 - invariance to the tick size;
@@ -132,6 +132,7 @@ How to read these results:
 - reset to baseline;
 - presence, order and JSON serialisability of every twin feature the interface reads.
 - equality between the generated evidence window and the frontend-facing twin metrics for every scenario.
+- recovery from delayed MQTT and Ditto startup, graceful API failure, rejection of invalid scenario controls without state mutation, and explicit LIVE/DEMO/REPLAY frontend states.
 
 These checks confirm that the code implements the stated model consistently. They are **verification, not validation**: no comparison with real mine production data has been made.
 

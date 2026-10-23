@@ -55,13 +55,13 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 
 Verified locally:
 
-- on 23 October, all 76 automated checks pass (44 simulator-package checks and 32 data-layer checks), including convergence, scenario propagation, both FIFO queues under every scenario, exclusive resources, stage timing, evidence-to-frontend metric equality, interface fields, and mass conservation;
+- on 23 October, all 81 automated checks pass (49 simulator-package checks and 32 data-layer checks), including convergence, scenario propagation, FIFO/exclusive resources, stage timing, evidence-to-frontend equality, startup recovery, API failure handling, twin fields/units, and mass conservation;
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and
 - Docker Compose accepts the combined official OpenEgiz and Ademix configuration.
 
-The complete local OpenEgiz deployment has started successfully from fresh volumes on the development machine. Eleven twins flowed through MQTT into Eclipse Ditto, the API reported `source: eclipse-ditto`, the interface returned HTTP 200, and all four scenario controls were exercised through the frontend proxy. The repeatable check is `python ademix/simulator/verify_scenarios.py`. A clean judge-like Ubuntu VM run remains a release gate.
+The complete local OpenEgiz deployment has started successfully from fresh volumes on the development machine. Eleven twins flowed through MQTT into Eclipse Ditto, the API reported `source: eclipse-ditto`, the interface returned HTTP 200, and all four scenario controls were exercised through the frontend proxy. `smoke_check.py` validates the live API, real Ditto source, exact 11-twin inventory, and all 120 required fields/units without changing state; `verify_scenarios.py` performs the mutating four-scenario release check. A clean judge-like Ubuntu VM run remains a release gate.
 
 ### Baseline-versus-scenario evidence
 

@@ -27,20 +27,27 @@ def put(thing_id, body):
         return response.status
 
 
+def put_with_retry(thing_id, body, attempts=20, delay_s=3):
+    """Wait for a slowly starting Ditto gateway without hiding a final failure."""
+    for attempt in range(attempts):
+        try:
+            return put(thing_id, body)
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_s)
+
+
 def main():
     with open(TWINS_FILE, encoding="utf-8") as source:
         twins = json.load(source)
     for thing_id, body in twins.items():
-        for attempt in range(20):
-            try:
-                status = put(thing_id, body)
-                print(f"{'created' if status == 201 else 'updated'}  {thing_id}")
-                break
-            except (urllib.error.URLError, TimeoutError) as exc:
-                if attempt == 19:
-                    print(f"FAILED {thing_id}: {exc}", file=sys.stderr)
-                    return 1
-                time.sleep(3)
+        try:
+            status = put_with_retry(thing_id, body)
+            print(f"{'created' if status == 201 else 'updated'}  {thing_id}")
+        except (urllib.error.URLError, TimeoutError) as exc:
+            print(f"FAILED {thing_id}: {exc}", file=sys.stderr)
+            return 1
     print(f"{len(twins)} Ademix twins ready")
     return 0
 

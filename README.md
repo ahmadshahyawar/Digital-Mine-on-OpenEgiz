@@ -48,6 +48,22 @@ Scenario controls change the underlying simulation state. Their effects are publ
 
 ## Verify from the terminal
 
+Run the read-only judge smoke check. It waits for slow startup, requires the
+real Eclipse Ditto source, and validates all 11 mine twins plus every required
+field and unit:
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  run --rm --no-deps ademix-simulator \
+  python smoke_check.py --base-url http://ademix-ui
+```
+
+Expected result: four `PASS` lines for API health, Ditto source, twin inventory,
+and the complete field/unit contract. This command is read-only and does not
+change the active scenario.
+
 ```bash
 curl --fail http://localhost:8088/api/health
 curl --fail http://localhost:8088/api/state

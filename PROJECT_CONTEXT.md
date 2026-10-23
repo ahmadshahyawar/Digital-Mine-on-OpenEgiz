@@ -387,6 +387,7 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 | 2026-10-23 | Codex | Integrated Claude's illustrative pit geometry and revalidated the final combined images | Updated pit-design evidence is bundled; the production image rebuilt successfully, all services are healthy, 37 in-image simulator tests pass, and all four live scenario checks pass through Eclipse Ditto |
 | 2026-10-23 | Codex | Completed the P1 simulation-credibility verification matrix without changing the model | 43 simulator-package and 32 data checks pass; both FIFO resources, exclusive service, stage timing, four-part mass balance, interruption transitions, documented assumptions, and every direct scenario switch are explicitly covered |
 | 2026-10-23 | Codex | Completed reproducible P1 what-if evidence and recommendations | The generator now reports seven requested KPIs including trips/h; `SUBMISSION.md` contains a concise steady comparison plus transient breakdown warning; an automated check proves frontend-facing metrics match each generated scenario run |
+| 2026-10-23 | Codex | Completed the P1 OpenEgiz/API reliability gate | The exact judge smoke command passed against live Ditto: 11 twins and 120 fields/units; delayed dependency recovery, graceful API errors, invalid controls, and LIVE/DEMO/REPLAY distinction are covered by tests |
 
 ## Decisions
 
@@ -451,6 +452,13 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - `SUBMISSION.md` contains the concise steady-state comparison and explicitly calls out the location-dependent first-hour breakdown loss so the recovered long-run result is not misleading.
 - `test_frontend_metrics_match_the_generated_steady_evidence` reconstructs the evidence window and checks the frontend-facing Ditto twin metrics for every scenario.
 - Verification result: 44 simulator-package checks pass locally and in the rebuilt Docker image, 32 data-layer checks pass, and the frontend production build succeeds (the existing bundle-size warning remains non-fatal).
+
+### P1 OpenEgiz/API reliability handoff — 2026-10-23
+
+- `smoke_check.py` is the read-only judge check documented in `README.md`. Running it inside the simulator image against `http://ademix-ui` passed API health, `source=eclipse-ditto`, all 11 required twin IDs, and all 120 fields/units.
+- `test_reliability.py` verifies MQTT retry/recovery, Ditto setup retry/recovery, a 503 rather than a crash when Ditto is unavailable, rejection of an invalid scenario without any engine mutation, and explicit frontend LIVE/DEMO/REPLAY labels with offline fallback.
+- `setup_twins.py` now isolates its bounded retry helper so slow-start recovery is directly testable while final failures still make setup exit non-zero.
+- The simulator package now has 49 passing checks; the 32 data-layer checks remain passing. No professor-owned frontend source or Smart Dispatch implementation was edited.
 
 ## Handoff Template
 
