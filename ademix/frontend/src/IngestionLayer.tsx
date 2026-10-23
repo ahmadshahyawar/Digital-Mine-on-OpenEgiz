@@ -247,7 +247,8 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     if (shown.current === null) shown.current = frame.circuit(index)
     let gap = target - shown.current
     while (gap < 0) gap += 2
-    if (gap > 1.5) gap = 0 // the data is slightly behind: wait where we are
+    const pastTarget = gap > 1.5
+    if (pastTarget) gap = 0 // the data is slightly behind: wait where we are
     if (gap > .7) { shown.current = frame.circuit(index); velocity.current = 0; gap = 0; dwell.current = { kind: null, left: 0 } } // replay jumped
     const m = metresPerUnit(shown.current)
     if (dwell.current.kind) {
@@ -265,11 +266,21 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
       velocity.current = wanted > velocity.current ? Math.min(wanted, velocity.current + accel * dt) : wanted
       const before = shown.current
       let next = before + Math.min(gap, velocity.current * dt)
+      // Hold a truck length behind the truck ahead, e.g. while it is still tipping or pulling away.
+      const room = roomAhead(index, before) - MIN_GAP
+      if (next > before + Math.max(0, room)) {
+        next = before + Math.max(0, room)
+        velocity.current = Math.min(velocity.current, Math.max(0, room) / Math.max(dt, 1e-3))
+      }
       // Reaching the tipping point (s = 1) or the loading spot (s = 2 ≡ 0) always means stopping to work.
       if (before < 1 && next >= 1) { next = 1; dwell.current = { kind: 'dumping', left: DUMP_SECONDS } }
       else if (before < 2 && next >= 2) { next = 2; dwell.current = { kind: 'loading', left: LOAD_SECONDS } }
       shown.current = next % 2
     }
+    SHOWN[index] = shown.current
+    // A truck just called out of the standby bay waits beside the loop for its turn: it does not hold
+    // up the trucks already queued for the excavator.
+    ON_ROAD[index] = state !== 'breakdown' && park.current < .5 && !(pastTarget && state === 'queued_at_excavator')
     const work = dwell.current
     const progress = work.kind ? 1 - work.left / (work.kind === 'loading' ? LOAD_SECONDS : DUMP_SECONDS) : 0
     activity.current[index] = { kind: work.kind, progress }
@@ -570,6 +581,22 @@ const STANDBY_S = (() => {
   return best
 })()
 const bayOf = new Map<number, number>() // truck index -> bay, kept while it is parked
+// Where each truck is drawn on the circuit, and whether it is on the road (not parked or pulled over),
+// so a truck never drives into the one ahead of it.
+const SHOWN: (number | null)[] = []
+const ON_ROAD: boolean[] = []
+const MIN_GAP = .03 // about one truck length plus a gap, in circuit units
+/** Circuit distance to the nearest on-road truck ahead of this one (Infinity when none is close). */
+function roomAhead(index: number, at: number) {
+  let room = Infinity
+  SHOWN.forEach((other, k) => {
+    if (k === index || other === null || other === undefined || !ON_ROAD[k]) return
+    const ahead = (((other - at) % 2) + 2) % 2
+    if (ahead < 1e-6 && k > index) return // exactly level: the lower-numbered truck goes first
+    if (ahead < .5) room = Math.min(room, ahead)
+  })
+  return room
+}
 // Crushed-ore storage sits on its own raised pad outside the pit (beyond the rim, away from the
 // mining area), fed by an elevated overland conveyor that crosses over the dump loop.
 const PAD_TOP = haulRoadPoint(0).y + .3
