@@ -102,3 +102,5 @@
 .ig-breakdown-tag { display: grid; gap: 1px; padding: 4px 9px; border-radius: 6px; background: #b3170f; border: 1px solid #ffb3ad; color: #fff; font-size: 11px; white-space: nowrap; pointer-events: none; }
 .ig-breakdown-tag span { color: #ffd9d6; font-size: 10px; }
 @media (max-width: 760px) { .ig-breakdown-alert { top: 112px; } }
+.ig-pit-card small { display: block; margin-top: 4px; white-space: normal; font-size: 10px; line-height: 1.4; color: #f3d9a4; }
+.ig-pit-card em { white-space: normal; text-align: right; }

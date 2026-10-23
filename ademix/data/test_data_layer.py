@@ -371,10 +371,21 @@ class SensorTopologyBundleTests(unittest.TestCase):
     def test_visual_pit_geometry_matches_the_3d_scene_code(self):
         scene = (DATA.parent / "frontend" / "src" / "TerrainStage.tsx").read_text(encoding="utf-8")
         geometry = self.TOPOLOGY["visual_pit_geometry"]
-        for token in ("-23.5", "4.35", "ribbonGeometry(path, 7.2)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35"):
+        for token in (
+            "benchHeightM: 10", "benchFaceAngleDeg: 70", "workingBenchWidthM: 20",
+            "overallSlopeDeg: 45", "workingBenches: 2", "-23.5",
+            "ribbonGeometry(path, 7.2)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35",
+        ):
             self.assertIn(token, scene)
         self.assertAlmostEqual(geometry["ramp_turns"], 2.35 / 2)
-        self.assertEqual(geometry["benches"], 6)
+        self.assertEqual(geometry["benches"], 42)
+        self.assertEqual(geometry["bench_height_m"], 10)
+        self.assertEqual(geometry["bench_face_angle_deg"], 70)
+        self.assertEqual(geometry["working_bench_width_m"], 20)
+        self.assertEqual(geometry["working_benches"], 2)
+        self.assertEqual(geometry["overall_slope_deg"], 45)
+        self.assertAlmostEqual(geometry["catch_berm_m"], 6.36, places=2)
+        self.assertIn("not approved Kazakhstan design values", geometry["design_status"])
 
     def test_frontend_bundle_regenerates_identically_and_cites_the_register(self):
         outputs = build.build(write=False)
