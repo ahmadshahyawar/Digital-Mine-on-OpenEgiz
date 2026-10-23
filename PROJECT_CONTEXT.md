@@ -233,25 +233,36 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
+### Handoff — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
 
 ```text
-Owner: Ahmad + Codex
-Branch: codex/a1-fuel-co2 (from origin/codex/ademix 8143940)
-Task: implement interval-based shift fuel and tank-to-wheel CO2 totals, define reset semantics,
-  publish and test the backend/data contract, and provide a fixture to Professor + Claude.
-Exact files: ademix/simulator/engine.py, ademix/simulator/test_engine.py,
-  ademix/simulator/app.py, ademix/simulator/test_reliability.py,
-  ademix/simulator/MODEL.md, ademix/simulator/FUEL_CO2_CONTRACT.md,
-  ademix/data/registry/parameters.csv, ademix/data/telemetry/telemetry_dictionary.csv,
-  ademix/data/telemetry/sensor_catalogue.csv, ademix/data/build_data_layer.py,
-  ademix/data/test_data_layer.py, ademix/data/telemetry/logs/*.csv,
-  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
-  PROJECT_CONTEXT.md.
-Frontend ownership: no React/3D/ESG panel source will be edited. The generated ingestion bundle is
-  updated only as the recorded data handoff.
-Expected handoff: frozen field contract with types/units/allowed values/examples/reset behavior,
-  two-hour 381.1 + 281.9 L/h fixture = 663.0 L, CO2 calculation, tests, commit SHA and integration instruction.
+Status: ready for integration; A1 work lock released
+Branch: codex/a1-fuel-co2
+Implementation commit: 953b97f
+Files: ademix/simulator/{engine.py,app.py,test_engine.py,test_reliability.py,MODEL.md,FUEL_CO2_CONTRACT.md};
+  ademix/data/{build_data_layer.py,registry/parameters.csv,telemetry/telemetry_dictionary.csv,
+  telemetry/sensor_catalogue.csv,telemetry/logs/*.csv,telemetry/manifest.json};
+  ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
+Contract: mine-01 now publishes shift_fuel_l (L), shift_co2_kg (kg CO2),
+  current_fuel_rate_lph (L/h), operating_trucks_fuel_count (trucks), shift_start_sim_s (s),
+  shift_elapsed_s (s), shift_id and fuel_estimate_basis. Full types, ranges, examples and reset
+  semantics are frozen in ademix/simulator/FUEL_CO2_CONTRACT.md.
+Reset: scenario/dispatch changes preserve history. POST /api/shift/reset alone increments shift_id,
+  records the simulation time and zeroes only the two cumulative estimates.
+Evidence: four operating trucks + excavator = 281.9 L/h; six + excavator = 381.1 L/h;
+  one hour at each = 663.0 L and 1774.851 kg tank-to-wheel CO2.
+Tests actually run: 62 simulator/API tests pass; 32 data tests pass; verify_scenarios.py passes
+  Eclipse-Ditto source, 11 twins, frontend contract and all scenarios; frontend tsc + Vite build passes
+  (existing >500 kB bundle warning only). Docker clean-start verification is an integration gate, not
+  claimed by this feature commit.
+Frontend handoff: Professor + Claude should consume the cumulative twin fields directly and label them
+  "estimated shift fuel" and "estimated tank-to-wheel CO2". Do not recompute past totals from the current
+  fleet and do not derive them from synthetic truck fuel_pct. No Claude-owned source file was edited.
+Limitations: comparable-equipment medium-load estimates, not measurements; queued/blocked trucks are
+  treated as engine-on; excavator rate is continuous; crusher electricity, upstream diesel, CH4 and N2O
+  are excluded.
+Integration: merge this branch into codex/ademix, rerun all tests plus clean Docker smoke, then push the
+  tested combined origin/codex/ademix. Do not merge to main.
 ```
 
 ### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23
@@ -463,6 +474,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed the P1 simulation-credibility verification matrix without changing the model | 43 simulator-package and 32 data checks pass; both FIFO resources, exclusive service, stage timing, four-part mass balance, interruption transitions, documented assumptions, and every direct scenario switch are explicitly covered |
 | 2026-10-23 | Codex | Completed reproducible P1 what-if evidence and recommendations | The generator now reports seven requested KPIs including trips/h; `SUBMISSION.md` contains a concise steady comparison plus transient breakdown warning; an automated check proves frontend-facing metrics match each generated scenario run |
 | 2026-10-23 | Codex | Completed the P1 OpenEgiz/API reliability gate | The exact judge smoke command passed against live Ditto: 11 twins and 120 fields/units; delayed dependency recovery, graceful API errors, invalid controls, and LIVE/DEMO/REPLAY distinction are covered by tests |
+| 2026-10-23 | Codex | Completed A1 cumulative fuel and tank-to-wheel CO2 accounting | Interval integration preserves history across fleet/scenario changes; explicit shift reset, 8-field frontend contract, 663.0 L fixture, 62 simulator/API tests, 32 data tests, scenario verifier and frontend build pass |
 
 ## Decisions
 
