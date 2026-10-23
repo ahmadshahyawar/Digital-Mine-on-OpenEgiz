@@ -26,6 +26,7 @@ SIMULATOR = DATA.parent / "simulator"
 SOURCE = DATA / "openmines" / "north_pit_mine.json"
 REGISTER = DATA / "registry" / "parameters.csv"
 RELATIONSHIPS = DATA / "topology" / "twin_relationships.json"
+MODEL_TRUTH = DATA / "evidence" / "model_truth.json"
 sys.path.insert(0, str(SIMULATOR))
 
 from compare_scenarios import comparison_json  # noqa: E402
@@ -171,6 +172,7 @@ def build(write: bool = True) -> dict:
             "ademix/data/openmines/north_pit_mine.json": sha256(SOURCE.read_bytes()),
             "ademix/data/registry/parameters.csv": sha256(REGISTER.read_bytes()),
             "ademix/data/topology/twin_relationships.json": sha256(RELATIONSHIPS.read_bytes()),
+            "ademix/data/evidence/model_truth.json": sha256(MODEL_TRUTH.read_bytes()),
             "ademix/simulator/engine.py": sha256((SIMULATOR / "engine.py").read_bytes()),
             "ademix/simulator/compare_scenarios.py": sha256((SIMULATOR / "compare_scenarios.py").read_bytes()),
             "ademix/simulator/history_evidence.py": sha256((SIMULATOR / "history_evidence.py").read_bytes()),
@@ -285,6 +287,7 @@ def ingestion_bundle(outputs: dict, manifest: dict) -> str:
         "dictionary": read_rows((DATA / "telemetry" / "telemetry_dictionary.csv").read_text(encoding="utf-8")),
         "topology": json.loads((DATA / "topology" / "mine_topology.json").read_text(encoding="utf-8")),
         "twinRelationships": json.loads(RELATIONSHIPS.read_text(encoding="utf-8")),
+        "modelTruth": json.loads(MODEL_TRUTH.read_text(encoding="utf-8")),
         "route_summary": read_rows(outputs["fleet/route_distance_summary.csv"]),
         "route_distances": [number(r["distance"]) for r in read_rows(outputs["fleet/route_distances.csv"])
                             if r["matrix"] == "l2d_road_matrix"],

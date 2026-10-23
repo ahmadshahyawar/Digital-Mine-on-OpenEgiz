@@ -1,0 +1,192 @@
+{
+  "schema_version": "ademix.model-truth.v1",
+  "title": "Why trust this model?",
+  "status": {
+    "verification": "Automated checks verify that the code implements the documented deterministic model consistently.",
+    "validation": "Not validated against production data from an operating mine.",
+    "telemetry": "Live values are synthetic model output delivered through MQTT and Eclipse Ditto, not field measurements.",
+    "safety": "Not a certified mine design, traffic-management plan, safety assessment or forecast guarantee."
+  },
+  "live_indicators": [
+    {
+      "id": "mass_balance",
+      "label": "Ore mass-balance error",
+      "thing_id": "org.openegiz.ademix:mine-01",
+      "feature": "mass_balance_error_t",
+      "unit": "t",
+      "category": "kpi",
+      "formula": "opening ROM + excavated ore - (ore in trucks + ROM inventory + processed production)",
+      "success_rule": "absolute value <= 0.000001 t",
+      "unavailable_behavior": "Show unavailable; never show a passing status without the returned field."
+    },
+    {
+      "id": "observed_throughput",
+      "label": "Observed rolling throughput",
+      "thing_id": "org.openegiz.ademix:mine-01",
+      "feature": "throughput_tph",
+      "unit": "t/h",
+      "category": "kpi",
+      "formula": "processed tonnes in the last 60 simulated minutes / 1 h",
+      "unavailable_behavior": "Show unavailable; do not substitute projected capacity."
+    },
+    {
+      "id": "projected_capacity",
+      "label": "Projected steady capacity",
+      "thing_id": "org.openegiz.ademix:scenario-controller",
+      "feature": "projected_throughput_tph",
+      "unit": "t/h",
+      "category": "analytical",
+      "formula": "min(fleet supply, excavator capacity, dump capacity, crusher capacity)",
+      "unavailable_behavior": "Show unavailable; do not substitute observed throughput."
+    },
+    {
+      "id": "planned_bottleneck",
+      "label": "Projected bottleneck",
+      "thing_id": "org.openegiz.ademix:scenario-controller",
+      "feature": "bottleneck",
+      "unit": null,
+      "category": "analytical",
+      "formula": "argmin of the four projected capacity limits",
+      "unavailable_behavior": "Show unavailable."
+    },
+    {
+      "id": "measured_bottleneck",
+      "label": "Live operational constraint",
+      "thing_id": "org.openegiz.ademix:mine-01",
+      "feature": "bottleneck_live",
+      "unit": null,
+      "category": "kpi",
+      "formula": "rule-based interpretation of current resource utilization, queues and availability",
+      "unavailable_behavior": "Show unavailable; do not replace it with the projected bottleneck."
+    }
+  ],
+  "principal_formulas": [
+    {
+      "id": "loading_capacity",
+      "expression": "truck_payload_t * 60 / load_time_min",
+      "result_parameter": "excavator_capacity_tph",
+      "unit": "t/h"
+    },
+    {
+      "id": "free_cycle_time",
+      "expression": "load_time_min + 2 * route_length_km / truck_speed_kmh * 60 + dump_time_min",
+      "unit": "min"
+    },
+    {
+      "id": "fleet_supply",
+      "expression": "available_trucks * truck_payload_t * 60 / free_cycle_time_min",
+      "unit": "t/h"
+    },
+    {
+      "id": "projected_throughput",
+      "expression": "min(fleet_supply_tph, excavator_capacity_tph, dump_capacity_tph, crusher_capacity_tph)",
+      "unit": "t/h"
+    },
+    {
+      "id": "mass_balance",
+      "expression": "initial_rom_t + excavated_t - (ore_in_trucks_t + rom_inventory_t + production_t)",
+      "unit": "t"
+    }
+  ],
+  "key_parameters": [
+    {
+      "parameter_id": "truck_payload_t",
+      "label": "Truck payload",
+      "value": 77,
+      "unit": "t",
+      "category": "sourced",
+      "source": "OpenMines north_pit_mine.json"
+    },
+    {
+      "parameter_id": "shovel_pass_t",
+      "label": "Shovel pass",
+      "value": 20.32,
+      "unit": "t",
+      "category": "sourced",
+      "source": "OpenMines north_pit_mine.json"
+    },
+    {
+      "parameter_id": "load_time_min",
+      "label": "Loading time",
+      "value": 6,
+      "unit": "min",
+      "category": "derived",
+      "source": "Four sourced shovel passes × sourced cycle time"
+    },
+    {
+      "parameter_id": "route_length_km",
+      "label": "One-way route length",
+      "value": 3.2,
+      "unit": "km",
+      "category": "assumption",
+      "source": "Team choice compared with OpenMines route-distance distribution"
+    },
+    {
+      "parameter_id": "crusher_capacity_tph",
+      "label": "Crusher planning capacity",
+      "value": 900,
+      "unit": "t/h",
+      "category": "assumption",
+      "source": "Team planning assumption; not a manufacturer rating"
+    },
+    {
+      "parameter_id": "rom_bin_capacity_t",
+      "label": "ROM bin capacity",
+      "value": 600,
+      "unit": "t",
+      "category": "assumption",
+      "source": "Team assumption"
+    },
+    {
+      "parameter_id": "road_restriction_speed_kmh",
+      "label": "Restricted-road speed",
+      "value": 10.72,
+      "unit": "km/h",
+      "category": "scenario_input",
+      "source": "Team what-if input"
+    },
+    {
+      "parameter_id": "breakdown_blockage_min",
+      "label": "Breakdown tow/blockage duration",
+      "value": 20,
+      "unit": "min",
+      "category": "scenario_input",
+      "source": "Team what-if input"
+    },
+    {
+      "parameter_id": "crusher_slowdown_factor",
+      "label": "Crusher slowdown factor",
+      "value": 0.55,
+      "unit": "ratio",
+      "category": "scenario_input",
+      "source": "Team what-if input"
+    }
+  ],
+  "evidence": {
+    "automated_checks": [
+      "deterministic repeatability",
+      "FIFO and exclusive resources",
+      "mass conservation",
+      "scenario/reset propagation",
+      "analytical projection convergence",
+      "generated evidence reproducibility"
+    ],
+    "current_live_source": "GET /api/state via Eclipse Ditto",
+    "specifications_path": "ademix/data/registry/parameters.csv",
+    "telemetry_dictionary_path": "ademix/data/telemetry/telemetry_dictionary.csv",
+    "model_document_path": "ademix/simulator/MODEL.md",
+    "provenance_manifest_path": "ademix/data/telemetry/manifest.json"
+  },
+  "safe_claims": [
+    "The implementation is verified against its documented formulas and invariants.",
+    "The deterministic model conserves ore within the documented numerical tolerance.",
+    "Saved comparisons are reproducible synthetic planning cases under common starts and windows."
+  ],
+  "prohibited_claims": [
+    "Validated against an operating mine.",
+    "Measured production, savings, emissions or safety performance.",
+    "Guaranteed forecast accuracy, savings or throughput.",
+    "Certified safe bench, road or traffic design."
+  ]
+}
+

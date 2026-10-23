@@ -233,6 +233,25 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — C4 model-truth contract — 2026-10-24
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/c4-model-truth-contract (from origin/codex/ademix 8609421)
+Task: freeze a concise machine-readable truth contract from existing verified model evidence while B1–B6
+  remain with Professor + Claude.
+Exact files: ademix/data/evidence/model_truth.json; ademix/data/build_data_layer.py;
+  ademix/data/test_data_layer.py; ademix/data/telemetry/manifest.json;
+  ademix/frontend/public/data/ingestion.json; ademix/simulator/MODEL_TRUTH_CONTRACT.md;
+  PROJECT_CONTEXT.md.
+Contract: additive static schema `ademix.model-truth.v1`; no new twin, field, API route, formula, scenario,
+  simulation behavior or OpenEgiz delivery change. Live values remain authoritative from returned twins.
+Frontend ownership: no React, CSS, 3D or presentation source will be edited. The future Why trust this?
+  view starts only after accepted B6 integration and the required C sequence reaches C4 UI work.
+Expected handoff: verified/not-validated statement, live joins, formulas, units, provenance categories,
+  assumptions, safe/prohibited claims, deterministic bundle, tests, limitations and commit SHA.
+```
+
 ### Handoff — Codex — C1 twin relationship contract — 2026-10-24
 
 ```text

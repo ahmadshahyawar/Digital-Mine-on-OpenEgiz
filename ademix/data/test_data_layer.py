@@ -56,6 +56,7 @@ DICTIONARY = read_csv(DATA / "telemetry" / "telemetry_dictionary.csv")
 ASSETS = json.loads((DATA / "assets" / "asset_types.json").read_text(encoding="utf-8"))
 TWINS = json.loads((DATA.parent / "simulator" / "twins.json").read_text(encoding="utf-8"))
 RELATIONSHIPS = json.loads((DATA / "topology" / "twin_relationships.json").read_text(encoding="utf-8"))
+MODEL_TRUTH = json.loads((DATA / "evidence" / "model_truth.json").read_text(encoding="utf-8"))
 MANIFEST = json.loads((DATA / "telemetry" / "manifest.json").read_text(encoding="utf-8"))
 
 
@@ -436,11 +437,45 @@ class SensorTopologyBundleTests(unittest.TestCase):
         self.assertNotIn("NaN", bundle_text)
         bundle = json.loads(bundle_text)
         self.assertEqual(bundle["twinRelationships"], RELATIONSHIPS)
+        self.assertEqual(bundle["modelTruth"], MODEL_TRUTH)
         for equipment in bundle["equipment"]:
             for spec in equipment["specs"]:
                 self.assertEqual(spec["status"], REGISTER[spec["parameter_id"]]["status"])
         fuel = [s for e in bundle["equipment"] for s in e["specs"] if s["parameter_id"].endswith("fuel_consumption_lph")]
         self.assertTrue(fuel and all(s["value"] == value(s["parameter_id"]) for s in fuel))
+
+    def test_model_truth_parameters_match_the_register(self):
+        self.assertEqual(MODEL_TRUTH["schema_version"], "ademix.model-truth.v1")
+        for parameter in MODEL_TRUTH["key_parameters"]:
+            with self.subTest(parameter=parameter["parameter_id"]):
+                registered = REGISTER[parameter["parameter_id"]]
+                self.assertEqual(parameter["value"], float(registered["value"]))
+                self.assertEqual(parameter["unit"], registered["unit"])
+                self.assertEqual(parameter["category"], registered["status"])
+
+    def test_model_truth_live_joins_match_twins_and_dictionary(self):
+        rules = {(row["thing_kind"], row["feature"]): row for row in DICTIONARY}
+        snapshot = engine.MineEngine().snapshot()
+        for indicator in MODEL_TRUTH["live_indicators"]:
+            with self.subTest(indicator=indicator["id"]):
+                self.assertIn(indicator["thing_id"], TWINS)
+                kind = TWINS[indicator["thing_id"]]["attributes"]["kind"]
+                thing_name = indicator["thing_id"].split(":", 1)[1]
+                self.assertIn(indicator["feature"], snapshot[thing_name])
+                rule = rules[(kind, indicator["feature"])]
+                self.assertEqual(indicator["category"], rule["origin"])
+                self.assertEqual(indicator["unit"] or "", rule["unit"])
+
+    def test_model_truth_keeps_verification_separate_from_validation(self):
+        status = MODEL_TRUTH["status"]
+        self.assertIn("verify", status["verification"].lower())
+        self.assertIn("not validated", status["validation"].lower())
+        self.assertIn("synthetic", status["telemetry"].lower())
+        prohibited = " ".join(MODEL_TRUTH["prohibited_claims"]).lower()
+        for phrase in ("validated", "measured", "guaranteed", "certified"):
+            self.assertIn(phrase, prohibited)
+        mass = next(item for item in MODEL_TRUTH["live_indicators"] if item["id"] == "mass_balance")
+        self.assertIn("never show a passing status", mass["unavailable_behavior"])
 
     def test_dispatch_comparison_is_reproducible_and_bundled_for_the_frontend(self):
         outputs = build.build(write=False)
