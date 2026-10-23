@@ -6,7 +6,7 @@ Status: **Verify** = already implemented or previously tested; verify the final 
 
 Ownership: Ahmad/Codex owns simulation, API, data and tests; Professor/Claude owns frontend and visual changes. One designated integrator owns shared release files. Record a task lock and handoff in `PROJECT_CONTEXT.md` before implementation.
 
-The concrete two-person work split and cross-layer handoff sequence are in `TEAM_WORK_PLAN.md`. Use this checklist for acceptance tests and the work plan for who changes which files. After the feature tasks, use `03_AI_JUDGE_READINESS.md` for the final builder, evidence, presentation, integrity, rubric-rehearsal and submission checks.
+The concrete two-person work split and cross-layer handoff sequence are in `TEAM_WORK_PLAN.md`. Use this checklist for acceptance tests and the work plan for who changes which files. Only after both feature workstreams are complete and integrated, use `03_AI_JUDGE_READINESS.md` as the last phase for builder, evidence, presentation, integrity, rubric-rehearsal and submission checks.
 
 ## P0 — Protect the submission first
 

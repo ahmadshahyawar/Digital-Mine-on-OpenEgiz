@@ -1,6 +1,8 @@
 # 03 — AI judge readiness
 
-Purpose: make the finished mine easy to build, inspect and score from the exact evidence the contest judges use. This is a final verification layer over `FINAL_TODO.md`, not a new feature backlog.
+Purpose: examine the finished mine and make it easy to build, inspect and score from the exact evidence the contest judges use. This is the **last workstream**, after the Ahmad/Codex and Professor/Claude feature tasks are completed and integrated. It is a final verification layer over `FINAL_TODO.md`, not a new feature backlog.
+
+Do not start J1–J8 while required A or B implementation work is still waiting for integration. First finish the two workstreams, combine them on `origin/codex/ademix`, and freeze that combined candidate. Then use this file to examine the complete application.
 
 An AI builder follows `README.md` literally. AI judges then inspect the build report, source, `SUBMISSION.md`, `presentation.pdf` and the running interface. They award rubric levels only for behavior they can verify. A strong feature can therefore lose credit when it is hard to find, contradicts another file, or depends on an unrecorded manual step.
 
@@ -55,7 +57,7 @@ Goal: show the user, problem, consequence and response before a judge needs deep
 
 Work:
 
-- finish B1–B6 on Professor + Claude's branch and use only returned OpenEgiz state;
+- verify the completed and integrated B1–B6 behavior using only returned OpenEgiz state;
 - make the default view show the mine, current production, current bottleneck, cycling/standby trucks and one queue/wait measure;
 - provide a short route: baseline → one disruption → visible consequence → Smart Dispatch response → recovery/reset;
 - keep technical layers available but closed until requested.
@@ -162,6 +164,6 @@ Pass test:
 
 ## Order and stop rule
 
-Run J1 first. J2 can start from the frozen candidate while Professor + Claude complete J3 and J5. Complete J4 after the interface is final, then J6, J7 and J8. Any failed J1, J4, J5 or J6 test blocks release to `main` until the cause is fixed or the unsupported claim is removed.
+First complete and integrate all required A and B tasks. Then freeze the combined candidate and run J1. After J1 passes, J2, J3 and J5 can examine that same candidate. Complete J4 only after the interface is final, then run J6, J7 and J8. Any failed J1, J4, J5 or J6 test blocks release to `main` until the cause is fixed or the unsupported claim is removed.
 
 Do not start a large new mine feature now. A second face, alternate route or new model helps only after J1–J8 pass; before that, it increases the chance of build failure, contradiction or weak evidence.

@@ -759,6 +759,7 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Kept workstream boundaries explicit: Ahmad + Codex own release/evidence/integrity work; Professor + Claude own the opening experience, presentation and visual-performance acceptance; both reconcile a strict rubric rehearsal.
 - These tasks add no new runtime claim and do not mark any release gate complete. The latest local/Windows verification remains 107 automated checks, 11 Ditto twins and 141 required fields/units; native Ubuntu, final frontend acceptance, presentation reconciliation and official `main` are still open.
 - `git fetch origin` succeeded at the start of this session. No missing `origin/main` commit was reported, and no organizer update was found in the fetched commit range.
+- Team sequencing clarification: J1–J8 examine the finished combined application. They run last, after all required A and B tasks are completed and integrated; they do not replace or interrupt the remaining implementation work.
 
 ## Handoff Template
 
