@@ -20,16 +20,19 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 |---|---|---|---|
 | `openmines/north_pit_mine.json` | OpenMines "North Pit Mine" configuration, unchanged | Third-party source (MIT) | 1 file |
 | `openmines/LICENSE` | Upstream MIT licence | Licence | 1 file |
-| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 25 parameters |
+| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 27 parameters (2 are required inputs with no value) |
 | `fleet/haulage_fleet_specs.csv` | All trucks, shovels and dump points in the source, marking the three the model uses | Derived from source | 28 rows |
 | `fleet/route_distances.csv` | Source load-to-dump and dump-to-load distance matrices, long format | Derived from source | 50 rows |
 | `fleet/route_distance_summary.csv` | Distribution statistics of those distances, and the model route's position in them | Derived from source | 2 rows |
 | `assets/asset_types.json` | Twin kinds, required attributes with types and units, parent relationships, instance counts | Curated schema | 6 kinds |
 | `telemetry/telemetry_dictionary.csv` | Every published twin feature with type, unit, bounds, allowed values, origin and meaning | Curated dictionary | 65 features |
+| `telemetry/sensor_catalogue.csv` | IoT sensor catalogue: each simulated sensor, its real-world equivalent, the features it produces and its MQTT topic | Curated catalogue | 16 entries (14 sensors, 2 fixed locations) |
+| `topology/mine_topology.json` | Haulage network (nodes, edges, servers, traffic rules), 3D pit geometry and what is not available | Curated topology | 5 nodes, 4 edges |
+| `../frontend/public/data/ingestion.json` | Bundle of the above for the Layer 1 3D view (`?stage=ingestion`) | Generated | 1 file |
 | `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 122 columns |
 | `telemetry/manifest.json` | SHA-256 of every input and output, plus generation settings | Provenance record | 1 file |
 | `build_data_layer.py` | Regenerates every derived and synthetic file | Code | — |
-| `test_data_layer.py` | 19 validation tests | Code | — |
+| `test_data_layer.py` | 24 validation tests | Code | — |
 
 The twin instances themselves remain in `ademix/simulator/twins.json`, because the setup container reads them from there.
 
@@ -43,6 +46,7 @@ The twin instances themselves remain in `ademix/simulator/twins.json`, because t
 | scenario_input | 3 | What-if magnitude chosen for the demonstration | 10.72 km/h restriction, 55 % crusher factor, 20 min blockage |
 | synthetic | 2 | Display-only signal with no physical calibration | Fuel burn per route, loaded and empty |
 | model_setting | 4 | Numerical or analysis setting | KPI window, bottleneck window, 95 % saturation, random seed |
+| required_input | 2 | Needed by the specification but not available in any source the team holds; no value is stored | Truck and excavator fuel consumption (L/h) |
 
 The source file states **no units**. Reading them as tonnes, km/h, minutes and km is an interpretation consistent across the file (77 t trucks at 25 km/h), but it has not been confirmed against the OpenMines code or documentation. The register says this for each affected value. The source's road-repair parameters (`lambda_repair` 0.00833, `mu_repair_duration` 50) are recorded for completeness but are not used, because the Ademix model has no random road events.
 
@@ -57,6 +61,18 @@ The source file states **no units**. Reading them as tonnes, km/h, minutes and k
    All four are corrected. The live values were already right after the first publish, so only the seed values changed.
 3. **The model route is short compared with its source.** The 3.2 km one-way route is at or below only 24 % of the source's 25 load-to-dump distances (median 5.15 km, interquartile range 3.26–7.41 km) and 12 % of its dump-to-load distances (median 5.62 km). A route at the source median would lengthen the free cycle from 22.4 to 31.7 min. At 25 km/h, six trucks would still out-supply one excavator: 6 × 77 × 60 / 31.72 ≈ 874 t/h, against the excavator's 770 t/h. So the baseline bottleneck would not change, but every haulage-sensitive result would. This is a model choice to keep the 3D scene compact, and it is now visible.
 4. **The source's largest truck class has 9 units;** the model uses 6 of them, by team choice.
+
+## 4a. The three element groups of the layer
+
+| Element group | Where it is | Status |
+|---|---|---|
+| Technical specifications of trucks and excavators: speed, capacity | `registry/parameters.csv`, `fleet/haulage_fleet_specs.csv` | Sourced from OpenMines; derived loading and dumping capacities |
+| Fuel consumption | `registry/parameters.csv` (`truck_fuel_consumption_lph`, `excavator_fuel_consumption_lph`) | **Required input.** No source the team holds gives it. The formula fuel (L/h) = power (kW) × load factor × brake-specific fuel consumption (g/kWh) ÷ (1000 × diesel density, kg/L) is recorded; a manufacturer or site figure must be supplied. |
+| Historical telemetry logs | `telemetry/logs/*.csv` | Synthetic, deterministic, hash-verified |
+| Real-time IoT sensor data | `telemetry/sensor_catalogue.csv` → MQTT `telemetry/<thing>` → Ditto | Simulated sensors, labelled with their real-world equivalents |
+| Mine topological parameters | `topology/mine_topology.json`, `fleet/route_distance*.csv` | Modelled layout plus OpenMines distance matrices; no surveyed elevations or grades |
+
+The 3D view `http://localhost:4173/?stage=ingestion` shows all of this: on the stand, or at `http://localhost:5173/?stage=ingestion` with `npm run dev` in `ademix/frontend`. It includes source cards, clickable topology markers, equipment spec sheets with status labels, the sensor catalogue, a topology diagram with the route-distance histogram, and a replay of the historical logs that drives the 3D fleet.
 
 ## 5. Reproducibility
 
@@ -74,7 +90,7 @@ If the engine or the register changes, a test fails until the generator is rerun
 
 ## 6. Validation
 
-All 19 tests pass. They check the following:
+All 24 tests pass. They check the following:
 
 - **Source integrity:** the stored source file matches its recorded checksum, and its MIT licence is present.
 - **Register:**
@@ -102,6 +118,10 @@ All 19 tests pass. They check the following:
   - every one of the 4 × 157 × 120 logged values respects its dictionary bounds or allowed values;
   - mass balance holds within 1e-6 t in every row;
   - the scenario switch happens at the recorded time.
+
+- **Sensors:** every published feature is produced by exactly the documented sensor kinds, and the publish interval matches the simulator settings.
+- **Topology:** every node and edge references registered parameters and existing twins, and the 3D pit geometry matches the scene code.
+- **Frontend bundle:** it regenerates byte for byte, its statuses match the register, and fuel consumption stays empty until it is supplied.
 
 These tests verify internal consistency and traceability. They do not validate the model against a real mine, and no such data is available to the team.
 

@@ -3,7 +3,7 @@
   "generator": "ademix/data/build_data_layer.py",
   "inputs_sha256": {
     "ademix/data/openmines/north_pit_mine.json": "a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c",
-    "ademix/data/registry/parameters.csv": "fcb84a785108837f2c81bbcc7ad8e30fe68a159a671812ded81111f6dbc447cf",
+    "ademix/data/registry/parameters.csv": "37ce4ea76b5f5cdbad0b50cc09211e749e4120aca825512302d6bc7b9358b7d1",
     "ademix/simulator/engine.py": "a374ed8f3215a36e61d0fe91a674fe90981e146606f5dcb1d12afae4b788d608"
   },
   "telemetry_settings": {

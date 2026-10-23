@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MineScene, type Twin } from './MineScene'
 import { TerrainStage } from './TerrainStage'
+import { IngestionLayer } from './IngestionLayer'
 import './styles.css'
 import './fleet.css'
 
@@ -65,4 +66,5 @@ function App() {
 }
 
 function Kpi({ label, value, unit }: { label: string; value: string; unit: string }) { return <div><span>{label}</span><strong>{value}</strong><small>{unit}</small></div> }
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)
+const ingestionView = new URLSearchParams(window.location.search).get('stage') === 'ingestion'
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{ingestionView ? <IngestionLayer/> : <App/>}</React.StrictMode>)

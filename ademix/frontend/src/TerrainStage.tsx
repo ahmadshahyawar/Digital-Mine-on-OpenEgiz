@@ -85,6 +85,11 @@ function terrainColors(geometry: THREE.BufferGeometry) {
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 }
 
+/** Point on the haul road: progress 0 is the crusher end at the rim, 1 is the loading face on the pit floor. */
+export function haulRoadPoint(progress: number) {
+  return new THREE.CatmullRomCurve3(haulRoadPoints()).getPointAt(THREE.MathUtils.clamp(progress, 0, 1))
+}
+
 function haulRoadPoints() {
   return Array.from({ length: 97 }, (_, index) => {
     const progress = index / 96

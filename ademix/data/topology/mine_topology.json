@@ -1,0 +1,41 @@
+{
+  "description": "Logical topology of the Ademix haulage system as modelled by engine.py, plus the visual pit geometry of the 3D scene. The operational graph uses the register's units; the pit geometry is in scene units and is not a surveyed model.",
+  "status": "Fictional, simplified layout calibrated at the OpenMines route-distance scale. Not survey data.",
+  "nodes": [
+    {"id": "loading_face", "label": "Loading face (EX-01)", "type": "loading_point", "twin": "excavator-01", "route_progress": 0.0, "servers": 1, "service_time_register": "load_time_min"},
+    {"id": "haul_road", "label": "Main haul road", "type": "road", "twin": "road-main", "servers": null, "service_time_register": null},
+    {"id": "dump_bay", "label": "Crusher dump bay", "type": "dump_point", "twin": "crusher-01", "route_progress": 1.0, "servers": 1, "service_time_register": "dump_time_min"},
+    {"id": "rom_bin", "label": "ROM bin", "type": "buffer", "twin": "crusher-01", "capacity_register": "rom_bin_capacity_t"},
+    {"id": "primary_crusher", "label": "Primary crusher (CR-01)", "type": "processor", "twin": "crusher-01", "rate_register": "crusher_capacity_tph"}
+  ],
+  "edges": [
+    {"from": "loading_face", "to": "dump_bay", "via": "haul_road", "direction": "loaded", "length_register": "route_length_km", "lanes": 1, "speed_register": "truck_speed_kmh"},
+    {"from": "dump_bay", "to": "loading_face", "via": "haul_road", "direction": "empty", "length_register": "route_length_km", "lanes": 1, "speed_register": "truck_speed_kmh"},
+    {"from": "dump_bay", "to": "rom_bin", "direction": "ore", "transfer": "instantaneous at end of dump"},
+    {"from": "rom_bin", "to": "primary_crusher", "direction": "ore", "transfer": "continuous at crusher rate while the bin is not empty"}
+  ],
+  "traffic_rules": [
+    "Single lane in both directions: a stopped truck blocks traffic either way.",
+    "One speed limit applies to every moving truck; loaded and empty speeds are equal.",
+    "Excavator and dump bay each serve one truck at a time in arrival order."
+  ],
+  "visual_pit_geometry": {
+    "units": "scene units (3D visual only)",
+    "source": "ademix/frontend/src/TerrainStage.tsx",
+    "terrain_extent": [150, 112],
+    "pit_outline": "ellipse with semi-axes 59 × 41",
+    "benches": 6,
+    "bench_height": 4.35,
+    "pit_floor_elevation": -23.5,
+    "rim_elevation": 4.6,
+    "ramp_width": 7.2,
+    "ramp_turns": 1.175,
+    "ramp_elevation_start": 4.8,
+    "ramp_elevation_end": -22.8
+  },
+  "not_available": [
+    "Surveyed elevations, road grades and rolling resistance (no survey data; travel time uses a constant speed).",
+    "Alternative routes for rerouting (single road only)."
+  ],
+  "source_route_distances": "fleet/route_distance_summary.csv compares the 3.2 km route with the 50 OpenMines load-to-dump and dump-to-load distances."
+}

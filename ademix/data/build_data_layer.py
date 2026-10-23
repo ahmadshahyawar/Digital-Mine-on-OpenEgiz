@@ -152,12 +152,105 @@ def build(write: bool = True) -> dict:
             "columns": len(next(csv.reader([lines[0]]))),
         }
     outputs["telemetry/manifest.json"] = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+    outputs[BUNDLE_PATH] = ingestion_bundle(outputs, manifest)
     if write:
         for path, text in outputs.items():
             target = DATA / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(text.encode("utf-8"))
     return outputs
+
+
+# ------------------------------------------------------------------ frontend bundle
+
+BUNDLE_PATH = "../frontend/public/data/ingestion.json"
+EQUIPMENT = [
+    ("Haul truck HT-01…06", "haul-truck", ["truck_payload_t", "truck_speed_kmh", "truck_fuel_consumption_lph",
+                                            "truck_fleet_size", "fuel_burn_loaded_pct_per_route", "fuel_burn_empty_pct_per_route"]),
+    ("Excavator EX-01", "excavator", ["shovel_pass_t", "shovel_cycle_min", "load_passes", "load_time_min",
+                                      "excavator_capacity_tph", "excavator_fuel_consumption_lph"]),
+    ("Crusher dump bay", "crusher", ["dump_time_min", "dump_capacity_tph"]),
+    ("Primary crusher CR-01", "crusher", ["crusher_capacity_tph", "rom_bin_capacity_t", "initial_rom_t"]),
+    ("Main haul road", "road", ["route_length_km", "truck_speed_kmh", "road_restriction_speed_kmh", "breakdown_blockage_min"]),
+]
+LOG_THINGS = {
+    "mine-01": ["throughput_tph", "production_t", "bottleneck_live"],
+    "excavator-01": ["state", "queue_length"],
+    "crusher-01": ["state", "rom_inventory_t", "queue_length"],
+    "road-main": ["state", "speed_limit_kmh", "blocked_trucks"],
+}
+LOG_TRUCK_FEATURES = ["state", "speed_kmh", "payload_t", "fuel_pct", "route_progress_pct", "heading"]
+
+
+def read_rows(text: str) -> list[dict]:
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def number(text: str):
+    if text == "":
+        return None
+    value = float(text)
+    return int(value) if value.is_integer() else value
+
+
+def ingestion_bundle(outputs: dict, manifest: dict) -> str:
+    register = read_rows(REGISTER.read_text(encoding="utf-8"))
+    for row in register:
+        row["value"] = number(row["value"])
+    by_id = {row["parameter_id"]: row for row in register}
+    equipment = [{"asset": asset, "kind": kind,
+                  "specs": [{key: by_id[pid][key] for key in ("parameter_id", "value", "unit", "status", "source", "notes")}
+                            for pid in ids]}
+                 for asset, kind, ids in EQUIPMENT]
+    columns = [f"{thing}.{f}" for thing, features in LOG_THINGS.items() for f in features]
+    columns += [f"truck-{i:02d}.{f}" for i in range(1, 7) for f in LOG_TRUCK_FEATURES]
+    logs = {}
+    for scenario in SCENARIOS:
+        rows = read_rows(outputs[f"telemetry/logs/{scenario}.csv"])
+        logs[scenario] = {
+            "label": SCENARIOS[scenario],
+            "columns": ["time_s"] + columns,
+            "rows": [[number(row["time_s"])] + [number(row[c]) if _is_number(row[c]) else row[c] for c in columns]
+                     for row in rows],
+        }
+    bundle = {
+        "layer": "Data & Asset Ingestion Layer",
+        "note": "Sourced values come from the OpenMines North Pit configuration (MIT). Telemetry logs and sensor "
+                "streams are synthetic simulator output, not measurements from a mine.",
+        "generator": "ademix/data/build_data_layer.py",
+        "sources": [
+            {"id": "specs", "title": "Equipment specifications", "origin": "OpenMines north_pit_mine.json (MIT)",
+             "records": len(read_rows(outputs["fleet/haulage_fleet_specs.csv"])), "unit": "equipment rows",
+             "kind": "sourced"},
+            {"id": "logs", "title": "Historical telemetry logs", "origin": "Deterministic simulator, seed 42",
+             "records": sum(len(v["rows"]) for v in logs.values()), "unit": "samples", "kind": "synthetic"},
+            {"id": "sensors", "title": "IoT sensor streams", "origin": "MQTT telemetry/<thing> → Eclipse Ditto",
+             "records": len(read_rows((DATA / "telemetry" / "sensor_catalogue.csv").read_text(encoding="utf-8"))),
+             "unit": "sensor types", "kind": "synthetic"},
+            {"id": "topology", "title": "Mine topology", "origin": "Modelled layout + OpenMines distance matrices",
+             "records": len(read_rows(outputs["fleet/route_distances.csv"])), "unit": "source routes", "kind": "mixed"},
+        ],
+        "register": register,
+        "equipment": equipment,
+        "source_fleet": read_rows(outputs["fleet/haulage_fleet_specs.csv"]),
+        "sensors": read_rows((DATA / "telemetry" / "sensor_catalogue.csv").read_text(encoding="utf-8")),
+        "dictionary": read_rows((DATA / "telemetry" / "telemetry_dictionary.csv").read_text(encoding="utf-8")),
+        "topology": json.loads((DATA / "topology" / "mine_topology.json").read_text(encoding="utf-8")),
+        "route_summary": read_rows(outputs["fleet/route_distance_summary.csv"]),
+        "route_distances": [number(r["distance"]) for r in read_rows(outputs["fleet/route_distances.csv"])
+                            if r["matrix"] == "l2d_road_matrix"],
+        "logs": logs,
+        "provenance": manifest,
+    }
+    return json.dumps(bundle, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+
+def _is_number(text: str) -> bool:
+    try:
+        float(text)
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == "__main__":

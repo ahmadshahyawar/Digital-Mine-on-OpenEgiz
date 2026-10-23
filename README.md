@@ -29,6 +29,7 @@ Expected result: the command exits successfully after OpenEgiz, the twin setup j
 ## What to open
 
 - **Ademix 3D Command Center:** <http://localhost:4173>
+- **Layer 1 · Data & Asset Ingestion view:** <http://localhost:4173/?stage=ingestion>
 - OpenEgiz/Grafana: <http://localhost:3000>
 - Ademix health endpoint: <http://localhost:8088/api/health>
 

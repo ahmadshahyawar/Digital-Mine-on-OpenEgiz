@@ -24,7 +24,7 @@ sys.path.insert(0, str(DATA.parent / "simulator"))
 import build_data_layer as build  # noqa: E402
 import engine  # noqa: E402
 
-STATUSES = {"sourced", "derived", "assumption", "scenario_input", "synthetic", "model_setting"}
+STATUSES = {"sourced", "derived", "assumption", "scenario_input", "synthetic", "model_setting", "required_input"}
 ORIGINS = {"simulated_state", "kpi", "analytical", "configuration", "static", "synthetic_signal"}
 SOURCE_SHA256_LF = "a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c"
 
@@ -78,6 +78,10 @@ class RegisterTests(unittest.TestCase):
             with self.subTest(parameter=pid):
                 self.assertIn(row["status"], STATUSES)
                 self.assertTrue(row["unit"] and row["source"] and row["notes"])
+                if row["status"] == "required_input":
+                    self.assertEqual(row["value"], "", "a required input must not carry an invented value")
+                    self.assertTrue(row["derivation"], "state how the value would be computed once supplied")
+                    continue
                 self.assertFalse(math.isnan(float(row["value"])))
                 self.assertLessEqual(float(row["check_min"]), float(row["value"]))
                 self.assertLessEqual(float(row["value"]), float(row["check_max"]))
@@ -259,6 +263,58 @@ class TelemetryLogTests(unittest.TestCase):
                         self.assertLessEqual(abs(float(row["mine-01.mass_balance_error_t"])), 1e-6)
                         expected = scenario if float(row["time_s"]) >= switch else "baseline"
                         self.assertEqual(row["scenario-controller.active"], expected)
+
+
+class SensorTopologyBundleTests(unittest.TestCase):
+    SENSORS = read_csv(DATA / "telemetry" / "sensor_catalogue.csv")
+    TOPOLOGY = json.loads((DATA / "topology" / "mine_topology.json").read_text(encoding="utf-8"))
+
+    def test_sensors_cover_exactly_the_published_features(self):
+        documented = {(r["thing_kind"], r["feature"]) for r in DICTIONARY}
+        covered = set()
+        for sensor in self.SENSORS:
+            for feature in sensor["features"].split("|"):
+                with self.subTest(sensor=sensor["sensor_id"], feature=feature):
+                    self.assertIn((sensor["asset_kind"], feature), documented)
+                covered.add((sensor["asset_kind"], feature))
+        self.assertEqual(covered, documented)
+
+    def test_sensor_publish_interval_matches_the_simulator_settings(self):
+        app = (DATA.parent / "simulator" / "app.py").read_text(encoding="utf-8")
+        self.assertIn('"SIM_SPEEDUP", "20"', app)
+        self.assertIn('"SIM_INTERVAL", "1"', app)
+        for sensor in self.SENSORS:
+            self.assertEqual((sensor["publish_interval_s_wall"], sensor["publish_interval_s_simulated"]), ("1", "20"))
+
+    def test_topology_references_registered_parameters(self):
+        for item in self.TOPOLOGY["nodes"] + self.TOPOLOGY["edges"]:
+            for key, ref in item.items():
+                if key.endswith("_register") and ref:
+                    with self.subTest(item=item.get("id", item.get("from")), key=key):
+                        self.assertIn(ref, REGISTER)
+        twins = {thing_id.split(":")[1] for thing_id in TWINS}
+        for node in self.TOPOLOGY["nodes"]:
+            self.assertIn(node["twin"], twins)
+
+    def test_visual_pit_geometry_matches_the_3d_scene_code(self):
+        scene = (DATA.parent / "frontend" / "src" / "TerrainStage.tsx").read_text(encoding="utf-8")
+        geometry = self.TOPOLOGY["visual_pit_geometry"]
+        for token in ("-23.5", "4.35", "ribbonGeometry(path, 7.2)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35"):
+            self.assertIn(token, scene)
+        self.assertAlmostEqual(geometry["ramp_turns"], 2.35 / 2)
+        self.assertEqual(geometry["benches"], 6)
+
+    def test_frontend_bundle_regenerates_identically_and_cites_the_register(self):
+        outputs = build.build(write=False)
+        bundle_text = outputs[build.BUNDLE_PATH]
+        self.assertEqual((DATA / build.BUNDLE_PATH).read_bytes(), bundle_text.encode("utf-8"))
+        self.assertNotIn("NaN", bundle_text)
+        bundle = json.loads(bundle_text)
+        for equipment in bundle["equipment"]:
+            for spec in equipment["specs"]:
+                self.assertEqual(spec["status"], REGISTER[spec["parameter_id"]]["status"])
+        fuel = [s for e in bundle["equipment"] for s in e["specs"] if s["parameter_id"].endswith("fuel_consumption_lph")]
+        self.assertTrue(fuel and all(s["value"] is None for s in fuel))
 
 
 if __name__ == "__main__":
