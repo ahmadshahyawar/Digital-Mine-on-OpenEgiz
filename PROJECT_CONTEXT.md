@@ -236,7 +236,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 ### Handoff — Codex — A3 production and recovery history — 2026-10-23
 
 ```text
-Status: ready for integration; A3 work lock released
+Status: integrated and verified on codex/ademix; A3 work lock released
 Owner: Ahmad + Codex
 Branch: codex/a3-recovery-history
 Implementation commit: a87dab0
@@ -253,14 +253,19 @@ Fixture: identical hashed state after 4 h warm-up; 5-minute samples; breakdown a
 Reproduction: `python ademix/data/build_data_layer.py` regenerates the history, manifest and frontend
   bundle byte-for-byte.
 Tests actually run: 70 simulator/API tests pass; 34 data tests pass; frontend tsc + Vite build passes
-  (existing >500 kB bundle warning only).
+  (existing >500 kB bundle warning only). After fast-forward integration, a clean Docker rebuild/start
+  from empty project volumes reached healthy status. The judge smoke command passed all 11 twins and
+  all 136 required fields/units; all 70 tests passed again inside the built image; live baseline, Smart
+  Dispatch, breakdown, road restriction, crusher slowdown and reset passed through MQTT, Ditto and API.
+  The built UI serves schema_version `ademix.production-recovery.v1` with event times 14400, 14400,
+  15600, 19200 and 25200 simulated seconds and reset in period 2.
 Frontend handoff: Professor + Claude should use simulated time, plot observed throughput as a solid line,
   projected steady capacity as a distinct dashed line, and use only supplied event markers. Preserve old
   period 1 after reset and begin period 2 at elapsed zero. Do not invent events or smooth away the dip.
 Limitations: deterministic five-minute sampling and a one-hour rolling observed KPI; recovery marker uses
   a documented 95% threshold; this is synthetic model history, not field telemetry or validation.
-Integration instruction: merge into codex/ademix, run combined tests/build and Docker/OpenEgiz gates,
-  then push codex/ademix only. Do not merge to main.
+Integration: fast-forwarded into codex/ademix and passed every combined release gate. Push
+  codex/ademix only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
