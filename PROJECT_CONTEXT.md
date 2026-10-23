@@ -361,6 +361,7 @@ Integrator notes: GraphicsSettings.tsx, GroundMaterial.ts, responsive.css, timin
 | 2026-10-22 | Codex | Expanded the mine into a ten-turn large-scale excavation and converted roads to unpaved haul roads | Live review caught and rejected point-sampled road-carving spokes; segment-based carving removed them. Final production build, 3 data checks, and 3 route/FIFO tests pass |
 | 2026-10-22 | Codex | Deepened the large pit and corrected unrealistic truck speed | Live render confirms ten deep stepped levels and a connected bottom road; truck interpolation now uses physical route length. Production build, 3 data checks, and 3 route/FIFO tests pass |
 | 2026-10-23 | Codex | Completed the HT-01 breakdown release gate, including service interruption, FIFO continuity, throughput impact, recovery, and stale-event cleanup | 37 simulator and 32 data tests pass; live API → MQTT → Eclipse Ditto → API smoke test reports HT-01 stopped, first-hour throughput 770.0→581.6 t/h, and a clean baseline reset |
+| 2026-10-23 | Codex | Integrated Claude's breakdown presentation and completed the four-scenario release gate from fresh Compose volumes | All services healthy; 69 local tests, 37 container tests, and the frontend production build pass; all four states propagated frontend proxy → API → MQTT → Ditto → API and reset cleanly |
 
 ## Decisions
 
@@ -404,6 +405,12 @@ Obtain the Team's visual approval of the rebuilt terraced pit at `?stage=world`;
 - The deterministic first-hour comparison is 770.0 t/h baseline versus 581.6 t/h after HT-01 fails (−24.5%). The analytical steady-state projection remains 770 t/h because five healthy trucks can still saturate the single excavator; this is expected, not a missing impact.
 - Added edge tests cover breakdown while dumping, removal from the excavator FIFO without reordering, preserved ore/mass balance, and reset invalidation of stale service/recovery events.
 - Windows validation used host MQTT port 1884 because the machine's Mosquitto service owns 1883. No committed Compose default changed.
+
+### Final scenario integration handoff — 2026-10-23
+
+- Integrated `origin/claude/breakdown-visual` without overwriting the simulator verification work. The frontend now presents the stopped truck, marker, location, road consequence, throughput, and active constraint from twin fields.
+- `ademix/simulator/verify_scenarios.py` exercises baseline, breakdown, road restriction, crusher slowdown, and reset through `http://127.0.0.1:4173/api`, rejecting demo mode and checking the exact fields consumed by `IngestionLayer.tsx`.
+- Clean Windows deployment removed the OpenEgiz Compose volumes, regenerated ignored credentials, rebuilt all images, and reached healthy state. The literal README Compose command was used; only the ignored host MQTT mapping was changed to 1884 because an administrator-owned Windows Mosquitto service occupies 1883. A clean Ubuntu judge-VM run remains unclaimed.
 
 ## Handoff Template
 

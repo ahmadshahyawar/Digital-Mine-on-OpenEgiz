@@ -60,11 +60,12 @@ sleep 3
 curl --fail http://localhost:8088/api/state
 ```
 
-Verify the complete HT-01 breakdown path through the scenario API, MQTT,
-Eclipse Ditto, and the read API, including a clean reset back to baseline:
+Verify all four operating states through the frontend proxy, scenario API,
+MQTT, Eclipse Ditto, and the read API, including the exact frontend field
+contract and a clean reset back to baseline:
 
 ```bash
-python ademix/simulator/verify_breakdown.py
+python ademix/simulator/verify_scenarios.py
 ```
 
 The check fails unless `/api/state` reports `source: eclipse-ditto`; local demo

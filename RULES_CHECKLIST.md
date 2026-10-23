@@ -77,20 +77,25 @@ For every claimed module:
 
 For every claimed what-if scenario:
 
-- [ ] It can be launched from the running stand without editing code.
-- [ ] It changes underlying twin state.
-- [ ] Its effects propagate to related twins.
-- [ ] Its effects appear in the 3D visualization and metrics.
-- [ ] `SUBMISSION.md` explains how to activate it.
-- [ ] `SUBMISSION.md` explains how to cancel/reset it.
+- [x] It can be launched from the running stand without editing code.
+- [x] It changes underlying twin state.
+- [x] Its effects propagate to related twins.
+- [x] Its effects appear in the 3D visualization and metrics.
+- [x] `SUBMISSION.md` explains how to activate it.
+- [x] `SUBMISSION.md` explains how to cancel/reset it.
 
 Planned scenarios: truck breakdown, road closure with rerouting, and reduced crusher capacity.
 
 HT-01 breakdown gate verified on 2026-10-23: the running stand changed Ditto
 twin state, stopped only HT-01 at zero speed, preserved FIFO/resource progress,
 reduced first-hour throughput from 770.0 to 581.6 t/h, and reset without stale
-breakdown or blocked state. Keep the shared checkboxes open until the same final
-release evidence is reconfirmed for all three claimed scenarios.
+breakdown or blocked state.
+
+Final scenario integration gate verified on 2026-10-23 with
+`ademix/simulator/verify_scenarios.py`: baseline, truck breakdown, road
+restriction, and crusher slowdown all propagated through the frontend proxy,
+API, simulator, MQTT, and Eclipse Ditto. All 11 twins and every field consumed
+by the frontend were present; the final reset removed stale scenario state.
 
 ## Data and Assumptions
 

@@ -33,6 +33,7 @@ presentation/node_modules/
 presentation/output/
 output/
 tmp/
+artifacts/
 
 __pycache__/
 *.pyc
