@@ -233,21 +233,34 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — A4 two-way road and breakdown consistency — 2026-10-23
+### Handoff — Codex — A4 two-way road and breakdown consistency — 2026-10-23
 
 ```text
 Owner: Ahmad + Codex
-Branch: codex/a4-road-direction (from origin/codex/ademix 542bf11)
-Task: replace the obsolete shared-single-lane breakdown rule with a documented two-way-road rule:
-  only same-direction followers behind HT-01 stop; opposing traffic continues; towing and reset clear state.
-Exact files: ademix/simulator/{engine.py,test_engine.py,MODEL.md,SCENARIOS.md,
-  ROAD_BREAKDOWN_CONTRACT.md,twins.json}; ademix/data/{build_data_layer.py,test_data_layer.py,
-  telemetry_dictionary.csv,telemetry/telemetry_dictionary.csv,telemetry/sensor_catalogue.csv,
-  telemetry/manifest.json,frontend/public/data/ingestion.json}; PROJECT_CONTEXT.md.
-Contract: extend road-main with traffic_model, blockage_lane, blockage_heading,
-  blocked_crusher_bound_trucks and blocked_face_bound_trucks; preserve existing field meanings and APIs.
-Frontend ownership: no React/3D source will be edited. Professor + Claude consume the frozen contract.
-Expected handoff: contract, hauling/returning fixtures, tests, commit SHA, limitations and integration steps.
+Status: ready for integration; A4 work lock released
+Branch: codex/a4-road-direction
+Implementation commit: ee35325
+Exact files: simulator engine/tests/twins/verification and ROAD_BREAKDOWN_CONTRACT.md; MODEL.md and
+  SCENARIOS.md; data dictionaries/catalogue/build/tests plus regenerated logs, evidence, manifest and
+  frontend ingestion bundle; SUBMISSION.md and PROJECT_CONTEXT.md. No frontend React/3D source changed.
+Contract: `ademix.road-breakdown.v1`. road-main adds traffic_model, blockage_lane, blockage_heading,
+  blocked_crusher_bound_trucks and blocked_face_bound_trucks. Existing APIs and fields remain compatible.
+Behavior: HT-01 blocks only same-direction followers approaching its position. Opposing traffic continues.
+  Both hauling/crusher-bound and returning/face-bound failures are covered. Tow occurs after exactly 1200
+  simulated seconds; reset removes breakdown, blockage, directional counters and stale events. The separate
+  road restriction remains a 10.72 km/h speed restriction on both lanes, not a closure or reroute.
+Evidence: common returning-lane first hour is now 770.0 → 691.0 t/h (-10.3%), nine trips/h; steady output
+  returns to 770.0 t/h. The prior 581.6 t/h shared-lane reference is explicitly superseded. Generated A2/A3
+  fixtures and telemetry were regenerated from the changed model.
+Tests actually run: 72 simulator/API tests pass; 35 data tests pass; frontend tsc + Vite build passes
+  (existing >500 kB bundle warning only). Direction, progress, speed, counters, tow, reset, FIFO continuity
+  and zero mass-balance error are asserted.
+Frontend request: use blockage_lane and directional counters; do not show the opposing lane as closed and
+  do not infer direction from screen position. Safe labels and reset rules are in ROAD_BREAKDOWN_CONTRACT.md.
+Limitations: separated lanes share one speed limit; no passing, reroute or lane-change logic is modelled;
+  breakdown/tow behavior and timing are synthetic team assumptions, not a site traffic-management plan.
+Integration instruction: merge into codex/ademix, run combined tests/build and clean Docker/OpenEgiz gates,
+  then push codex/ademix only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A3 production and recovery history — 2026-10-23
@@ -574,6 +587,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed A1 cumulative fuel and tank-to-wheel CO2 accounting | Interval integration preserves history across fleet/scenario changes; explicit shift reset, 8-field frontend contract, 663.0 L fixture, 62 simulator/API tests, 32 data tests, scenario verifier and frontend build pass |
 | 2026-10-23 | Codex | Completed A2 matched fixed-versus-smart evidence | Versioned JSON fixture proves identical starts and matched windows for all four conditions; baseline preserves 770 t/h with 4 cycling + 2 parked, -33.3% operating truck-hours and -26.0% estimated fuel |
 | 2026-10-23 | Codex | Completed A3 production and recovery history | Versioned five-minute history separates observed rolling throughput from projection and marks breakdown, 20-minute tow, recovery threshold and reset into a new comparison period |
+| 2026-10-23 | Codex | Completed A4 two-way-road breakdown consistency | Same-direction followers stop behind HT-01 while opposing traffic continues; directional Ditto fields, hauling/returning tests, tow/reset behavior and regenerated evidence are ready for integration |
 
 ## Decisions
 
