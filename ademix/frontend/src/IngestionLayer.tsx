@@ -345,36 +345,50 @@ function ConveyorTrestles({ from, to }: { from: THREE.Vector3; to: THREE.Vector3
 }
 
 /**
- * Road lighting on both sides of the haul road (staggered poles with lamp heads and light pools on
- * the road surface) plus tall mast towers at the loading and dump loops.
+ * Mobile light towers as used on open-pit mines: trailer-mounted diesel units with a telescopic mast
+ * and a four-lamp head, parked at the work areas (loading face, dump pad, stockpile, ramp bends) and
+ * aimed at them, rather than continuous street lighting along the road.
  */
 function RoadLighting() {
-  const poles = React.useMemo(() => {
-    const list: { position: THREE.Vector3; yaw: number; arm: number }[] = []
-    for (let pct = LOOP_PCT + 1; pct <= 100 - LOOP_PCT - 1; pct += 5) {
-      list.push({ ...lanePose(pct, 1, 4.6), arm: -1 }) // outer edge, arm reaching over the road
-      list.push({ ...lanePose(pct + 2.5, -1, 4.6), arm: -1 }) // inner edge, staggered
-    }
-    return list
+  const towers = React.useMemo(() => {
+    const aimAt = (position: THREE.Vector3, target: THREE.Vector3) => ({
+      position, target, yaw: -Math.atan2(target.z - position.z, target.x - position.x),
+    })
+    const face = haulRoadPoint(1)
+    const crusher = haulRoadPoint(0)
+    const rampA = lanePose(35, 1, 0).position
+    const rampB = lanePose(68, 1, 0).position
+    return [
+      aimAt(face.clone().add(new THREE.Vector3(-9, 0, 6)), face),
+      aimAt(crusher.clone().addScaledVector(crusher.clone().setY(0).normalize(), 13), crusher),
+      aimAt(STOCKPILE.clone().add(crusher.clone().sub(STOCKPILE).setY(0).normalize().multiplyScalar(11)), STOCKPILE),
+      aimAt(lanePose(35, 1, 6.4).position, rampA),
+      aimAt(lanePose(68, 1, 6.4).position, rampB),
+    ]
   }, [])
-  const masts = React.useMemo(() => [haulRoadPoint(1), haulRoadPoint(0)].map((centre, i) => {
-    const outward = centre.clone().setY(0).normalize()
-    return centre.clone().addScaledVector(outward, i ? 13 : 10.5)
-  }), [])
-  return <group>
-    {poles.map((p, i) => <group key={i} position={p.position} rotation={[0, p.yaw, 0]}>
-      <mesh position={[0, 2.2, 0]}><cylinderGeometry args={[.08, .11, 4.4, 6]}/><meshStandardMaterial color="#b9c0bd"/></mesh>
-      <mesh position={[0, 4.35, p.arm * .9]}><boxGeometry args={[.12, .12, 1.8]}/><meshStandardMaterial color="#b9c0bd"/></mesh>
-      <mesh position={[0, 4.2, p.arm * 1.7]}><boxGeometry args={[.55, .2, .35]}/><meshStandardMaterial color="#2d3436" emissive="#fff3c4" emissiveIntensity={1.4}/></mesh>
-      <mesh position={[0, .24, p.arm * 2.1]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[2.2, 20]}/>
-        <meshBasicMaterial color="#fff1b8" transparent opacity={.22} depthWrite={false} blending={THREE.AdditiveBlending}/></mesh>
-    </group>)}
-    {masts.map((m, i) => <group key={`mast-${i}`} position={m}>
-      <mesh position={[0, 4.5, 0]}><cylinderGeometry args={[.15, .22, 9, 6]}/><meshStandardMaterial color="#c9cfcc"/></mesh>
-      <mesh position={[0, 9.2, 0]}><boxGeometry args={[2.2, .6, .4]}/><meshStandardMaterial color="#2d3436" emissive="#fff6c8" emissiveIntensity={1.2}/></mesh>
-      <mesh position={[0, .5, 0]}><boxGeometry args={[1.6, 1, 1.1]}/><meshStandardMaterial color="#e2c14f"/></mesh>
-    </group>)}
-  </group>
+  return <group>{towers.map((t, i) => {
+    const pool = t.position.clone().lerp(t.target, .55)
+    return <group key={i}>
+      <group position={t.position} rotation={[0, t.yaw, 0]}>
+        {/* trailer with wheels and outriggers */}
+        <mesh position={[0, .75, 0]}><boxGeometry args={[2.6, .9, 1.3]}/><meshStandardMaterial color="#e2c14f" roughness={.7}/></mesh>
+        {[-.7, .7].map(z => <mesh key={z} position={[-.4, .35, z]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.35, .35, .25, 12]}/><meshStandardMaterial color="#1f2326"/></mesh>)}
+        {[-1, 1].map(z => <mesh key={`o${z}`} position={[.9, .25, z * 1.1]}><boxGeometry args={[.25, .25, .9]}/><meshStandardMaterial color="#3a3f42"/></mesh>)}
+        {/* telescopic mast and four-lamp head aimed at the work area */}
+        <mesh position={[.6, 5.2, 0]}><cylinderGeometry args={[.1, .16, 8.8, 8]}/><meshStandardMaterial color="#c9cfcc"/></mesh>
+        <group position={[.75, 9.6, 0]} rotation={[0, 0, -.35]}>
+          <mesh><boxGeometry args={[.25, 1.3, 1.9]}/><meshStandardMaterial color="#2d3436"/></mesh>
+          {[[-.32, -.45], [-.32, .45], [.32, -.45], [.32, .45]].map(([y, z]) => <mesh key={`${y}${z}`} position={[.14, y, z]}>
+            <boxGeometry args={[.06, .5, .7]}/><meshStandardMaterial color="#fff6d0" emissive="#fff3c4" emissiveIntensity={2}/></mesh>)}
+        </group>
+      </group>
+      {/* light pool on the ground where the tower is aimed */}
+      <mesh position={pool.clone().add(new THREE.Vector3(0, .3, 0))} rotation={[-Math.PI / 2, 0, -t.yaw]}>
+        <circleGeometry args={[7.5, 32]}/>
+        <meshBasicMaterial color="#fff2c0" transparent opacity={.16} depthWrite={false} blending={THREE.AdditiveBlending}/>
+      </mesh>
+    </group>
+  })}</group>
 }
 
 /** Weather in the scene: a windsock at the crusher pad, dust haze along the road, and rain when it falls. */
@@ -650,7 +664,9 @@ function DataFlow({ trucks }: { trucks: React.MutableRefObject<THREE.Vector3[]> 
 }
 
 const SAMPLE_SECONDS = 300 // the recorded logs hold one sample every 5 simulated minutes
-const SPEEDS: [number, string][] = [[1, 'Real time'], [10, '10×'], [60, '60×'], [300, '300×']]
+// The scene compresses the 3.2 km road to ~215 units (1 unit ≈ 15 m) but draws trucks ~9× real size so
+// they stay visible; at about 10× a truck covers its own length in ~1.4 s, as a real truck does at 25 km/h.
+const SPEEDS: [number, string][] = [[10, 'Real-life look (10×)'], [1, 'Real time (1×)'], [60, '60×'], [300, '300×']]
 
 function Playhead({ playing, rows, head, speed, onRow }: { playing: boolean; rows: number; head: React.MutableRefObject<number>; speed: number; onRow: (row: number) => void }) {
   useFrame((_, delta) => {
@@ -668,7 +684,7 @@ export function IngestionLayer() {
   const [scenario, setScenario] = React.useState('truck_breakdown')
   const [row, setRow] = React.useState(46)
   const [playing, setPlaying] = React.useState(true)
-  const [speed, setSpeed] = React.useState(1)
+  const [speed, setSpeed] = React.useState(10)
   const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
