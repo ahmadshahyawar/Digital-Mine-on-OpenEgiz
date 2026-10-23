@@ -2,22 +2,18 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
-import type { Twin } from './MineScene'
+import { MineScene, type Twin } from './MineScene'
 import { TerrainStage } from './TerrainStage'
 import { IngestionLayer } from './IngestionLayer'
 import './styles.css'
 import './fleet.css'
-import './timing.css'
-import './responsive.css'
 
 type StateResponse = { source: string; twins: Twin[] }
 const value = (twin: Twin | undefined, key: string, fallback: string | number = 0) => twin?.features?.[key]?.properties?.value ?? fallback
 
 function App() {
   const reviewStage = new URLSearchParams(window.location.search).get('stage')
-  const liveMine = reviewStage === null
-  const loadingReview = reviewStage === 'loading'
-  const worldReview = reviewStage === 'world'
+  const terrainReview = reviewStage === 'terrain' || reviewStage === 'roads' || reviewStage === 'equipment' || reviewStage === 'plant' || reviewStage === 'motion'
   const [data, setData] = React.useState<StateResponse>({ source: 'connecting', twins: [] })
   const [selectedId, setSelectedId] = React.useState('')
   const [error, setError] = React.useState('')
@@ -34,10 +30,10 @@ function App() {
   const mine = data.twins.find(t => t.attributes?.kind === 'mine')
   const selected = data.twins.find(t => t.thingId === selectedId)
   const scenarioTwin = data.twins.find(t => t.attributes?.kind === 'scenario')
-  const projectedThroughput = Number(value(scenarioTwin, 'projected_throughput_tph', 770))
-  const baselineThroughput = Number(value(scenarioTwin, 'baseline_throughput_tph', 770))
+  const baselineTph = Number(value(scenarioTwin, 'baseline_throughput_tph', 770))
+  const projectedTph = Number(value(scenarioTwin, 'projected_throughput_tph', baselineTph))
   const scenario = String(value(mine, 'active_scenario', 'baseline'))
-  const connected = ['eclipse-ditto', 'local-simulator-demo'].includes(data.source) && !error
+  const connected = data.source === 'eclipse-ditto' && !error
   const fleet = data.twins.filter(t => t.attributes?.kind === 'haul-truck')
   const setScenario = async (next: string) => {
     setScenarioPending(next)
@@ -61,10 +57,10 @@ function App() {
       <aside><h2>What-if control</h2><p>Change an operating condition and observe the effect across connected twins.</p>{[
         ['baseline','Normal operations'], ['truck_breakdown','Truck HT-01 breakdown'], ['road_closure','Main road restriction'], ['crusher_slowdown','Crusher capacity −45%']
       ].map(([id,label]) => <button key={id} disabled={Boolean(scenarioPending)} className={scenario === id ? 'active' : ''} onClick={() => setScenario(id)}>{scenarioPending === id ? 'Applying…' : label}<span>→</span></button>)}
-      <div className="comparison"><span>Projected throughput</span><b>{projectedThroughput.toFixed(0)} <small>t/h</small></b><em>{Number(value(scenarioTwin, 'impact_pct', 0)).toFixed(0)}% vs {baselineThroughput.toFixed(0)} t/h baseline</em><div><i style={{width: `${Math.max(12, projectedThroughput / Math.max(1, baselineThroughput) * 100)}%`}}/></div></div>
+      <div className="comparison"><span>Projected throughput</span><b>{projectedTph.toFixed(0)} <small>t/h</small></b><em>{Number(value(scenarioTwin, 'impact_pct', 0)).toFixed(0)}% vs {baselineTph.toFixed(0)} t/h baseline</em><div><i style={{width: `${Math.max(12, Math.min(100, 100 * projectedTph / baselineTph))}%`}}/></div></div>
       <div className="source"><b>Trusted state</b><span>Simulator → MQTT → Ditto → 3D</span></div></aside>
-      <div className="viewport"><Canvas shadows camera={{ position: loadingReview ? [95, -120, 105] : worldReview ? [0, 1650, 400] : [0, 1500, 380], fov: loadingReview ? 42 : 58, near: 1, far: 5000 }} dpr={[0.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}><TerrainStage showRoads={liveMine || reviewStage !== 'terrain'} showEquipment={liveMine || loadingReview || worldReview || ['equipment','plant','motion'].includes(reviewStage || '')} showPlant={liveMine || worldReview || reviewStage === 'plant' || reviewStage === 'motion'} moving={liveMine || loadingReview || worldReview || reviewStage === 'motion'} twins={data.twins} selectedId={selectedId} setSelectedId={setSelectedId} focusLoading={loadingReview}/></Canvas><div className="view-label">{worldReview ? 'LARGE MINE ENVIRONMENT · MATERIAL FLOW REVIEW' : loadingReview ? 'LOADING FACE · FIFO AND CLEARANCE REVIEW' : reviewStage === 'motion' ? 'STAGE 5 · LIVE MOTION REVIEW' : reviewStage === 'plant' ? 'STAGE 4 · PROCESSING PLANT REVIEW' : reviewStage === 'equipment' ? 'STAGE 3 · EQUIPMENT REVIEW' : reviewStage === 'roads' ? 'STAGE 2 · HAUL ROAD REVIEW' : reviewStage === 'terrain' ? 'STAGE 1 · TERRAIN REVIEW' : 'LIVE OPENGIZ TWIN · HAULAGE TO CRUSHER'} · DRAG TO ORBIT · SCROLL TO ZOOM</div>{error && <div className="error">Waiting for OpenEgiz state…</div>}</div>
-      <aside className="detail"><h2>{selected?.attributes?.name || 'Live fleet'}</h2>{selected ? <><button className="back" onClick={() => setSelectedId('')}>← Back to fleet</button>{Object.entries(selected.features || {}).filter(([key]) => !['position_x','position_z','heading'].includes(key)).map(([key,feature]) => <div className={`reading ${key.includes('time') || key.includes('wait') ? 'timing' : ''}`} key={key}><span>{key.replace(/_/g,' ')}</span><b>{String(feature.properties?.value ?? '—')} <small>{feature.properties?.unit}</small></b></div>)}</> : <><p>Select a truck in the scene or fleet list to inspect its Eclipse Ditto state and complete cycle timing.</p><div className="fleet-list">{fleet.map(t => { const state = String(value(t, 'state', 'unknown')); return <button key={t.thingId} onClick={() => setSelectedId(t.thingId)}><i className={state}/><span><b>{t.attributes?.name}</b><small>{state} · {String(value(t, 'payload_t'))} t</small></span><em>{Number(value(t, 'fuel_pct')).toFixed(0)}%</em></button> })}</div><div className="platform-card"><span>PLATFORM STATE</span><b>{data.twins.length} connected twins</b><small>Updated every 2 seconds via Ditto</small></div></>}</aside>
+      <div className="viewport"><Canvas camera={{ position: terrainReview ? [92, 72, 98] : [57, 48, 62], fov: 42 }} dpr={[0.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>{terrainReview ? <TerrainStage showRoads={reviewStage !== 'terrain'} showEquipment={['equipment','plant','motion'].includes(reviewStage || '')} showPlant={reviewStage === 'plant' || reviewStage === 'motion'} moving={reviewStage === 'motion'} twins={data.twins}/> : <MineScene twins={data.twins} selectedId={selectedId} setSelectedId={setSelectedId}/>}</Canvas><div className="view-label">{reviewStage === 'motion' ? 'STAGE 5 · LIVE MOTION REVIEW' : reviewStage === 'plant' ? 'STAGE 4 · PROCESSING PLANT REVIEW' : reviewStage === 'equipment' ? 'STAGE 3 · EQUIPMENT REVIEW' : reviewStage === 'roads' ? 'STAGE 2 · HAUL ROAD REVIEW' : reviewStage === 'terrain' ? 'STAGE 1 · TERRAIN REVIEW' : 'LIVE TWIN MAP'} · DRAG TO ORBIT · SCROLL TO ZOOM</div>{error && <div className="error">Waiting for OpenEgiz state…</div>}</div>
+      <aside className="detail"><h2>{selected?.attributes?.name || 'Live fleet'}</h2>{selected ? <><button className="back" onClick={() => setSelectedId('')}>← Back to fleet</button>{Object.entries(selected.features || {}).slice(0, 7).map(([key,feature]) => <div className="reading" key={key}><span>{key.replace(/_/g,' ')}</span><b>{String(feature.properties?.value ?? '—')} <small>{feature.properties?.unit}</small></b></div>)}</> : <><p>Select a truck in the scene or fleet list to inspect its Eclipse Ditto state.</p><div className="fleet-list">{fleet.map(t => { const state = String(value(t, 'state', 'unknown')); return <button key={t.thingId} onClick={() => setSelectedId(t.thingId)}><i className={state}/><span><b>{t.attributes?.name}</b><small>{state} · {String(value(t, 'payload_t'))} t</small></span><em>{Number(value(t, 'fuel_pct')).toFixed(0)}%</em></button> })}</div><div className="platform-card"><span>PLATFORM STATE</span><b>{data.twins.length} connected twins</b><small>Updated every 2 seconds via Ditto</small></div></>}</aside>
     </section>
   </main>
 }

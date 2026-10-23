@@ -110,7 +110,7 @@ A strong submission should ideally provide:
 
 **Last updated:** 2026-10-22
 
-- The latest `claude/data-asset-layer` work is integrated with the Codex large-world scene: its replay-driven fleet, FIFO loading/dumping workflow, turning-loop behavior, sensor/topology/data-flow, fleet/ESG, weather, and safety views now consume the shared enlarged haul-road geometry at `?stage=ingestion`. The large pit, RTS camera, zoom, terrain, facilities, and primary live OpenEgiz view remain intact.
+- Team decision: `claude/data-asset-layer` is the authoritative visual implementation. Its terrain scale, roads, turning loops, vehicles, buildings, FIFO queues, loading/dumping animations, camera, sensor/topology/data-flow overlays, fleet/ESG, weather, and safety presentation are preserved as designed. Codex contributions are limited to compatible nonvisual improvements such as platform integration, Docker/build reliability, tests, evidence, and documentation unless the Team explicitly requests a visual change.
 
 - The team has registered for the competition.
 - The submitted registration records team name **Ademix** with GitHub users `ahmadshahyawar` and `TurkenGulzat`.

@@ -22,16 +22,16 @@
   "visual_pit_geometry": {
     "units": "scene units (3D visual only)",
     "source": "ademix/frontend/src/TerrainStage.tsx",
-    "terrain_extent": [1500, 1150],
-    "pit_outline": "controlled rounded-square contour with nominal semi-axes 500 × 400",
-    "benches": 10,
-    "bench_height": 21.5,
-    "pit_floor_elevation": -213.5,
-    "rim_elevation": 3.5,
-    "ramp_width": 36,
-    "ramp_turns": 10,
-    "ramp_elevation_start": 3.8,
-    "ramp_elevation_end": -212.2
+    "terrain_extent": [150, 112],
+    "pit_outline": "ellipse with semi-axes 59 × 41",
+    "benches": 6,
+    "bench_height": 4.35,
+    "pit_floor_elevation": -23.5,
+    "rim_elevation": 4.6,
+    "ramp_width": 7.2,
+    "ramp_turns": 1.175,
+    "ramp_elevation_start": 4.8,
+    "ramp_elevation_end": -22.8
   },
   "not_available": [
     "Surveyed elevations, road grades and rolling resistance (no survey data; travel time uses a constant speed).",

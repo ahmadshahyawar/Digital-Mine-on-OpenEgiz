@@ -64,8 +64,6 @@ def value(parameter_id):
 
 class SourceIntegrityTests(unittest.TestCase):
     def test_source_file_matches_its_recorded_checksum(self):
-        # Verify the canonical LF content so Windows Git checkouts with CRLF do
-        # not create a false integrity failure for the unchanged source file.
         source_bytes = (DATA / "openmines" / "north_pit_mine.json").read_bytes().replace(b"\r\n", b"\n")
         digest = hashlib.sha256(source_bytes).hexdigest()
         self.assertEqual(digest, SOURCE_SHA256_LF)
@@ -373,10 +371,10 @@ class SensorTopologyBundleTests(unittest.TestCase):
     def test_visual_pit_geometry_matches_the_3d_scene_code(self):
         scene = (DATA.parent / "frontend" / "src" / "TerrainStage.tsx").read_text(encoding="utf-8")
         geometry = self.TOPOLOGY["visual_pit_geometry"]
-        for token in ("-213.5", "PIT_LIFT_HEIGHT = 21.5", "ribbonGeometry(path, HAUL_ROAD_WIDTH)", "lerp(3.8, -212.2", "500", "400", "Math.PI * 20"):
+        for token in ("-23.5", "4.35", "ribbonGeometry(path, 7.2)", "lerp(4.8, -22.8", "59", "41", "Math.PI * 2.35"):
             self.assertIn(token, scene)
-        self.assertEqual(geometry["ramp_turns"], 10)
-        self.assertEqual(geometry["benches"], 10)
+        self.assertAlmostEqual(geometry["ramp_turns"], 2.35 / 2)
+        self.assertEqual(geometry["benches"], 6)
 
     def test_frontend_bundle_regenerates_identically_and_cites_the_register(self):
         outputs = build.build(write=False)
