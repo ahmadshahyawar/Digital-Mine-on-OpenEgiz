@@ -27,6 +27,7 @@ SOURCE = DATA / "openmines" / "north_pit_mine.json"
 REGISTER = DATA / "registry" / "parameters.csv"
 sys.path.insert(0, str(SIMULATOR))
 
+from compare_scenarios import comparison_json  # noqa: E402
 from engine import SCENARIOS, MineEngine  # noqa: E402
 
 USED_TRUCK, USED_SHOVEL, USED_DUMP = "OfficalTruck", "NorthPitMine-LoadSite2-Shovel-1", "NorthPitMine-DumpSite1"
@@ -159,6 +160,7 @@ def build(write: bool = True) -> dict:
     for scenario in SCENARIOS:
         outputs[f"telemetry/logs/{scenario}.csv"] = telemetry_log(scenario)
     outputs["telemetry/logs/weather_station.csv"] = weather_log()
+    outputs["evidence/fixed_vs_smart.json"] = comparison_json()
     manifest = {
         "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
         "generator": "ademix/data/build_data_layer.py",
@@ -166,6 +168,7 @@ def build(write: bool = True) -> dict:
             "ademix/data/openmines/north_pit_mine.json": sha256(SOURCE.read_bytes()),
             "ademix/data/registry/parameters.csv": sha256(REGISTER.read_bytes()),
             "ademix/simulator/engine.py": sha256((SIMULATOR / "engine.py").read_bytes()),
+            "ademix/simulator/compare_scenarios.py": sha256((SIMULATOR / "compare_scenarios.py").read_bytes()),
         },
         "telemetry_settings": {
             "seed": LOG_SEED, "step_s": LOG_STEP_S, "sample_s": LOG_SAMPLE_S,
@@ -175,11 +178,16 @@ def build(write: bool = True) -> dict:
         "outputs": {},
     }
     for path, text in outputs.items():
-        lines = text.splitlines()
+        if path.endswith(".json"):
+            document = json.loads(text)
+            records, columns = len(document["scenarios"]), len(document)
+        else:
+            lines = text.splitlines()
+            records, columns = len(lines) - 1, len(next(csv.reader([lines[0]])))
         manifest["outputs"][path] = {
             "sha256": sha256(text.encode("utf-8")),
-            "rows": len(lines) - 1,
-            "columns": len(next(csv.reader([lines[0]]))),
+            "rows": records,
+            "columns": columns,
         }
     outputs["telemetry/manifest.json"] = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
     outputs[BUNDLE_PATH] = ingestion_bundle(outputs, manifest)
@@ -278,6 +286,7 @@ def ingestion_bundle(outputs: dict, manifest: dict) -> str:
             "rows": [[number(v) for v in row.values()] for row in read_rows(outputs["telemetry/logs/weather_station.csv"])],
             "columns": next(csv.reader([outputs["telemetry/logs/weather_station.csv"].splitlines()[0]])),
         },
+        "dispatchComparison": json.loads(outputs["evidence/fixed_vs_smart.json"]),
         "emission_references": read_rows((DATA / "registry" / "emission_references.csv").read_text(encoding="utf-8")),
         "provenance": manifest,
     }

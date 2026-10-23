@@ -233,6 +233,26 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a2-dispatch-evidence (from origin/codex/ademix 6cd5c68)
+Task: generate a versioned fixed-versus-smart comparison from identical deterministic start states,
+  matched warm-up/trigger/windows, and publish a stable frontend evidence contract.
+Exact files: ademix/simulator/compare_scenarios.py, ademix/simulator/test_engine.py,
+  ademix/simulator/SCENARIOS.md, ademix/simulator/DISPATCH_COMPARISON_CONTRACT.md,
+  ademix/data/build_data_layer.py,
+  ademix/data/test_data_layer.py, ademix/data/evidence/fixed_vs_smart.json,
+  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
+  PROJECT_CONTEXT.md.
+Contract: no live twin/API change. Generated ingestion.json gains dispatchComparison schema v1 with
+  methodology, identical-start hash, fixed/smart metrics and deltas for transient and steady windows.
+Frontend ownership: no React/3D source will be edited; Professor + Claude consume the generated contract.
+Expected handoff: schema, all four scenario fixtures, exact reproduction command, tests, commit SHA,
+  limitations and integration instructions.
+```
+
 ### Handoff — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
 
 ```text

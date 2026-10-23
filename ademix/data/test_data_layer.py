@@ -400,6 +400,24 @@ class SensorTopologyBundleTests(unittest.TestCase):
         fuel = [s for e in bundle["equipment"] for s in e["specs"] if s["parameter_id"].endswith("fuel_consumption_lph")]
         self.assertTrue(fuel and all(s["value"] == value(s["parameter_id"]) for s in fuel))
 
+    def test_dispatch_comparison_is_reproducible_and_bundled_for_the_frontend(self):
+        outputs = build.build(write=False)
+        path = "evidence/fixed_vs_smart.json"
+        generated = outputs[path]
+        self.assertEqual((DATA / path).read_bytes(), generated.encode("utf-8"))
+        evidence = json.loads(generated)
+        self.assertEqual(evidence["schema_version"], "ademix.dispatch-comparison.v1")
+        self.assertTrue(evidence["synthetic"])
+        self.assertEqual(set(evidence["scenarios"]), {"baseline", "truck_breakdown", "road_closure", "crusher_slowdown"})
+        common = evidence["methodology"]["common_start_state_sha256"]
+        self.assertTrue(common)
+        for scenario in evidence["scenarios"].values():
+            self.assertEqual(scenario["start_state_sha256"], common)
+            for period in ("transient", "steady"):
+                self.assertEqual(set(scenario["periods"][period]), {"window_h", "fixed", "smart", "smart_minus_fixed"})
+        bundle = json.loads(outputs[build.BUNDLE_PATH])
+        self.assertEqual(bundle["dispatchComparison"], evidence)
+
 
 if __name__ == "__main__":
     unittest.main()

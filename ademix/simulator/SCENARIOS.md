@@ -240,7 +240,7 @@ Rule 3 is needed. Without it, smart dispatch lost 7–9 % of first-hour producti
 
 Every run uses the same 4 h warm-up; the policy and the condition switch at the same moment. Each cell reads fixed → smart.
 
-**Truck operating hours per kt** is the time trucks spend in the cycle (not parked or broken down) per 1,000 t crushed. It is a proxy for engine hours, and so for fuel and maintenance. The model does not compute fuel for idling or queueing, so no fuel saving is claimed.
+**Truck operating hours per kt** is the time trucks spend in the cycle (not parked or broken down) per 1,000 t crushed. A1 now separately integrates estimated fuel for every event interval using documented comparable-equipment medium-load rates. Queued and blocked trucks are treated as engine-on; parked and broken-down trucks do not accrue the truck rate, while the excavator rate remains active. These are synthetic estimates, not measured fuel savings. The versioned matched fixture, units and scientifically valid claim are defined in `DISPATCH_COMPARISON_CONTRACT.md` and generated as `ademix/data/evidence/fixed_vs_smart.json`.
 
 ### Steady state: hours 2–9 after the switch
 

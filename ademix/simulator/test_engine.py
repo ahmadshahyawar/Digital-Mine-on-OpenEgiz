@@ -722,6 +722,49 @@ class DispatchTests(unittest.TestCase):
         self.assertAlmostEqual(mine.mass_balance_error_t(), 0.0, places=6)
 
 
+class DispatchEvidenceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from compare_scenarios import comparison_evidence
+        cls.evidence = comparison_evidence()
+
+    def test_every_pair_uses_the_same_initial_state_and_windows(self):
+        common = self.evidence["methodology"]["common_start_state_sha256"]
+        self.assertEqual(self.evidence["methodology"]["warmup_h"], 4)
+        self.assertEqual(self.evidence["methodology"]["transient_window_h"], 1)
+        self.assertEqual(self.evidence["methodology"]["steady_window_h"], 8)
+        for scenario, result in self.evidence["scenarios"].items():
+            with self.subTest(scenario=scenario):
+                self.assertEqual(result["start_state_sha256"], common)
+                self.assertEqual(result["periods"]["transient"]["window_h"], 1)
+                self.assertEqual(result["periods"]["steady"]["window_h"], 8)
+
+    def test_baseline_smart_parks_two_without_losing_steady_throughput(self):
+        steady = self.evidence["scenarios"]["baseline"]["periods"]["steady"]
+        self.assertEqual(steady["fixed"]["cycling_trucks_avg"], 6)
+        self.assertEqual(steady["smart"]["cycling_trucks_avg"], 4)
+        self.assertEqual(steady["smart"]["standby_trucks_avg"], 2)
+        self.assertAlmostEqual(steady["fixed"]["throughput_tph"], 770, delta=1)
+        self.assertAlmostEqual(steady["smart"]["throughput_tph"], 770, delta=1)
+        self.assertAlmostEqual(steady["smart"]["estimated_fuel_l"], 8 * 281.9, places=6)
+        self.assertAlmostEqual(steady["fixed"]["estimated_fuel_l"], 8 * 381.1, places=6)
+
+    def test_operating_hours_reduction_is_reproducible_for_every_condition(self):
+        expected_pct = {
+            "baseline": -33.333338,
+            "truck_breakdown": -20.0,
+            "road_closure": 0.0,
+            "crusher_slowdown": -50.0,
+        }
+        for scenario, expected in expected_pct.items():
+            with self.subTest(scenario=scenario):
+                steady = self.evidence["scenarios"][scenario]["periods"]["steady"]
+                self.assertAlmostEqual(
+                    steady["smart_minus_fixed"]["truck_operating_h_per_kt"]["percent"], expected, places=6
+                )
+                self.assertAlmostEqual(steady["fixed"]["throughput_tph"], steady["smart"]["throughput_tph"], places=6)
+
+
 class InterfaceTests(unittest.TestCase):
     def test_snapshot_keeps_every_feature_the_interface_reads(self):
         state = MineEngine().snapshot()
