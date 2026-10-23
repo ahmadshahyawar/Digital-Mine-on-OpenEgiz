@@ -460,6 +460,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - `setup_twins.py` now isolates its bounded retry helper so slow-start recovery is directly testable while final failures still make setup exit non-zero.
 - The simulator package now has 49 passing checks; the 32 data-layer checks remain passing. No professor-owned frontend source or Smart Dispatch implementation was edited.
 
+### P1 Docker/judge-environment handoff — 2026-10-23
+
+- A destructive-to-containers-only clean rehearsal removed this project's containers and volumes, then ran the literal README Compose build/start command. All services became healthy or exited successfully in 85.93 seconds.
+- All 16 unique resolved Compose images report `linux/amd64`. Their deliberately conservative summed size is 7.632 GiB; Docker reported 5.802 GB of images, 352.8 MB of volumes, and 2.95 GB of disposable build cache, comfortably below the 60 GB judge limit.
+- The documented UI, API health, API state, and Grafana health URLs all returned HTTP 200. The read-only smoke check passed real Eclipse Ditto state, all 11 required twins, and all 120 required fields/units.
+- Runtime frontend assets are Git-tracked and total 2.94 MiB. A targeted source/public scan found no HTTP/CDN references for models, textures, fonts, scripts, or runtime data.
+- `evidence/docker-clean-start-2026-10-23.md` records the commands and results. This was a Windows 10 Docker Desktop Linux-container rehearsal with host MQTT mapped to 1884; a native clean Ubuntu 24.04 AMD64 run remains an explicit release gate.
+
 ## Handoff Template
 
 Copy and complete this block after each work session:

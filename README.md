@@ -26,6 +26,10 @@ docker compose --env-file deploy/compose/.env \
 
 Expected result: the command exits successfully after OpenEgiz, the twin setup job, simulator, and UI are ready.
 
+The latest recorded clean-start rehearsal, including startup time, disk use,
+image architecture, URL checks, and the remaining Ubuntu verification gate, is
+in [`evidence/docker-clean-start-2026-10-23.md`](evidence/docker-clean-start-2026-10-23.md).
+
 ## What to open
 
 - **Ademix 3D Command Center:** <http://localhost:4173>
