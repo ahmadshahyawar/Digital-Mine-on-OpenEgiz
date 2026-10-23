@@ -233,24 +233,40 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
+### Handoff — Codex — A2 matched fixed-versus-smart evidence — 2026-10-23
 
 ```text
+Status: ready for integration; A2 work lock released
 Owner: Ahmad + Codex
-Branch: codex/a2-dispatch-evidence (from origin/codex/ademix 6cd5c68)
-Task: generate a versioned fixed-versus-smart comparison from identical deterministic start states,
-  matched warm-up/trigger/windows, and publish a stable frontend evidence contract.
-Exact files: ademix/simulator/compare_scenarios.py, ademix/simulator/test_engine.py,
-  ademix/simulator/SCENARIOS.md, ademix/simulator/DISPATCH_COMPARISON_CONTRACT.md,
-  ademix/data/build_data_layer.py,
-  ademix/data/test_data_layer.py, ademix/data/evidence/fixed_vs_smart.json,
-  ademix/data/telemetry/manifest.json, ademix/frontend/public/data/ingestion.json,
-  PROJECT_CONTEXT.md.
-Contract: no live twin/API change. Generated ingestion.json gains dispatchComparison schema v1 with
-  methodology, identical-start hash, fixed/smart metrics and deltas for transient and steady windows.
-Frontend ownership: no React/3D source will be edited; Professor + Claude consume the generated contract.
-Expected handoff: schema, all four scenario fixtures, exact reproduction command, tests, commit SHA,
-  limitations and integration instructions.
+Branch: codex/a2-dispatch-evidence
+Implementation commit: 284259c
+Exact files: ademix/simulator/{compare_scenarios.py,test_engine.py,SCENARIOS.md,
+  DISPATCH_COMPARISON_CONTRACT.md}; ademix/data/{build_data_layer.py,test_data_layer.py,
+  evidence/fixed_vs_smart.json,telemetry/manifest.json};
+  ademix/frontend/public/data/ingestion.json; PROJECT_CONTEXT.md.
+Contract: no live twin/API change. `dispatchComparison` in the generated ingestion bundle and
+  `ademix/data/evidence/fixed_vs_smart.json` use schema `ademix.dispatch-comparison.v1`.
+  The full schema, units, null-delta rule, window semantics and safe claims are frozen in
+  ademix/simulator/DISPATCH_COMPARISON_CONTRACT.md.
+Method: seed 42; one common hashed state after 4 h warm-up; policy and condition triggered at the
+  same simulated instant; matched 1 h transient and 8 h steady windows; 20 s deterministic step.
+Baseline steady fixture: fixed 6.0 cycling / 0 parked vs smart 4.0 cycling / 2.0 parked;
+  both 770.0 t/h; operating truck-hours 7.792208 → 5.194805 h/kt (-33.3%);
+  estimated fuel 3048.8 → 2255.2 L (-26.0%).
+All-condition fixture: steady operating truck-hours change is -33.3% baseline, -20.0% breakdown,
+  0.0% road restriction and -50.0% crusher slowdown; matched throughput is unchanged in each pair.
+Reproduction: `python ademix/data/build_data_layer.py` regenerates the JSON evidence, manifest and
+  frontend ingestion bundle byte-for-byte.
+Tests actually run: 65 simulator/API tests pass; 33 data tests pass, including identical hashes,
+  matched windows, all four scenarios and exact regeneration; frontend tsc + Vite build passes
+  (existing >500 kB bundle warning only).
+Frontend handoff: Professor + Claude may build the fixed/smart comparison card solely from
+  `dispatchComparison`. Display `percent: null` as `—` or `new`; label results as synthetic modeled
+  estimates. Do not recompute metrics, change window definitions or claim measured/guaranteed savings.
+Limitations: deterministic conceptual model, one seed and one parameter set; fuel uses A1 comparable
+  rates; the evidence does not quantify uncertainty and is not a field validation.
+Integration instruction: merge this feature branch into codex/ademix, run combined Python/data/build
+  and live Docker/OpenEgiz gates, then push codex/ademix only. Do not merge to main.
 ```
 
 ### Handoff — Codex — A1 cumulative fuel and CO2 truth — 2026-10-23
@@ -500,6 +516,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed reproducible P1 what-if evidence and recommendations | The generator now reports seven requested KPIs including trips/h; `SUBMISSION.md` contains a concise steady comparison plus transient breakdown warning; an automated check proves frontend-facing metrics match each generated scenario run |
 | 2026-10-23 | Codex | Completed the P1 OpenEgiz/API reliability gate | The exact judge smoke command passed against live Ditto: 11 twins and 120 fields/units; delayed dependency recovery, graceful API errors, invalid controls, and LIVE/DEMO/REPLAY distinction are covered by tests |
 | 2026-10-23 | Codex | Completed A1 cumulative fuel and tank-to-wheel CO2 accounting | Interval integration preserves history across fleet/scenario changes; explicit shift reset, 8-field frontend contract, 663.0 L fixture, 62 simulator/API tests, 32 data tests, scenario verifier and frontend build pass |
+| 2026-10-23 | Codex | Completed A2 matched fixed-versus-smart evidence | Versioned JSON fixture proves identical starts and matched windows for all four conditions; baseline preserves 770 t/h with 4 cycling + 2 parked, -33.3% operating truck-hours and -26.0% estimated fuel |
 
 ## Decisions
 
