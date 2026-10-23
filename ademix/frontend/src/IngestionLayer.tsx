@@ -318,10 +318,19 @@ function LoopRoads() {
     }
     return { surface: build(3.4, .26), edge: build(3.55, .24) }
   }), [])
-  return <group>{parts.map((p, i) => <group key={i}>
-    <mesh geometry={p.edge}><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}/></mesh>
-    <mesh geometry={p.surface}><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}/></mesh>
-  </group>)}</group>
+  const rings = React.useMemo(() => [{ centre: haulRoadPoint(1), radius: 7.3 }, { centre: haulRoadPoint(0), radius: 9.6 }], [])
+  return <group>
+    {rings.map(({ centre, radius }, i) => <group key={`ring-${i}`} position={centre.clone().add(new THREE.Vector3(0, .3, 0))} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh><ringGeometry args={[radius - 3.55, radius + 3.55, 72]}/><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}
+        polygonOffset polygonOffsetFactor={-1}/></mesh>
+      <mesh position={[0, 0, .01]}><ringGeometry args={[radius - 3.35, radius + 3.35, 72]}/><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}
+        polygonOffset polygonOffsetFactor={-2}/></mesh>
+    </group>)}
+    {parts.map((p, i) => <group key={i}>
+      <mesh geometry={p.edge}><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-3}/></mesh>
+      <mesh geometry={p.surface}><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-4}/></mesh>
+    </group>)}
+  </group>
 }
 
 /** Safety berms (windrows) along both edges of the haul road and the turning loops, as on real haul roads. */
@@ -409,7 +418,7 @@ const DUMP_POSE = loopPose('crusher', .5)
 const ROM_BIN = (() => {
   const centre = haulRoadPoint(0)
   const inward = centre.clone().sub(DUMP_POSE.position).setY(0).normalize()
-  return DUMP_POSE.position.clone().addScaledVector(inward, 4.3).setY(centre.y + .3)
+  return DUMP_POSE.position.clone().addScaledVector(inward, 4.9).setY(centre.y + .3) // just inside the loop road
 })()
 const HOPPER = plantToWorld(-2.6, 2.4, 0)
 // Crushed-ore storage sits on its own raised pad outside the pit (beyond the rim, away from the
@@ -486,7 +495,11 @@ function OreHandling({ frame, activity }: { frame: Frame; activity: React.Mutabl
 
 /** Steel trestles holding the overland conveyor above the dump loop and the ground. */
 function ConveyorTrestles({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
-  const legs = React.useMemo(() => Array.from({ length: 5 }, (_, i) => from.clone().lerp(to, (i + 1) / 6)), [from, to])
+  const legs = React.useMemo(() => {
+    const crusher = haulRoadPoint(0)
+    return Array.from({ length: 7 }, (_, i) => from.clone().lerp(to, (i + 1) / 8))
+      .filter(top => Math.hypot(top.x - crusher.x, top.z - crusher.z) > 13.6) // keep the loop road clear
+  }, [from, to])
   return <group>{legs.map((top, i) => {
     const height = top.y - (PAD_TOP - 6)
     return <mesh key={i} position={[top.x, top.y - height / 2, top.z]}><boxGeometry args={[.45, height, .45]}/><meshStandardMaterial color="#c58a2b"/></mesh>

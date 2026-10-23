@@ -253,10 +253,10 @@ function ProcessingPlantLayer({ twins = [], moving = false, hideStorage = false 
       <circleGeometry args={[6.8, 32]}/>
       <meshStandardMaterial color="#61584b" roughness={1}/>
     </mesh>}
-    <mesh position={[-5.8, .2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    {!hideStorage && <mesh position={[-5.8, .2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <ringGeometry args={[4.4, 4.8, 32]}/>
       <meshBasicMaterial color="#e2c14f"/>
-    </mesh>
+    </mesh>}
   </group>
 }
 
