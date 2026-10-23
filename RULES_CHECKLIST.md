@@ -88,14 +88,17 @@ Planned scenarios: truck breakdown, road closure with rerouting, and reduced cru
 
 HT-01 breakdown gate verified on 2026-10-23: the running stand changed Ditto
 twin state, stopped only HT-01 at zero speed, preserved FIFO/resource progress,
-reduced first-hour throughput from 770.0 to 581.6 t/h, and reset without stale
-breakdown or blocked state.
+and reset without stale breakdown or blocked state. The current A4 two-way-lane
+fixture reduces the common returning-lane first hour from 770.0 to 691.0 t/h;
+the older 581.6 t/h shared-lane result is superseded.
 
 Final scenario integration gate verified on 2026-10-23 with
-`ademix/simulator/verify_scenarios.py`: baseline, truck breakdown, road
-restriction, and crusher slowdown all propagated through the frontend proxy,
-API, simulator, MQTT, and Eclipse Ditto. All 11 twins and every field consumed
-by the frontend were present; the final reset removed stale scenario state.
+`ademix/simulator/verify_scenarios.py`: fixed and Smart Dispatch were each combined
+with baseline, truck breakdown, road restriction and crusher slowdown through the
+frontend proxy, API, simulator, MQTT and Eclipse Ditto. All 11 twins and 141
+required fields/units were present; the final reset restored fixed/baseline without
+stale breakdown, blockage or standby state. Human visual acceptance and a clean
+Ubuntu run remain separate unchecked gates.
 
 ## Data and Assumptions
 

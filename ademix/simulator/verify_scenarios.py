@@ -185,6 +185,40 @@ def verify(base_url: str, timeout_s: float) -> None:
         )
         verify_contract(twins)
         results.append("crusher_slowdown: constrained at 495 t/h")
+
+        # Verify the dispatch policy is orthogonal to every operating condition. Each transition
+        # is observed only after Eclipse Ditto returns both the requested condition and the smart
+        # fleet allocation; a successful HTTP response alone is not sufficient evidence.
+        activate(base_url, "baseline")
+        set_dispatch(base_url, "smart")
+        smart_expectations = {
+            "baseline": (4, 4, 2),
+            "truck_breakdown": (4, 4, 1),
+            "road_closure": (8, 6, 0),
+            "crusher_slowdown": (3, 3, 3),
+        }
+        for scenario, (required, cycling, standby) in smart_expectations.items():
+            activate(base_url, scenario)
+            _, twins = wait_for(
+                base_url,
+                scenario,
+                lambda t, scenario=scenario, required=required, cycling=cycling, standby=standby: (
+                    value(t, "scenario-controller", "dispatch_policy") == "smart"
+                    and int(value(t, "scenario-controller", "trucks_required")) == required
+                    and int(value(t, "scenario-controller", "trucks_in_cycle")) == cycling
+                    and int(value(t, "scenario-controller", "trucks_standby")) == standby
+                    and sum(value(t, truck, "state") == "standby" for truck in TRUCKS) == standby
+                    and (
+                        scenario != "truck_breakdown"
+                        or value(t, "truck-01", "state") == "breakdown"
+                    )
+                ),
+                timeout_s,
+            )
+            verify_contract(twins)
+            results.append(
+                f"smart + {scenario}: required={required}, cycling={cycling}, standby={standby}"
+            )
     finally:
         set_dispatch(base_url, "fixed")
         activate(base_url, "baseline")

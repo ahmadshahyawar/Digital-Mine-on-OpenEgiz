@@ -233,6 +233,22 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — A5 combined release verification — 2026-10-23
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/a5-release-verification (from origin/codex/ademix 52e5f09)
+Task: verify the full fixed/smart × baseline/breakdown/road-restriction/crusher-slowdown matrix through
+  frontend proxy → API → simulator → MQTT → Eclipse Ditto → API, then reset cleanly and record release gates.
+Exact files: ademix/simulator/verify_scenarios.py; README.md; SUBMISSION.md; FINAL_TODO.md;
+  RULES_CHECKLIST.md; PROJECT_CONTEXT.md.
+Contract: no twin/API behavior change. Verification consumes the frozen A1–A4 contracts.
+Frontend ownership: no React/3D source or presentation file will be edited. Human visual approval remains
+  a named gate; automated checks will not be represented as human approval.
+Expected handoff: eight-state live results, clean-start/smoke/test/build results, remaining Ubuntu and human
+  visual gates, commit SHA and release-candidate integration instructions.
+```
+
 ### Handoff — Codex — A4 two-way road and breakdown consistency — 2026-10-23
 
 ```text

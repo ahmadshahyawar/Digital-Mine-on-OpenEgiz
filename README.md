@@ -81,16 +81,18 @@ sleep 3
 curl --fail http://localhost:8088/api/state
 ```
 
-Verify all four operating states through the frontend proxy, scenario API,
-MQTT, Eclipse Ditto, and the read API, including the exact frontend field
-contract and a clean reset back to baseline:
+Verify the complete fixed/smart × baseline/breakdown/road-restriction/crusher-slowdown
+matrix through the frontend proxy, scenario API, MQTT, Eclipse Ditto, and the read
+API, including the exact frontend field contract and a clean reset to fixed/baseline:
 
 ```bash
 python ademix/simulator/verify_scenarios.py
 ```
 
 The check fails unless `/api/state` reports `source: eclipse-ditto`; local demo
-mode therefore cannot be mistaken for an end-to-end OpenEgiz verification.
+mode therefore cannot be mistaken for an end-to-end OpenEgiz verification. Smart
+Dispatch must report 4/4/2 required/cycling/standby in baseline, 4/4/1 during a
+breakdown, 8/6/0 during the road restriction, and 3/3/3 during crusher slowdown.
 
 The state response must report `"source":"eclipse-ditto"` and include 11 twins in namespace `org.openegiz.ademix`.
 

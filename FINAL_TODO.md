@@ -32,9 +32,9 @@ The concrete two-person work split and cross-layer handoff sequence are in `TEAM
 
 ## P1 — Correctness and trustworthy numbers
 
-- [ ] **6. Run the existing simulation verification suite.** Codex — Verify.
+- [x] **6. Run the existing simulation verification suite.** Codex — Verified on the A5 candidate (Windows Docker/Linux containers).
   - Work: verify FIFO queues, exclusive loading/dumping, finite ROM capacity, complete truck lifecycle, interruption/recovery, non-negative inventory and mass conservation. Existing recorded total: 56 simulator-package plus 32 data-layer checks; rerun rather than treating that historical result as final evidence.
-  - Test: all relevant suites pass on the release SHA and in the built image; processed ore plus ROM plus payload equals opening stock plus extraction within documented numerical tolerance. Include direct scenario switches and clean reset. Save actual command output; explain any changed test count.
+  - Test: 72 simulator/API and 35 data checks pass locally; 72 pass in the built simulator image. Processed ore plus ROM plus payload equals opening stock plus extraction within documented numerical tolerance. Direct switches and clean reset are covered. Final Ubuntu evidence remains item 2.
 
 - [ ] **7. Reconcile physical formulas, units and comparison windows.** Codex with integrator — Verify/Fix.
   - Work: check 77 t payload, 6 min loading, 3.2 km one-way travel, 25 km/h baseline, 1 min dumping and assumed 900 t/h crusher capacity. Label approximately 22.36 min as the no-queue cycle; approximately 36 min is the recorded baseline cycle including queues. Distinguish projected, rolling, cumulative and steady-window metrics.
@@ -52,9 +52,9 @@ The concrete two-person work split and cross-layer handoff sequence are in `TEAM
   - Work: if justified inputs are available, distinguish loaded travel, empty travel, working, idling and engine-off use, including excavator idle state. Do not add idle consumption on top of a duty-cycle rate that already incorporates idle time.
   - Test: controlled state sequences integrate to independently calculated fuel totals; parked engine-off equipment has the documented rate; idle equipment uses the chosen idle rate. Record sources/assumptions and sensitivity. No measured fuel-saving claim without matching evidence.
 
-- [ ] **11. Align road behavior, geometry and documentation.** Codex + Claude coordinated — Fix/Verify.
+- [x] **11. Align road behavior, geometry and documentation.** Codex + Claude coordinated — Verified by A4 contract and A5 live gate.
   - Work: reconcile the two-way visual road with the model's single-lane blockage wording. Define which direction is blocked and how followers/opposing traffic react. Describe current restriction as reduced speed; no alternative route currently exists. Explain conceptual route scale and grade limits.
-  - Test: fail a truck during loaded and empty travel; verify the documented affected traffic stops, other permitted traffic behaves consistently, twin speed/progress matches the scene, towing clears the intended restriction and reset leaves no stale blockage. Observe approach, road and turning-loop clearances in close views.
+  - Test: automated hauling/returning failures verify same-direction blocking, opposing flow, twin speed/progress, towing and clean reset with zero mass error. Close-view visual clearance remains part of item 18's human acceptance.
 
 ## P1 — Demonstrate the existing decision features
 
