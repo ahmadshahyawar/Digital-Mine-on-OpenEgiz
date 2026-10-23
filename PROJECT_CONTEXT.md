@@ -254,6 +254,19 @@ Interfaces changed (additive): truck state `standby`; scenario-controller fields
 Expected handoff: commit SHAs, tests, comparison table, Codex request (verify_scenarios.py + docs).
 ```
 
+Handoff — Claude — Scenario C: Smart Dispatch — 2026-10-23
+
+- Commits on `claude/smart-dispatch`: `f41a51e` (simulator: engine.py, app.py, test_engine.py, compare_scenarios.py, SCENARIOS.md section 7), merge of `claude/road-shoulder` (wider road, breakdown shoulder; see its handoff), `08c9d25` (Layer 1 What-If panel: IngestionLayer.tsx, ingestion.css).
+- Rule: required fleet n = ceil(C_server × T_free / (77 t × 3600)) — 4 normal, 4 breakdown, 8 road restriction (all 6 cycle), 3 crusher slowdown. Surplus empty trucks park (`standby`) on a ready line at the face; the excavator, when binding, loads a parked truck rather than idle; parked trucks rejoin when a cycling truck is lost (breakdown, held behind a blockage), on a scenario change, or on `fixed`.
+- Model results (`compare_scenarios.py`, steady state hours 2–9): production identical in all four conditions; truck operating h per kt −33 % normal, −20 % breakdown, −50 % crusher slowdown, 0 % road restriction; wait at face 13.6 → 1.6 min. First-hour production after a breakdown equals the fixed fleet at all 12 trigger times. Synthetic model output, no fuel saving claimed.
+- Checks: `python -m unittest test_engine` 41 tests pass (7 new `DispatchTests`); `tsc -b` and Vite build pass; demo stand (ADEMIX_DEMO_MODE=1): `/api/dispatch` switches policy, 4 cycling / 2 parked appear in the panel and sensor table, breakdown with smart on releases one parked truck. Not run on the Docker/Ditto stand.
+- Interfaces (additive): truck state `standby`; scenario-controller `dispatch_policy`, `dispatch_description`, `trucks_required`, `trucks_in_cycle`, `trucks_standby`, `dispatch_reason`; mine-01 `truck_operating_h_per_kt`, `operating_fleet_utilization`; `POST /api/dispatch {"policy": "fixed"|"smart"}`; `/api/health` reports `dispatch`.
+- Request to Codex (simulator/data owner; TurkenGulzat approved Claude editing the simulator for this task):
+  1. Review the engine change; add a smart-dispatch step to `verify_scenarios.py` (POST /api/dispatch, check the new fields through Ditto) and run it on the Docker stand.
+  2. If the replay bundle should show Scenario C, add smart-dispatch logs and the new fields to `build_data_layer.py` / `ingestion.json`.
+  3. Integrator: mention Scenario C in `SUBMISSION.md` / `README.md` (how to activate: What-if panel → C; reset: A).
+- Known visual issue (not fixed): at the crusher loop junction, loop berm tubes cross the paved pad.
+
 ### Lock — Claude — truck-breakdown visualization — 2026-10-23
 
 ```text
