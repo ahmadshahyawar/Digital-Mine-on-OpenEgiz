@@ -237,7 +237,7 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ```text
 Owner: Ahmad + Codex
-Status: implementation and clean Windows Docker/Linux-container verification complete; ready for integration
+Status: integrated and verified on codex/ademix; A5 work lock released
 Branch: codex/a5-release-verification (from origin/codex/ademix 52e5f09)
 Implementation commit: 2711e6e
 Exact files: ademix/simulator/verify_scenarios.py; README.md; SUBMISSION.md; FINAL_TODO.md;
@@ -261,8 +261,9 @@ Clarification: an additional attempt to discover tests inside the lean productio
   product test failure; the repository suite passed and the production image passed the official smoke test.
 Remaining gates: native clean Ubuntu 24.04 AMD64 rehearsal and Team human visual acceptance are unverified;
   presentation reconciliation is intentionally deferred. Do not merge to main until those gates are accepted.
-Integration: push this feature branch, fast-forward it into codex/ademix, rerun combined checks and push only
-  codex/ademix. Main remains untouched.
+Integration: feature branch pushed, then fast-forwarded into codex/ademix after a final fetch confirmed no
+  newer Professor/Claude handoff. The combined branch again passed 72 simulator/API tests, 35 data tests and
+  the production frontend build. Push only codex/ademix. Main remains untouched.
 ```
 
 ### Handoff — Codex — A4 two-way road and breakdown consistency — 2026-10-23
