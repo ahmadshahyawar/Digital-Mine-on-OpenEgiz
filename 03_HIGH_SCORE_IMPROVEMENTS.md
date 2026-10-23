@@ -1,15 +1,15 @@
 # 03 — High-score improvements before final examination
 
-Purpose: strengthen the parts of the completed mine that the rubric rewards most before J1–J8 begin. Ahmad + Codex own this entire C phase. Codex may prepare nonvisual contracts while Professor + Claude complete B1–B6, but Codex begins C-phase frontend work only after B6 is integrated. These tasks do not replace the final examination in `04_AI_JUDGE_READINESS.md`.
+Purpose: strengthen the parts of the completed mine that the rubric rewards most before J1–J8 begin. Professor + Claude own the user-facing C1–C5 implementation after B6 is accepted and integrated. Ahmad + Codex own backend/data contracts, evidence, automated backend checks and release integration. These tasks do not replace the final examination in `04_AI_JUDGE_READINESS.md`.
 
 No task can guarantee a perfect score. The goal is to give the judges strong, immediate evidence for level 4 while protecting the stable OpenEgiz path. Do not add a second loading face, alternate road, new simulation service or unrelated dashboard during this phase.
 
 ## Ownership and sequence
 
-- **Ahmad + Codex own C1–C6 completely**, including their limited frontend work, integration, tests and evidence.
-- **Professor + Claude own B1–B6 only** and stop after the accepted B6 handoff.
-- While B work is active, Codex may prepare C1/C4 data contracts without editing React, CSS, 3D or presentation files. After B6 is integrated, ownership of the exact frontend paths needed for C transfers to Ahmad + Codex.
-- Use a focused `codex/<feature>` branch for each C task and integrate one accepted task at a time through `origin/codex/ademix`.
+- **Professor + Claude own the frontend/3D implementation and visual acceptance for C1–C5** after B6 is accepted and integrated.
+- **Ahmad + Codex own simulator/API meaning, C1/C4 contracts, generated evidence, backend/data tests and release integration.**
+- While B work is active, Codex may prepare nonvisual contracts without editing Claude-owned frontend paths. After B6, Claude continues to own the exact frontend paths needed for C1–C5; Codex does not edit them concurrently.
+- Use a focused `claude/<feature>` branch for each C task and integrate one accepted task at a time through `origin/codex/ademix`.
 - Required order: C1 → C2 → C3 → C4 → C5. C6 is optional and begins only when C1–C5 pass and sufficient time remains. J1–J8 always remain last.
 
 ## C1 — Make the mine model and relationships inspectable
@@ -18,7 +18,7 @@ Rubric target: **Mine model — 25 points**.
 
 Goal: show that the submission is a connected operational model, not eleven unrelated objects.
 
-- define a small machine-readable relationship contract for the existing twins;
+- consume the existing machine-readable relationship contract for the twins; request changes through a handoff rather than redefining it;
 - preserve the current `_parents` hierarchy and add only truthful operational links: excavator loads trucks, trucks travel on the road, trucks deliver to the crusher, crusher processes mine ore, and the scenario controller changes operating conditions/policy;
 - document relationship names and direction, and verify every referenced twin exists.
 - add an optional **Mine model** view showing the mine parent, five operational twin types, six truck instances and the material/control relationships;
@@ -79,7 +79,7 @@ Rubric target: **Behavioral credibility — 20 points**.
 
 Goal: let a judge see why the numbers are credible and where their limits are without reading all source files first.
 
-- freeze a concise truth contract from existing verified evidence: source/assumption category, units, principal formula, mass-balance status, observed rolling value, projected capacity and known limitation;
+- consume the existing concise truth contract: source/assumption category, units, principal formula, mass-balance status, observed rolling value, projected capacity and known limitation;
 - do not add unsupported validation, accuracy or site-performance claims.
 - add an optional **Why trust this?** section to the Decision workspace;
 - show the material-balance check, model constraint/formula, key sourced parameters, team assumptions and the meaning of synthetic telemetry;
@@ -140,4 +140,4 @@ Pass test:
 
 ## Completion gate
 
-When C1–C5 pass, record commit SHAs, tests, screenshots, limitations and skipped C6 status in `PROJECT_CONTEXT.md`. Freeze the integrated candidate. Only then begin `04_AI_JUDGE_READINESS.md`.
+When C1–C5 pass, Professor + Claude hand off commit SHAs, frontend build results, screenshots, limitations and visual acceptance. Ahmad + Codex integrate, run backend/data/live checks and record the combined result plus skipped C6 status in `PROJECT_CONTEXT.md`. Freeze the integrated candidate. Only then begin `04_AI_JUDGE_READINESS.md`.

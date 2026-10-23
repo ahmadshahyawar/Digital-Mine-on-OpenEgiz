@@ -5,10 +5,10 @@ This page is for Ahmad, Professor, Codex and Claude. The AI agents manage the te
 ## Who does what
 
 - **Ahmad + Codex:** simulation, calculations, digital twins, MQTT/Ditto, data evidence, backend tests and release integration.
-- **Professor + Claude:** 3D mine, interface, charts, explanations, animations and visual checks.
+- **Professor + Claude:** B1–B6, then the user-facing C1–C5 mine/Decision views, 3D effects, explanations, animations and visual checks.
 - Both sides read the same project context and understand the complete mine.
 
-Professor + Claude's assigned implementation ends after B6. Ahmad + Codex own all C tasks; Codex may prepare nonvisual C contracts during B work and begins C frontend edits only after B6 is accepted and integrated.
+After B6 is accepted and integrated, Professor + Claude continue with the frontend/3D implementation of C1–C5. Ahmad + Codex keep ownership of backend/data contracts, evidence, automated backend checks and release integration. Neither AI edits the same frontend paths concurrently.
 
 ## The branch that combines both sides
 

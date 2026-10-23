@@ -233,6 +233,23 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Handoff — Team — Professor owns B1–B6 and visible C1–C5 — 2026-10-24
+
+```text
+Latest ownership decision: Professor + Claude complete B1–B6 and then the user-facing/frontend/3D work for
+  C1–C5, one accepted and integrated task at a time.
+Ahmad + Codex retain simulator/API meaning, existing C1 relationship and C4 model-truth contracts, generated
+  evidence, backend/data tests and release integration. Codex does not edit Claude's C frontend paths concurrently.
+Sequence: B1 → B2 → B3 → B4 → B5 → B6 → C1 → C2 → C3 → C4 → C5.
+C inputs: C1 and C4 nonvisual contracts are already integrated and authoritative. Claude requests any missing
+  field or contract change through a handoff rather than altering backend meaning.
+Score guard: no longer map, decorative workers/buildings, second route or unrelated dashboard. The required
+  judge journey and software-rendering reliability take priority.
+Final gate: Ahmad + Codex integrate and run backend/data suites, frontend build, live smoke, scenario matrix
+  and reset. J1–J8 remain last. C6/A9 stays optional and unassigned until the required candidate is stable.
+Documentation branch: codex/professor-b-c-plan. No application behavior or completed-task claim is added here.
+```
+
 ### Handoff — Codex — score-first execution order — 2026-10-24
 
 ```text

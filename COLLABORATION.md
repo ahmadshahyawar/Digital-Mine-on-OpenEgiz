@@ -19,7 +19,7 @@ Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work be
 
 ### C-phase ownership transfer
 
-Professor + Claude own frontend/3D work only through B1–B6. Codex may prepare nonvisual C contracts while B work continues, without touching Claude-owned frontend paths. After B6 is accepted and integrated, the Team transfers the exact frontend/3D paths required by C1–C6 to Ahmad + Codex. From that point, Professor + Claude have no C implementation assignment, and Codex must preserve the accepted B experience while adding the score-focused C views. This staged transfer prevents concurrent edits to the same frontend files.
+Professor + Claude own frontend/3D work through B1–B6 and continue with the user-facing implementation of C1–C5 after B6 is accepted and integrated. Codex may prepare nonvisual C contracts while B work continues without touching Claude-owned frontend paths. Ahmad + Codex retain simulator/API meaning, generated evidence, backend/data tests and release integration. C6/A9 is optional and remains unassigned until the required candidate is stable. This split prevents concurrent edits to the same frontend files.
 
 For cross-layer work, agree on the twin/API contract before parallel implementation. Ahmad + Codex own field meaning, units, allowed values, scenario/reset behavior and backend fixtures. Professor + Claude own presentation and may request contract changes before it is frozen. After freeze, neither side silently renames, duplicates or reinterprets a field.
 
