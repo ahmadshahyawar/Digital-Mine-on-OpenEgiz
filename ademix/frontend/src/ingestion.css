@@ -41,3 +41,10 @@
   .ig-bar { flex-wrap: wrap; left: 16px; right: 16px; }
   .ig-key { display: none; }
 }
+.ig-mode { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; padding: 4px 10px; border-radius: 999px; font-size: 11px; letter-spacing: .08em; background: var(--ig-glass); text-shadow: none; }
+.ig-mode i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.ig-mode.live { color: #b9ffd7; border: 1px solid #38ef9d; } .ig-mode.live i { background: #38ef9d; box-shadow: 0 0 8px #38ef9d; }
+.ig-mode.replay { color: #f3d9a4; border: 1px solid #f0b85a; } .ig-mode.replay i { background: #f0b85a; }
+.ig-live-note { color: #b9ffd7; flex: 1; }
+@media (prefers-reduced-motion: no-preference) { .ig-mode.live i { animation: ig-pulse 1.6s ease-in-out infinite; } }
+@keyframes ig-pulse { 50% { opacity: .35; } }

@@ -180,6 +180,37 @@ export function IngestionLayer() {
   const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['specs', 'sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
+  // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
+  const [live, setLive] = React.useState(false)
+  const [, setTick] = React.useState(0)
+  const liveState = React.useRef<{ prev: Record<string, unknown>; curr: Record<string, unknown>; at: number }>({ prev: {}, curr: {}, at: 0 })
+
+  React.useEffect(() => {
+    let stopped = false
+    const poll = async () => {
+      try {
+        const response = await fetch('/api/state', { cache: 'no-store' })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const body = await response.json()
+        if (body.source !== 'eclipse-ditto' || !Array.isArray(body.twins) || !body.twins.length) throw new Error('not live')
+        const flat: Record<string, unknown> = {}
+        for (const twin of body.twins as { thingId: string; features?: Record<string, { properties?: { value?: unknown } }> }[]) {
+          const name = String(twin.thingId).split(':')[1]
+          for (const [feature, value] of Object.entries(twin.features ?? {})) flat[`${name}.${feature}`] = value?.properties?.value
+        }
+        if (stopped) return
+        const previous = liveState.current.curr
+        liveState.current = { prev: Object.keys(previous).length ? previous : flat, curr: flat, at: performance.now() }
+        setLive(true)
+        setTick(t => t + 1)
+      } catch {
+        if (!stopped) setLive(false)
+      }
+    }
+    poll()
+    const timer = window.setInterval(poll, 2000)
+    return () => { stopped = true; window.clearInterval(timer) }
+  }, [])
 
   React.useEffect(() => {
     fetch('/data/ingestion.json').then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
@@ -191,27 +222,36 @@ export function IngestionLayer() {
 
   const index = (key: string) => log.columns.indexOf(key)
   const current = log.rows[Math.min(row, log.rows.length - 1)]
-  const frame: Frame = {
-    at: key => current[index(key)],
-    atMix: key => {
-      const i = Math.floor(head.current), f = head.current - i
-      const a = num(log.rows[i]?.[index(key)]), b = num(log.rows[Math.min(i + 1, log.rows.length - 1)]?.[index(key)])
-      return Math.abs(b - a) > 60 ? (f < .5 ? a : b) : a + (b - a) * f
-    },
-  }
+  const mix = (a: number, b: number, f: number) => Math.abs(b - a) > 60 ? (f < .5 ? a : b) : a + (b - a) * f
+  const frame: Frame = live
+    ? {
+      at: key => (liveState.current.curr[key] ?? null) as string | number | null,
+      atMix: key => {
+        const { prev, curr, at } = liveState.current
+        return mix(num(prev[key] ?? curr[key]), num(curr[key]), Math.min(1, (performance.now() - at) / 2000))
+      },
+    }
+    : {
+      at: key => current[index(key)],
+      atMix: key => {
+        const i = Math.floor(head.current), f = head.current - i
+        return mix(num(log.rows[i]?.[index(key)]), num(log.rows[Math.min(i + 1, log.rows.length - 1)]?.[index(key)]), f)
+      },
+    }
   const specsOf = (asset: string) => {
     const all = bundle.equipment.flatMap(e => e.specs)
     return SPEC_PICK[asset].map(id => all.find(s => s.parameter_id === id)!).filter(Boolean)
   }
   const toggle = (layer: Layer) => setLayers(prev => { const next = new Set(prev); next.has(layer) ? next.delete(layer) : next.add(layer); return next })
   const seek = (value: number) => { head.current = value; setRow(value) }
-  const hours = num(current[0]) / 3600
+  const hours = (live ? num(frame.at('mine-01.sim_time_s')) : num(current[0])) / 3600
+  const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
   return <main className="ig-shell">
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
         <TerrainStage showRoads showPlant moving twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
-        <Playhead playing={playing} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
+        <Playhead playing={playing && !live} rows={log.rows.length} head={head} onRow={r => r !== row && setRow(r)}/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks}/>)}
         <Excavator frame={frame} layers={layers} specs={specsOf('Excavator EX-01')}/>
         <RomBin frame={frame} layers={layers} specs={specsOf('Primary crusher CR-01')}/>
@@ -224,6 +264,9 @@ export function IngestionLayer() {
     <header className="ig-title">
       <span>LAYER 1 · DATA &amp; ASSET INGESTION</span>
       <h1>North Pit</h1>
+      <div id="ig-mode" className={`ig-mode ${live ? 'live' : 'replay'}`} role="status">
+        <i/>{live ? 'LIVE · Eclipse Ditto twins · every 2 s' : 'REPLAY · recorded synthetic log (stand offline)'}
+      </div>
     </header>
 
     <nav className="ig-layers" aria-label="Scene layers">
@@ -236,12 +279,16 @@ export function IngestionLayer() {
     </div>
 
     <footer className="ig-bar">
-      <button id="ig-play" className="ig-play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? '❚❚' : '▶'}</button>
-      <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)} aria-label="Telemetry log">
-        {Object.entries(bundle.logs).map(([id, l]) => <option key={id} value={id}>{l.label}</option>)}
-      </select>
-      <input id="ig-time" type="range" min={0} max={log.rows.length - 1} value={row} onChange={e => seek(Number(e.target.value))} aria-label="Replay time"/>
-      <span className="ig-clock">{hours.toFixed(2)} h · {hours < 4 ? 'normal operations' : log.label}</span>
+      {live
+        ? <span className="ig-clock ig-live-note">Live from OpenEgiz · simulated time {hours.toFixed(2)} h · {bundle.logs[liveScenario]?.label ?? liveScenario}</span>
+        : <>
+          <button id="ig-play" className="ig-play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? '❚❚' : '▶'}</button>
+          <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)} aria-label="Telemetry log">
+            {Object.entries(bundle.logs).map(([id, l]) => <option key={id} value={id}>{l.label}</option>)}
+          </select>
+          <input id="ig-time" type="range" min={0} max={log.rows.length - 1} value={row} onChange={e => seek(Number(e.target.value))} aria-label="Replay time"/>
+          <span className="ig-clock">{hours.toFixed(2)} h · {hours < 4 ? 'normal operations' : log.label}</span>
+        </>}
       <span className="ig-read">{num(frame.at('mine-01.throughput_tph')).toFixed(0)} <small>t/h</small></span>
       <span className="ig-read">{num(frame.at('crusher-01.rom_inventory_t')).toFixed(0)} <small>t ROM</small></span>
       <span className="ig-read">{String(frame.at('road-main.state'))} <small>road</small></span>
