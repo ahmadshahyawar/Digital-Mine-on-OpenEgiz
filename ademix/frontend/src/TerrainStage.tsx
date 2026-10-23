@@ -7,8 +7,72 @@ import type { Twin } from './MineScene'
 
 const WIDTH = 150
 const DEPTH = 112
-const SEGMENTS = 128
+const SEGMENTS = 192
 const twinValue = (twin: Twin | undefined, key: string, fallback: string | number = 0) => twin?.features?.[key]?.properties?.value ?? fallback
+
+/**
+ * Pit design values: ILLUSTRATIVE ASSUMPTIONS FOR A CONCEPTUAL PROJECT — NOT APPROVED KAZAKHSTAN DESIGN VALUES.
+ * Kazakhstan's industrial-safety rules leave bench height, berm and working-platform widths and slope angles to
+ * the site's project documentation; a qualified mining/geotechnical engineer must set and verify them.
+ */
+export const PIT_DESIGN = {
+  metresPerUnit: 14.9, // scene scale: the 3.2 km haul route spans about 215 scene units
+  benchHeightM: 10,
+  benchFaceAngleDeg: 70,
+  workingBenchWidthM: 20,
+  overallSlopeDeg: 45,
+  workingBenches: 2, // the lowest benches are active working levels with 20 m platforms
+}
+const CREST_RADIUS = .91
+const CREST_ELEVATION = 4.6
+const FLOOR_ELEVATION = -23.5
+
+/**
+ * Bench layout from the crest inward (scene units). The 45° overall slope with 10 m benches at 70° leaves
+ * a catch berm of 10/tan45° − 10/tan70° ≈ 6.4 m on final-wall benches; the berm width itself is to be set by
+ * project design and is derived here only so the wall keeps the stated overall slope.
+ */
+export const PIT_BENCHES = (() => {
+  const { metresPerUnit: m, benchHeightM, benchFaceAngleDeg, workingBenchWidthM, overallSlopeDeg, workingBenches } = PIT_DESIGN
+  const h = benchHeightM / m
+  const faceRun = h / Math.tan(THREE.MathUtils.degToRad(benchFaceAngleDeg))
+  const bermRun = h / Math.tan(THREE.MathUtils.degToRad(overallSlopeDeg)) - faceRun
+  const workingRun = workingBenchWidthM / m
+  const count = Math.ceil((CREST_ELEVATION - FLOOR_ELEVATION) / h)
+  const benches: { crestD: number; toeD: number; top: number; bottom: number; flat: number; working: boolean }[] = []
+  let d = 0
+  let top = CREST_ELEVATION
+  for (let i = 0; i < count; i++) {
+    const bottom = Math.max(FLOOR_ELEVATION, top - h)
+    const face = faceRun * (top - bottom) / h
+    const working = i >= count - 1 - workingBenches && i < count - 1
+    const flat = i === count - 1 ? 0 : working ? workingRun : bermRun
+    benches.push({ crestD: d, toeD: d + face, top, bottom, flat, working })
+    d += face + flat
+    top = bottom
+  }
+  return { benches, h, faceRun, bermRun, workingRun, floorD: d, catchBermM: bermRun * m }
+})()
+
+/** Drop below the crest at a horizontal inward distance from the crest line (scene units). */
+function wallDrop(inward: number) {
+  for (const bench of PIT_BENCHES.benches) {
+    if (inward <= bench.toeD) return CREST_ELEVATION - bench.top + (inward - bench.crestD) / Math.max(bench.toeD - bench.crestD, 1e-6) * (bench.top - bench.bottom)
+    if (inward <= bench.toeD + bench.flat) return CREST_ELEVATION - bench.bottom
+  }
+  return CREST_ELEVATION - FLOOR_ELEVATION
+}
+
+const pitVariation = (angle: number) => Math.sin(angle * 3 + .7) * .018 + Math.sin(angle * 7) * .009
+const pitRadiusScale = (angle: number) => 1 / Math.sqrt((Math.cos(angle) / 59) ** 2 + (Math.sin(angle) / 41) ** 2)
+const crestElevation = (angle: number) => CREST_ELEVATION + Math.sin(angle * 4) * .55
+
+/** Point on the pit wall at polar angle and inward distance from the crest, with its elevation. */
+export function pitWallPoint(angle: number, inward: number) {
+  const polar = (CREST_RADIUS - pitVariation(angle)) * pitRadiusScale(angle) - inward
+  const elevation = Math.max(FLOOR_ELEVATION, crestElevation(angle) - wallDrop(inward))
+  return new THREE.Vector3(Math.cos(angle) * polar, elevation, Math.sin(angle) * polar)
+}
 
 function carveEngineeredPit(heights: Float32Array, options: { xSegments: number; ySegments: number; xSize: number; ySize: number }) {
   const columns = options.xSegments + 1
@@ -25,16 +89,13 @@ function carveEngineeredPit(heights: Float32Array, options: { xSegments: number;
       const radius = ellipticalRadius + geologicalVariation
       const original = heights[index]
 
-      if (radius < .14) {
-        heights[index] = -23.5 + Math.sin(x * .16) * .22 + Math.cos(z * .2) * .18
-      } else if (radius < .91) {
-        const normalized = (radius - .14) / .77
-        const scaled = normalized * 6
-        const level = Math.min(5, Math.floor(scaled))
-        const withinLevel = scaled - level
-        const benchElevation = -22 + level * 4.35
-        const wallProgress = withinLevel < .42 ? 0 : THREE.MathUtils.smoothstep(withinLevel, .42, 1)
-        heights[index] = benchElevation + wallProgress * 4.35
+      if (radius < CREST_RADIUS) {
+        // Pit wall from the illustrative design values: 10 m benches at 70°, 45° overall, 20 m working benches.
+        const inward = (CREST_RADIUS - radius) * pitRadiusScale(angle)
+        const wall = crestElevation(angle) - wallDrop(inward)
+        heights[index] = wall <= FLOOR_ELEVATION
+          ? FLOOR_ELEVATION + Math.sin(x * .16) * .22 + Math.cos(z * .2) * .18
+          : wall
       } else if (radius < 1.02) {
         const blend = THREE.MathUtils.smoothstep(radius, .91, 1.02)
         const rim = 4.6 + Math.sin(angle * 4) * .55
@@ -268,6 +329,34 @@ useGLTF.preload('/models/plant-conveyor.glb')
 useGLTF.preload('/models/plant-conveyor-slope.glb')
 useGLTF.preload('/models/plant-stairs.glb')
 
+/** Bench crest and toe lines on the pit wall, kept off the haul road where it crosses the benches. */
+function BenchLines() {
+  const { crests, toes } = React.useMemo(() => {
+    const road = haulRoadPoints()
+    const steps = 360
+    const build = (pick: (b: typeof PIT_BENCHES.benches[number]) => number) => {
+      const positions: number[] = []
+      for (const bench of PIT_BENCHES.benches.slice(1)) {
+        const inward = pick(bench)
+        const points = Array.from({ length: steps + 1 }, (_, k) => pitWallPoint(k / steps * Math.PI * 2, inward))
+        const visible = points.map(pt => pt.y > FLOOR_ELEVATION + .05 && road.every(r => Math.hypot(pt.x - r.x, pt.z - r.z) > 5.2))
+        for (let k = 0; k < steps; k++) {
+          if (!visible[k] || !visible[k + 1]) continue
+          positions.push(points[k].x, points[k].y + .12, points[k].z, points[k + 1].x, points[k + 1].y + .12, points[k + 1].z)
+        }
+      }
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+      return geometry
+    }
+    return { crests: build(b => b.crestD), toes: build(b => b.toeD) }
+  }, [])
+  return <group>
+    <lineSegments geometry={crests}><lineBasicMaterial color="#d8b98e" transparent opacity={.75}/></lineSegments>
+    <lineSegments geometry={toes}><lineBasicMaterial color="#5b4433" transparent opacity={.8}/></lineSegments>
+  </group>
+}
+
 export function TerrainStage({ showRoads = false, showEquipment = false, showPlant = false, moving = false, twins = [], hideStorage = false }: { showRoads?: boolean; showEquipment?: boolean; showPlant?: boolean; moving?: boolean; twins?: Twin[]; hideStorage?: boolean }) {
   const terrain = React.useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, metalness: 0, flatShading: false })
@@ -298,6 +387,7 @@ export function TerrainStage({ showRoads = false, showEquipment = false, showPla
     <hemisphereLight args={['#dbe8e5', '#49382b', 1.55]}/>
     <directionalLight position={[-45, 70, 35]} intensity={2.25}/>
     <primitive object={terrain} position={[0, 0, 0]}/>
+    <BenchLines/>
     {showRoads && <HaulRoadLayer/>}
     {showEquipment && <EquipmentLayer twins={twins} moving={moving}/>}
     {showPlant && <ProcessingPlantLayer twins={twins} moving={moving} hideStorage={hideStorage}/>}

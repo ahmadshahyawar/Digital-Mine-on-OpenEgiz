@@ -94,3 +94,5 @@
 @media (max-width: 760px) { .ig-stack { left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 40vh; } }
 .ig-gauges .ig-val small { text-transform: none; }
 .ig-title, .ig-layers, .ig-bar, .ig-key { z-index: 40; }
+.ig-pit-card small { display: block; margin-top: 4px; white-space: normal; font-size: 10px; line-height: 1.4; color: #f3d9a4; }
+.ig-pit-card em { white-space: normal; text-align: right; }

@@ -2,7 +2,7 @@ import React from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
-import { TerrainStage, haulRoadPoint } from './TerrainStage'
+import { PIT_BENCHES, PIT_DESIGN, TerrainStage, haulRoadPoint, pitWallPoint } from './TerrainStage'
 import './ingestion.css'
 
 // Layer 1 · Data & Asset Ingestion: a full-screen 3D scene. Equipment specifications sit on the
@@ -623,6 +623,23 @@ function SafetyScene({ loopSpeed }: { loopSpeed: number }) {
   </group>
 }
 
+/** Pit-wall design values shown in the scene, labelled as illustrative assumptions. */
+function PitDesignCard() {
+  const rows: [string, string][] = [
+    ['Bench height', `${PIT_DESIGN.benchHeightM} m`],
+    ['Bench face angle', `${PIT_DESIGN.benchFaceAngleDeg}°`],
+    ['Working bench width', `${PIT_DESIGN.workingBenchWidthM} m (lowest ${PIT_DESIGN.workingBenches})`],
+    ['Overall pit slope', `${PIT_DESIGN.overallSlopeDeg}°`],
+    ['Catch berm', `by project design (≈${PIT_BENCHES.catchBermM.toFixed(1)} m implied)`],
+    ['Benches drawn', `${PIT_BENCHES.benches.length}`],
+  ]
+  return <div className="ig-card ig-pit-card">
+    <b>Pit design · illustrative</b>
+    {rows.map(([label, v]) => <span key={label}><i style={{ background: STATUS_COLOR.assumption }}/>{label}<em>{v}</em></span>)}
+    <small>Illustrative assumptions for a conceptual project, not approved Kazakhstan design values. Bench geometry must be set in the site's project documentation and verified by a qualified mining/geotechnical engineer.</small>
+  </div>
+}
+
 function SpecsPanel({ specsOf }: { specsOf: (asset: string) => Spec[] }) {
   return <section className="ig-panel ig-inline" aria-label="Fixed specifications">
     <h2>Fixed specifications</h2>
@@ -631,6 +648,7 @@ function SpecsPanel({ specsOf }: { specsOf: (asset: string) => Spec[] }) {
     <SpecCard title="Excavator EX-01" specs={specsOf('Excavator EX-01')}/>
     <SpecCard title="Primary crusher CR-01" specs={specsOf('Primary crusher CR-01')}/>
     <SpecCard title="Main haul road" specs={specsOf('Main haul road')}/>
+    <PitDesignCard/>
   </section>
 }
 
@@ -778,6 +796,13 @@ function SensorPanel({ frame, live }: { frame: Frame; live: boolean }) {
     </div>
     <p className="ig-foot-note">Fuel % is a synthetic display signal.</p>
   </section>
+}
+
+function PitWallLabel() {
+  const at = React.useMemo(() => pitWallPoint(2.2, PIT_BENCHES.floorD * .45).add(new THREE.Vector3(0, 2.5, 0)), [])
+  return <Html center distanceFactor={115} position={at} zIndexRange={[20, 0]}>
+    <div className="ig-node"><b>Pit wall · illustrative</b><span>{PIT_DESIGN.benchHeightM} m benches · {PIT_DESIGN.benchFaceAngleDeg}° faces · {PIT_DESIGN.overallSlopeDeg}° overall</span></div>
+  </Html>
 }
 
 function Topology({ specs }: { specs: Spec[] }) {
@@ -979,6 +1004,7 @@ export function IngestionLayer() {
         {layers.has('weather') && <WeatherScene weather={weather}/>}
         {layers.has('safety') && <SafetyScene loopSpeed={reg('loop_speed_kmh')}/>}
         {layers.has('topology') && <Topology specs={specsOf('Main haul road')}/>}
+        {layers.has('topology') && <PitWallLabel/>}
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
     </div>
