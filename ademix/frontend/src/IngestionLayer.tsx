@@ -19,7 +19,7 @@ type Bundle = {
   weather: { note: string; columns: string[]; rows: number[][] }
 }
 type Weather = Record<string, number>
-type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
+type Layer = 'whatif' | 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
 type Frame = {
   at: (key: string) => string | number | null
   atMix: (key: string) => number
@@ -29,7 +29,7 @@ type Frame = {
 }
 type Getter = (key: string) => unknown
 
-const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
+const LAYERS: [Layer, string][] = [['whatif', 'What-if'], ['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
 const STATUS_COLOR: Record<string, string> = {
   sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
   synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b', external_reference: '#5ec8f2',
@@ -37,6 +37,7 @@ const STATUS_COLOR: Record<string, string> = {
 const TRUCK_COLOR: Record<string, string> = {
   hauling: '#38ef9d', returning: '#4fd1c5', loading: '#ffc246', dumping: '#ffc246',
   queued_at_excavator: '#f0b85a', queued_at_crusher: '#f0b85a', blocked: '#ff9f2e', breakdown: '#ff5149',
+  standby: '#8da2b8',
 }
 const HUB = new THREE.Vector3(0, 40, 0)
 const SPEC_PICK: Record<string, string[]> = {
@@ -79,7 +80,10 @@ function SpecCard({ title, specs }: { title: string; specs: Spec[] }) {
 // Right-hand traffic: every truck keeps right of its direction of travel, so empty trucks entering the
 // pit use the inner lane and loaded trucks leaving use the outer lane; they never meet head-on.
 const LANE_OFFSET = 2.1
-const SHOULDER_OFFSET = 4.6
+const SHOULDER_OFFSET = 5.1 // centre of a truck parked on the shoulder, clear of its lane
+const PULLED_OVER_OFFSET = 3.7 // pulled to the edge but still over the lane line while the road is restricted
+const ROAD_HALF_WIDTH = 6.8
+const LOOP_HALF_WIDTH = 4.4
 const QUEUE_SPACING_PCT = 3.6 // about one truck length plus a gap along the ramp
 const LOOP_PCT = 8 // the last 8 % of the route at each end runs through the turning loop
 
@@ -139,6 +143,8 @@ function circuitPosition(state: string, pct: number, heading: number, rank: numb
   if (state === 'dumping') return 1
   if (state === 'queued_at_crusher') return (100 - LOOP_PCT - rank * QUEUE_SPACING_PCT) / 100
   if (state === 'queued_at_excavator') return 1 + (100 - (LOOP_PCT + rank * QUEUE_SPACING_PCT)) / 100
+  // Smart dispatch ready line: parked empty on the inbound shoulder before the face loop (moved aside below).
+  if (state === 'standby') return 1 + (100 - (LOOP_PCT + (rank + .5) * QUEUE_SPACING_PCT)) / 100
   const held = state === 'blocked' ? pct - heading * QUEUE_SPACING_PCT * (rank + .6) : pct
   return heading > 0 ? held / 100 : 1 + (100 - held) / 100
 }
@@ -162,7 +168,7 @@ function circuitPose(s: number) {
   return lanePose(pct, -1, LANE_OFFSET) // inner lane, empty
 }
 
-const WAITING = new Set(['queued_at_excavator', 'queued_at_crusher', 'blocked'])
+const WAITING = new Set(['queued_at_excavator', 'queued_at_crusher', 'blocked', 'standby'])
 type Queues = Record<string, number[]>
 
 /** Updates first-come-first-served queues from one snapshot and returns each truck's place in its queue. */
@@ -215,6 +221,7 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
   const heading: 1 | -1 = num(frame.at(`${id}.heading`)) >= 0 ? 1 : -1
   const shown = React.useRef<number | null>(null)
   const velocity = React.useRef(0) // circuit units per real second
+  const pullOver = React.useRef(0) // extra sideways offset towards the shoulder while broken down or parked
   useFrame((_, delta) => {
     if (!group.current) return
     const dt = Math.min(delta, .1)
@@ -266,10 +273,14 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
       load.current.position.copy(at)
       load.current.rotation.z = tilt
     }
-    // Stops in its lane while it blocks the road, then is towed onto the shoulder.
-    const pose = state === 'breakdown' && !blockageActive
-      ? lanePose(frame.atMix(`${id}.route_progress_pct`), heading, SHOULDER_OFFSET)
-      : circuitPose(shown.current)
+    // A broken-down truck pulls to the right-hand edge. While the simulator reports the road restricted it
+    // still overhangs its lane; once the road reopens it sits fully on the shoulder.
+    const pose = circuitPose(shown.current)
+    if (state === 'breakdown' || state === 'standby') {
+      const wanted = (state === 'breakdown' && blockageActive ? PULLED_OVER_OFFSET : SHOULDER_OFFSET) - LANE_OFFSET
+      pullOver.current += (wanted - pullOver.current) * Math.min(1, dt * 1.2)
+    } else pullOver.current += (0 - pullOver.current) * Math.min(1, dt * 1.2)
+    if (Math.abs(pullOver.current) > 1e-3) pose.position.add(new THREE.Vector3(Math.sin(pose.yaw), 0, Math.cos(pose.yaw)).multiplyScalar(pullOver.current))
     group.current.position.copy(pose.position).add(new THREE.Vector3(0, .38, 0))
     group.current.rotation.y = pose.yaw
     positions.current[index] = group.current.position.clone()
@@ -316,14 +327,14 @@ function LoopRoads() {
       geometry.computeVertexNormals()
       return geometry
     }
-    return { surface: build(3.4, .26), edge: build(3.55, .24) }
+    return { surface: build(LOOP_HALF_WIDTH, .26), edge: build(LOOP_HALF_WIDTH + .15, .24) }
   }), [])
   const rings = React.useMemo(() => [{ centre: haulRoadPoint(1), radius: 7.3 }, { centre: haulRoadPoint(0), radius: 9.6 }], [])
   return <group>
     {rings.map(({ centre, radius }, i) => <group key={`ring-${i}`} position={centre.clone().add(new THREE.Vector3(0, .3, 0))} rotation={[-Math.PI / 2, 0, 0]}>
-      <mesh><ringGeometry args={[radius - 3.55, radius + 3.55, 72]}/><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}
+      <mesh><ringGeometry args={[radius - LOOP_HALF_WIDTH - .15, radius + LOOP_HALF_WIDTH + .15, 72]}/><meshStandardMaterial color="#d9d2c0" roughness={1} side={THREE.DoubleSide}
         polygonOffset polygonOffsetFactor={-1}/></mesh>
-      <mesh position={[0, 0, .01]}><ringGeometry args={[radius - 3.35, radius + 3.35, 72]}/><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}
+      <mesh position={[0, 0, .01]}><ringGeometry args={[radius - LOOP_HALF_WIDTH, radius + LOOP_HALF_WIDTH, 72]}/><meshStandardMaterial color="#504a40" roughness={.98} side={THREE.DoubleSide}
         polygonOffset polygonOffsetFactor={-2}/></mesh>
     </group>)}
     {parts.map((p, i) => <group key={i}>
@@ -339,7 +350,7 @@ function SafetyBerms() {
     const along = (points: THREE.Vector3[]) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(40, points.length * 3), .5, 6, false)
     const road = (side: 1 | -1) => {
       const points: THREE.Vector3[] = []
-      for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * 4.5).position.add(new THREE.Vector3(0, .35, 0)))
+      for (let pct = LOOP_PCT; pct <= 100 - LOOP_PCT; pct += 1) points.push(lanePose(pct, 1, side * (ROAD_HALF_WIDTH + .5)).position.add(new THREE.Vector3(0, .35, 0)))
       return along(points)
     }
     const loop = (end: 'face' | 'crusher', side: 1 | -1) => {
@@ -348,7 +359,7 @@ function SafetyBerms() {
       for (let k = 4; k <= 76; k++) {
         const t = k / 80
         const forward = curve.getTangentAt(t).setY(0).normalize()
-        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * 4.2).add(new THREE.Vector3(0, .35, 0)))
+        points.push(curve.getPointAt(t).addScaledVector(new THREE.Vector3(-forward.z, 0, forward.x), side * (LOOP_HALF_WIDTH + .9)).add(new THREE.Vector3(0, .35, 0)))
       }
       return along(points)
     }
@@ -524,8 +535,8 @@ function RoadLighting() {
       aimAt(face.clone().add(new THREE.Vector3(-9, 0, 6)), face),
       aimAt(crusher.clone().addScaledVector(crusher.clone().setY(0).normalize(), 13), crusher),
       aimAt(STOCKPILE.clone().add(crusher.clone().sub(STOCKPILE).setY(0).normalize().multiplyScalar(11)), STOCKPILE),
-      aimAt(lanePose(35, 1, 6.4).position, rampA),
-      aimAt(lanePose(68, 1, 6.4).position, rampB),
+      aimAt(lanePose(35, 1, ROAD_HALF_WIDTH + 2.2).position, rampA),
+      aimAt(lanePose(68, 1, ROAD_HALF_WIDTH + 2.2).position, rampB),
     ]
   }, [])
   return <group>{towers.map((t, i) => {
@@ -597,12 +608,12 @@ function WeatherScene({ weather }: { weather: Weather }) {
 /** Safety furniture: excavator swing exclusion zone, loop speed signs, dump bund and a runaway escape lane. */
 function SafetyScene({ loopSpeed }: { loopSpeed: number }) {
   const excavator = haulRoadPoint(1).add(new THREE.Vector3(1.2, .45, -1.5))
-  const signs = React.useMemo(() => [lanePose(LOOP_PCT + 2, -1, 4.4), lanePose(100 - LOOP_PCT - 2, 1, 4.4)], [])
+  const signs = React.useMemo(() => [lanePose(LOOP_PCT + 2, -1, ROAD_HALF_WIDTH + 1.4), lanePose(100 - LOOP_PCT - 2, 1, ROAD_HALF_WIDTH + 1.4)], [])
   const bund = React.useMemo(() => {
     const toTruck = DUMP_POSE.position.clone().sub(ROM_BIN).setY(0).normalize()
     return { position: ROM_BIN.clone().addScaledVector(toTruck, 3.3), yaw: -Math.atan2(toTruck.z, toTruck.x) }
   }, [])
-  const escape = React.useMemo(() => lanePose(50, -1, 6.6), [])
+  const escape = React.useMemo(() => lanePose(50, -1, ROAD_HALF_WIDTH + 2.6), [])
   return <group>
     <mesh position={excavator.clone().add(new THREE.Vector3(0, -.2, 0))} rotation={[-Math.PI / 2, 0, 0]}>
       <ringGeometry args={[6.1, 6.5, 48]}/><meshBasicMaterial color="#ff4d4d" transparent opacity={.85} side={THREE.DoubleSide}/></mesh>
@@ -659,6 +670,8 @@ const TRAVELLING = new Set(['hauling', 'returning'])
 function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   const states = Array.from({ length: 6 }, (_, i) => String(frame.at(`truck-0${i + 1}.state`)))
   const active = states.filter(s => s !== 'breakdown').length
+  const parked = states.filter(s => s === 'standby').length
+  const smart = frame.at('scenario-controller.dispatch_policy') === 'smart'
   const speed = num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')
   const cycleMin = reg('load_time_min') + reg('dump_time_min') + 2 * reg('route_length_km') / speed * 60
   const target = num(frame.at('scenario-controller.projected_throughput_tph'))
@@ -667,8 +680,10 @@ function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
   const waitFace = num(frame.at('excavator-01.average_wait_min'))
   const waitCrusher = num(frame.at('crusher-01.average_wait_min'))
-  const advice = spare > 0
-    ? `${needed} trucks are enough to reach ${target.toFixed(0)} t/h. The other ${spare} mostly wait in queues: park ${spare === 1 ? 'one' : spare} at the face to save fuel, or add a second loading unit to use them.`
+  const advice = smart
+    ? `Smart dispatch is on: ${active - parked} trucks cycle and ${parked} wait engine-off on the ready line at the face.`
+    : spare > 0
+    ? `${needed} trucks are enough to reach ${target.toFixed(0)} t/h. The other ${spare} mostly wait in queues: switch on Scenario C (smart dispatch) to park ${spare === 1 ? 'one' : spare} at the face, or add a second loading unit to use them.`
     : spare < 0
       ? `Haulage is short by ${-spare} truck${spare === -1 ? '' : 's'}: the excavator waits for trucks. Lift the road restriction or bring in a spare truck.`
       : 'Fleet and loading unit are matched; queues come from cycle variation only.'
@@ -687,9 +702,79 @@ function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   </section>
 }
 
+const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
+
+/**
+ * What-If Scenario Engine: A normal operations, B fault injection, C smart dispatch, and the dynamic
+ * bottleneck. Every figure is read from the simulator's twins; the buttons only send the request.
+ */
+function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
+  const [busy, setBusy] = React.useState('')
+  const [failure, setFailure] = React.useState('')
+  const at = (key: string) => frame.at(key)
+  const scenario = String(at('scenario-controller.active') ?? at('mine-01.active_scenario') ?? 'baseline')
+  const policy = String(at('scenario-controller.dispatch_policy') ?? 'fixed')
+  const send = async (path: string, body: object, label: string) => {
+    setBusy(label)
+    setFailure('')
+    try {
+      const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    } catch (reason) {
+      setFailure(`Request failed (${String(reason)}).`)
+    } finally {
+      setBusy('')
+    }
+  }
+  const normal = async () => {
+    await send('/api/scenario', { scenario: 'baseline' }, 'A')
+    await send('/api/dispatch', { policy: 'fixed' }, 'A')
+  }
+  const projected = num(at('scenario-controller.projected_throughput_tph'))
+  const baseline = num(at('scenario-controller.baseline_throughput_tph'))
+  const impact = num(at('scenario-controller.impact_pct'))
+  const hasDispatch = at('scenario-controller.dispatch_policy') !== undefined
+  const hoursPerKt = num(at('mine-01.truck_operating_h_per_kt'))
+  const disabled = !live || busy !== ''
+  const card = (id: string, on: boolean) => `ig-wi-card${on ? ' on' : ''}${id === busy ? ' busy' : ''}`
+  return <section className="ig-panel ig-inline ig-whatif" aria-label="What-if scenario engine">
+    <h2>What-if scenario engine</h2>
+    <div className="ig-wi-cards">
+      <button id="ig-wi-a" className={card('A', scenario === 'baseline' && policy === 'fixed')} disabled={disabled} onClick={normal}>
+        <b>A</b><span>Normal operations<small>baseline · fixed fleet</small></span></button>
+      <div className={card('B', scenario !== 'baseline')}>
+        <b>B</b><span>Fault injection<small>breakdown &amp; disruption</small></span>
+        <div className="ig-wi-faults">
+          {FAULTS.map(([id, label]) => <button key={id} id={`ig-wi-${id}`} className={scenario === id ? 'on' : ''} disabled={disabled}
+            onClick={() => send('/api/scenario', { scenario: id }, 'B')}>{label}</button>)}
+        </div>
+      </div>
+      <button id="ig-wi-c" className={card('C', policy === 'smart')} disabled={disabled || !hasDispatch} aria-pressed={policy === 'smart'}
+        onClick={() => send('/api/dispatch', { policy: policy === 'smart' ? 'fixed' : 'smart' }, 'C')}>
+        <b>C</b><span>Smart dispatch<small>{policy === 'smart' ? 'on · right-sized fleet' : 'off · tap to optimise'}</small></span></button>
+    </div>
+    <div className="ig-gauges">
+      <div><span>Projected output</span><Flash value={projected.toFixed(0)}>{projected.toFixed(0)} <small>t/h</small></Flash></div>
+      <div className={impact < 0 ? 'ig-bad' : ''}><span>vs normal {baseline.toFixed(0)} t/h</span><Flash value={impact}>{impact > 0 ? '+' : ''}{impact.toFixed(0)} <small>%</small></Flash></div>
+      <div><span>Trucks cycling / parked</span><Flash value={`${at('scenario-controller.trucks_in_cycle')}/${at('scenario-controller.trucks_standby')}`}>
+        {hasDispatch ? num(at('scenario-controller.trucks_in_cycle')) : '—'} <small>/ {hasDispatch ? num(at('scenario-controller.trucks_standby')) : '—'} · need {hasDispatch ? num(at('scenario-controller.trucks_required')) : '—'}</small></Flash></div>
+      <div><span>Truck hours per kt</span><Flash value={hoursPerKt.toFixed(2)}>{hoursPerKt > 0 ? hoursPerKt.toFixed(2) : '—'} <small>h/kt</small></Flash></div>
+    </div>
+    <div className="ig-wi-bottleneck">
+      <span>Bottleneck · planned</span><b>{String(at('scenario-controller.bottleneck') ?? '—')}</b>
+      <span>Bottleneck · measured now</span><b>{String(at('mine-01.bottleneck_live') ?? '—')}</b>
+      <p>{String(at('mine-01.bottleneck_live_reason') ?? at('scenario-controller.bottleneck_reason') ?? '')}</p>
+    </div>
+    {hasDispatch && <p className="ig-advice">{String(at('scenario-controller.dispatch_reason'))}</p>}
+    <p className="ig-foot-note">{live
+      ? failure || 'B and C combine: try a breakdown with smart dispatch on. Figures are simulator output, not site measurements.'
+      : 'Controls need the running stand; the recorded replay has no dispatch data.'}</p>
+  </section>
+}
+
 /** Energy and CO2 per tonne from the sourced fuel rates and IPCC diesel factors. */
 function EsgPanel({ frame, reg, hours }: { frame: Frame; reg: Reg; hours: number }) {
-  const running = Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(s => s !== 'breakdown').length
+  const running = Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(s => s !== 'breakdown' && s !== 'standby').length
   const litresPerHour = running * reg('truck_fuel_consumption_lph') + reg('excavator_fuel_consumption_lph')
   const tph = num(frame.at('mine-01.throughput_tph'))
   const perTonne = tph > 0 ? litresPerHour / tph : 0
@@ -927,7 +1012,7 @@ export function IngestionLayer() {
   const [row, setRow] = React.useState(46)
   const [playing, setPlaying] = React.useState(true)
   const [speed, setSpeed] = React.useState(10)
-  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['sensors', 'topology', 'flow']))
+  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['whatif', 'sensors', 'topology', 'flow']))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
   const activity = React.useRef<Activity[]>([])
@@ -1065,7 +1150,8 @@ export function IngestionLayer() {
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
     </div>
-    {['specs', 'fleet', 'weather', 'safety'].some(l => layers.has(l as Layer)) && <div className="ig-stack">
+    {['whatif', 'specs', 'fleet', 'weather', 'safety'].some(l => layers.has(l as Layer)) && <div className="ig-stack">
+      {layers.has('whatif') && <WhatIfPanel frame={frame} live={live}/>}
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
       {layers.has('fleet') && <EsgPanel frame={frame} reg={reg} hours={hours}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
@@ -1098,7 +1184,7 @@ export function IngestionLayer() {
 
     <footer className="ig-bar">
       {live
-        ? <span className="ig-clock ig-live-note">Live from OpenEgiz · simulated time {hours.toFixed(2)} h · {bundle.logs[liveScenario]?.label ?? liveScenario}</span>
+        ? <span className="ig-clock ig-live-note">{liveSource === 'eclipse-ditto' ? 'Live from OpenEgiz' : 'Local demo simulator'} · simulated time {hours.toFixed(2)} h · {bundle.logs[liveScenario]?.label ?? liveScenario}</span>
         : <>
           <button id="ig-play" className="ig-play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? '❚❚' : '▶'}</button>
           <select id="ig-scenario" value={scenario} onChange={e => setScenario(e.target.value)} aria-label="Telemetry log">

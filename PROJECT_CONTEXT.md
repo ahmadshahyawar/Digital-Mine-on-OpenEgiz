@@ -233,6 +233,40 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — Scenario C: Smart Dispatch — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat). The simulator is Codex-owned; TurkenGulzat explicitly approved Claude
+  building Smart Dispatch in the simulator on its own branch and informing Codex (2026-10-23).
+Branch: claude/smart-dispatch (from origin/codex/ademix 8d8a30e)
+Task: add a dispatch policy (fixed | smart) orthogonal to the four operating scenarios. Smart dispatch
+  right-sizes the active fleet from the steady-state model, parks surplus empty trucks on a ready line at the
+  crusher, and releases them when the need rises (breakdown, road restriction, policy switch). Add twin
+  fields, an API endpoint, tests, a policy comparison in compare_scenarios.py and SCENARIOS.md, and a
+  What-If panel (Scenario A/B/C + bottleneck) in Layer 1.
+Exact files: ademix/simulator/engine.py, ademix/simulator/app.py, ademix/simulator/test_engine.py,
+  ademix/simulator/compare_scenarios.py, ademix/simulator/SCENARIOS.md, ademix/frontend/src/IngestionLayer.tsx,
+  ademix/frontend/src/ingestion.css
+Interfaces changed (additive): truck state `standby`; scenario-controller fields dispatch_policy,
+  dispatch_description, trucks_required, trucks_in_cycle, trucks_standby, dispatch_reason; mine-01 fields
+  truck_operating_h_per_kt, operating_fleet_utilization; POST /api/dispatch {"policy": "fixed"|"smart"}.
+  twins.json, verify_scenarios.py and Compose are not edited.
+Expected handoff: commit SHAs, tests, comparison table, Codex request (verify_scenarios.py + docs).
+```
+
+Handoff — Claude — Scenario C: Smart Dispatch — 2026-10-23
+
+- Commits on `claude/smart-dispatch`: `f41a51e` (simulator: engine.py, app.py, test_engine.py, compare_scenarios.py, SCENARIOS.md section 7), merge of `claude/road-shoulder` (wider road, breakdown shoulder; see its handoff), `08c9d25` (Layer 1 What-If panel: IngestionLayer.tsx, ingestion.css).
+- Rule: required fleet n = ceil(C_server × T_free / (77 t × 3600)) — 4 normal, 4 breakdown, 8 road restriction (all 6 cycle), 3 crusher slowdown. Surplus empty trucks park (`standby`) on a ready line at the face; the excavator, when binding, loads a parked truck rather than idle; parked trucks rejoin when a cycling truck is lost (breakdown, held behind a blockage), on a scenario change, or on `fixed`.
+- Model results (`compare_scenarios.py`, steady state hours 2–9): production identical in all four conditions; truck operating h per kt −33 % normal, −20 % breakdown, −50 % crusher slowdown, 0 % road restriction; wait at face 13.6 → 1.6 min. First-hour production after a breakdown equals the fixed fleet at all 12 trigger times. Synthetic model output, no fuel saving claimed.
+- Checks: `python -m unittest test_engine` 41 tests pass (7 new `DispatchTests`); `tsc -b` and Vite build pass; demo stand (ADEMIX_DEMO_MODE=1): `/api/dispatch` switches policy, 4 cycling / 2 parked appear in the panel and sensor table, breakdown with smart on releases one parked truck. Not run on the Docker/Ditto stand.
+- Interfaces (additive): truck state `standby`; scenario-controller `dispatch_policy`, `dispatch_description`, `trucks_required`, `trucks_in_cycle`, `trucks_standby`, `dispatch_reason`; mine-01 `truck_operating_h_per_kt`, `operating_fleet_utilization`; `POST /api/dispatch {"policy": "fixed"|"smart"}`; `/api/health` reports `dispatch`.
+- Request to Codex (simulator/data owner; TurkenGulzat approved Claude editing the simulator for this task):
+  1. Review the engine change; add a smart-dispatch step to `verify_scenarios.py` (POST /api/dispatch, check the new fields through Ditto) and run it on the Docker stand.
+  2. If the replay bundle should show Scenario C, add smart-dispatch logs and the new fields to `build_data_layer.py` / `ingestion.json`.
+  3. Integrator: mention Scenario C in `SUBMISSION.md` / `README.md` (how to activate: What-if panel → C; reset: A).
+- Known visual issue (not fixed): at the crusher loop junction, loop berm tubes cross the paved pad.
+
 ### Lock — Claude — truck-breakdown visualization — 2026-10-23
 
 ```text
@@ -292,6 +326,25 @@ Handoff — Claude — pit-wall geometry — 2026-10-23
 - Checks: `tsc -b` and Vite build pass; card text verified in the DOM. Full-size visual review not done (preview pane too small). Engine tests pass.
 - Data tests: 3 failures that come from the `codex/ademix` base, not this change: bundle/log reproducibility float rounding (35.65 vs 35.66) and the manifest input hash for `north_pit_mine.json` (expects CRLF `271134…`, file is LF `a966…`).
 - Request to Codex (data owner): `ademix/data/topology/mine_topology.json` `visual_pit_geometry` still says 6 benches × 4.35; update it to the values above, and update the geometry token check in `ademix/data/test_data_layer.py` (≈line 374: "4.35", "-23.5", "Math.PI * 2.35") to the new `PIT_DESIGN` constants. Claude has not edited these files.
+
+### Lock — Claude — wider haul road, broken trucks on the shoulder — 2026-10-23
+
+```text
+Owner: Claude (for TurkenGulzat)
+Branch: claude/road-shoulder (from claude/pit-geometry 21078a8, PR #2)
+Task: widen the drawn haul road and its loops so each direction has a lane plus a shoulder, and show a truck
+  whose twin state is `breakdown` pulled to the right-hand edge (still encroaching its lane while
+  road-main.state is `restricted`), then fully on the shoulder once the road reopens.
+Exact files: ademix/frontend/src/TerrainStage.tsx, ademix/frontend/src/IngestionLayer.tsx
+Interfaces consumed or changed: consumes truck-0N.state, road-main.state (unchanged); no simulator change.
+Expected handoff: commit SHA, files, build, browser check.
+```
+
+Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
+
+- Commit `4be2758` on `claude/road-shoulder`. Files: `ademix/frontend/src/TerrainStage.tsx`, `ademix/frontend/src/IngestionLayer.tsx`.
+- Road ribbon 7.2→13.6 units, terrain shelf flattened to 7.2 (blend to 10.6), outer berm 4.2→7.3, loop half-width 3.35→4.4, loop berms, loop speed signs, ramp lights and escape lane moved out to match. Broken-down truck eases to offset 3.7 (over its lane line) while `road-main.state` is `restricted`, then 5.1 (shoulder) once open.
+- Checks: `tsc -b` passes; overview canvas captured in the browser shows the wider ramp shelf. Not done: a breakdown observed on the wider road, and the crusher-loop junction, where loop berm tubes cross the paved pad (may predate this change; needs a close review).
 
 ### Collaboration ownership — 2026-10-23
 

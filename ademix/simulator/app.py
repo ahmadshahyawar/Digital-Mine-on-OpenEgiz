@@ -43,6 +43,10 @@ class ScenarioRequest(BaseModel):
     scenario: str
 
 
+class DispatchRequest(BaseModel):
+    policy: str
+
+
 def ditto_message(name, features):
     return {
         "topic": f"{NAMESPACE}/{name}/things/twin/commands/modify",
@@ -108,7 +112,7 @@ def shutdown():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "scenario": engine.scenario}
+    return {"status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch}
 
 
 @app.get("/api/state")
@@ -137,4 +141,14 @@ def scenario(request: ScenarioRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"scenario": engine.scenario, "status": "activated"}
+
+
+@app.post("/api/dispatch")
+def dispatch(request: DispatchRequest):
+    """Scenario C: switch between the fixed fleet and smart dispatch, independently of the scenario."""
+    try:
+        engine.set_dispatch(request.policy)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"dispatch": engine.dispatch, "status": "activated"}
 

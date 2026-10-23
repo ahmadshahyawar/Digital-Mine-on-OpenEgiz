@@ -111,10 +111,10 @@ function carveEngineeredPit(heights: Float32Array, options: { xSegments: number;
           nearestRoadElevation = roadPoint.y
         }
       }
-      if (nearestRoadDistance < 3.8) {
+      if (nearestRoadDistance < 7.2) {
         heights[index] = nearestRoadElevation
-      } else if (nearestRoadDistance < 7.2) {
-        const shoulderBlend = THREE.MathUtils.smoothstep(nearestRoadDistance, 3.8, 7.2)
+      } else if (nearestRoadDistance < 10.6) {
+        const shoulderBlend = THREE.MathUtils.smoothstep(nearestRoadDistance, 7.2, 10.6)
         heights[index] = THREE.MathUtils.lerp(nearestRoadElevation, heights[index], shoulderBlend)
       }
 
@@ -202,8 +202,8 @@ function HaulRoadLayer() {
     }))
     return {
       curve: path,
-      road: ribbonGeometry(path, 7.2),
-      outerBerm: offsetCurve(4.2),
+      road: ribbonGeometry(path, 13.6), // two lanes plus a shoulder on each side
+      outerBerm: offsetCurve(7.3),
       markers: Array.from({ length: 25 }, (_, index) => {
         const progress = .025 + index * .039
         const point = path.getPointAt(progress)
@@ -339,7 +339,7 @@ function BenchLines() {
       for (const bench of PIT_BENCHES.benches.slice(1)) {
         const inward = pick(bench)
         const points = Array.from({ length: steps + 1 }, (_, k) => pitWallPoint(k / steps * Math.PI * 2, inward))
-        const visible = points.map(pt => pt.y > FLOOR_ELEVATION + .05 && road.every(r => Math.hypot(pt.x - r.x, pt.z - r.z) > 5.2))
+        const visible = points.map(pt => pt.y > FLOOR_ELEVATION + .05 && road.every(r => Math.hypot(pt.x - r.x, pt.z - r.z) > 8.4))
         for (let k = 0; k < steps; k++) {
           if (!visible[k] || !visible[k + 1]) continue
           positions.push(points[k].x, points[k].y + .12, points[k].z, points[k + 1].x, points[k + 1].y + .12, points[k + 1].z)

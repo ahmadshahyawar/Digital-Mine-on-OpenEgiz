@@ -61,6 +61,15 @@ SCENARIOS = {
     "road_closure": "Main road restriction",
     "crusher_slowdown": "Crusher capacity −45%",
 }
+# Dispatch policy, independent of the operating scenario. "smart" keeps only as many trucks in
+# the cycle as the slowest server needs (steady-state model below) and parks the surplus empty on
+# a ready line beside the excavator. A parked truck is loaded whenever the excavator, as the
+# binding server, would otherwise stand idle, and parked trucks rejoin the cycle as soon as a cycling truck is lost
+# (breakdown, held behind a road blockage) or the need rises.
+DISPATCH_POLICIES = {
+    "fixed": "Fixed fleet: every available truck cycles",
+    "smart": "Smart dispatch: right-sized fleet, surplus on the ready line",
+}
 LOADING, ROAD, FLEET, DUMP, CRUSHER = (
     "loading resource", "haul-road travel", "available truck fleet",
     "dump point", "crusher processing capacity",
@@ -69,7 +78,7 @@ TRAVEL_STATES = {"hauling", "returning"}
 PRODUCTIVE_STATES = {"loading", "hauling", "dumping", "returning"}
 TRUCK_STATES = (
     "queued_at_excavator", "loading", "hauling", "queued_at_crusher",
-    "dumping", "returning", "blocked", "breakdown",
+    "dumping", "returning", "blocked", "breakdown", "standby",
 )
 # Legal truck-cycle transitions. "hauling -> hauling" is a re-plan after a speed or
 # blockage change; anything else (a skipped stage) raises immediately.
@@ -79,14 +88,15 @@ ALLOWED_TRANSITIONS = {
     "hauling": {"hauling", "queued_at_crusher", "blocked", "breakdown"},
     "queued_at_crusher": {"dumping", "breakdown"},
     "dumping": {"returning", "breakdown"},
-    "returning": {"returning", "queued_at_excavator", "blocked", "breakdown"},
+    "returning": {"returning", "queued_at_excavator", "blocked", "breakdown", "standby"},
     "blocked": {"hauling", "returning"},
     "breakdown": {"hauling", "returning", "queued_at_excavator", "queued_at_crusher"},
+    "standby": {"queued_at_excavator", "breakdown"},
 }
 COUNTERS = (
     "production_t", "excavator_busy_s", "dump_busy_s", "crusher_busy_s", "truck_s",
     "productive_s", "travel_s", "excavator_queue_s", "crusher_queue_s", "blocked_s",
-    "down_s", "rom_ts", "delivered_t",
+    "down_s", "rom_ts", "delivered_t", "standby_s",
 )
 EPS_T = 1e-6
 
@@ -121,7 +131,35 @@ def road_speed_kmh(scenario: str) -> float:
     return ROAD_RESTRICTION_SPEED_KMH if scenario == "road_closure" else BASE_SPEED_KMH
 
 
-def projection(scenario: str, truck_count: int = TRUCK_COUNT) -> dict:
+def free_cycle_s(scenario: str) -> float:
+    """Truck cycle with no waiting: load, haul, dump and return at the scenario's road speed."""
+    return LOAD_SECONDS + DUMP_SECONDS + 2 * ROUTE_KM / road_speed_kmh(scenario) * 3600.0
+
+
+def trucks_required(scenario: str) -> dict:
+    """Smallest fleet whose free-running supply covers the slowest single server.
+
+    n = ceil(C_server * T_free / (payload * 3600)). With n trucks the server stays saturated
+    in steady state, so throughput equals the fixed-fleet value with fewer trucks cycling.
+    """
+    if scenario not in SCENARIOS:
+        raise ValueError(f"unknown scenario: {scenario}")
+    servers = {
+        LOADING: CAPACITY_T * 3600.0 / LOAD_SECONDS,
+        DUMP: CAPACITY_T * 3600.0 / DUMP_SECONDS,
+        CRUSHER: crusher_capacity_tph(scenario),
+    }
+    server = min(servers, key=servers.get)
+    cycle_s = free_cycle_s(scenario)
+    return {
+        "trucks": math.ceil(servers[server] * cycle_s / (CAPACITY_T * 3600.0) - 1e-9),
+        "server": server,
+        "server_tph": servers[server],
+        "free_cycle_min": cycle_s / 60.0,
+    }
+
+
+def projection(scenario: str, truck_count: int = TRUCK_COUNT, dispatch: str = "fixed") -> dict:
     """Steady-state capacity of each stage of the cycle (t/h) and the binding one.
 
     For a closed, deterministic cyclic system, long-run throughput is the minimum of
@@ -129,7 +167,11 @@ def projection(scenario: str, truck_count: int = TRUCK_COUNT) -> dict:
     """
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario: {scenario}")
+    if dispatch not in DISPATCH_POLICIES:
+        raise ValueError(f"unknown dispatch policy: {dispatch}")
     active = truck_count - (1 if scenario == "truck_breakdown" else 0)
+    if dispatch == "smart":
+        active = min(active, trucks_required(scenario)["trucks"])
     speed = road_speed_kmh(scenario)
     travel_s = 2 * ROUTE_KM / speed * 3600.0
     free_cycle_s = LOAD_SECONDS + DUMP_SECONDS + travel_s
@@ -175,6 +217,7 @@ class MineEngine:
         self.excavated_t = 0.0
         self.rom_inventory_t = INITIAL_ROM_T
         self.scenario = "baseline"
+        self.dispatch = "fixed"
         self.scenario_started_s = 0.0
         self.blockage: tuple[float, float] | None = None
         self._events: list = []
@@ -218,6 +261,18 @@ class MineEngine:
             self._replan_travel()
             self._crusher_token += 1
             self._try_start_dump()
+            self._release_standby()
+
+    def set_dispatch(self, policy: str):
+        if policy not in DISPATCH_POLICIES:
+            raise ValueError(f"unknown dispatch policy: {policy}")
+        with self.lock:
+            if policy == self.dispatch:
+                return
+            self.dispatch = policy
+            self._reset_window()
+            # Releasing is immediate; surplus trucks are parked one by one as they finish dumping.
+            self._release_standby()
 
     def step(self, dt: float):
         if dt <= 0:
@@ -240,7 +295,7 @@ class MineEngine:
             raise RuntimeError(f"{truck.name}: illegal transition {truck.state} -> {state}")
         if state in ("hauling", "dumping") and truck.payload_t != CAPACITY_T:
             raise RuntimeError(f"{truck.name}: {state} without a full payload")
-        if state in ("returning", "loading") and truck.payload_t != 0.0:
+        if state in ("returning", "loading", "standby") and truck.payload_t != 0.0:
             raise RuntimeError(f"{truck.name}: {state} while still loaded")
         truck.state = state
 
@@ -277,6 +332,7 @@ class MineEngine:
         cum["crusher_queue_s"] += span * counts["queued_at_crusher"]
         cum["blocked_s"] += span * counts["blocked"]
         cum["down_s"] += span * counts["breakdown"]
+        cum["standby_s"] += span * counts["standby"]
         if self.excavator_truck:
             cum["excavator_busy_s"] += span
         if self.dump_truck:
@@ -306,8 +362,13 @@ class MineEngine:
             self._commit_travel(truck)
             if truck.travel_blocked:
                 self._set_state(truck, "blocked")
+                self._release_standby()  # a truck held behind the blockage no longer feeds the excavator
             elif truck.direction == 1:
                 self._join_crusher_queue(truck)
+            elif len(self._in_cycle()) > self.dispatch_need():
+                truck.progress = 0.0
+                self._set_state(truck, "standby")  # parked empty on the ready line beside the excavator
+                self._try_start_loading()
             else:
                 self._join_excavator_queue(truck)
         elif kind == "load_done":
@@ -346,7 +407,14 @@ class MineEngine:
         self._try_start_loading()
 
     def _try_start_loading(self):
-        if self.excavator_truck or not self.excavator_queue:
+        if self.excavator_truck:
+            return
+        if not self.excavator_queue:
+            # When the excavator is the binding server, smart dispatch never lets it idle while a
+            # truck is parked beside it. (When the crusher binds, an idle excavator costs nothing.)
+            spare = next((t for t in self.trucks if t.state == "standby"), None)
+            if spare is not None and trucks_required(self.scenario)["server"] == LOADING:
+                self._unpark(spare)
             return
         truck = self.excavator_queue.popleft()
         wait = self.sim_time_s - truck.wait_started_s
@@ -382,6 +450,29 @@ class MineEngine:
         self.dump_truck = truck
         truck.token += 1
         self._schedule(DUMP_SECONDS, "dump_done", truck, truck.token)
+
+    # --------------------------------------------------------------- dispatch
+
+    def dispatch_need(self) -> int:
+        """Trucks the dispatcher wants cycling: all of them (fixed) or the steady-state minimum (smart)."""
+        if self.dispatch == "fixed":
+            return len(self.trucks)
+        return trucks_required(self.scenario)["trucks"]
+
+    def _in_cycle(self) -> list[Truck]:
+        """Trucks that are actually cycling: not parked, broken down or held behind a blockage."""
+        return [t for t in self.trucks if t.state not in ("standby", "breakdown", "blocked")]
+
+    def _release_standby(self):
+        for truck in self.trucks:
+            if len(self._in_cycle()) >= self.dispatch_need():
+                return
+            if truck.state == "standby":
+                self._unpark(truck)
+
+    def _unpark(self, truck: Truck):
+        truck.last_dump_end_s, truck.cycle_wait_s = None, 0.0  # parked time is not a haul cycle
+        self._join_excavator_queue(truck)
 
     # ----------------------------------------------------------------- travel
 
@@ -452,10 +543,13 @@ class MineEngine:
         elif truck.state == "dumping":
             self.dump_truck = None  # the payload stays on the truck
             self.breakdown_location = "crusher dump bay"
+        elif truck.state == "standby":
+            self.breakdown_location = "ready line at the excavator, parked"
         truck.token += 1
         self._set_state(truck, "breakdown")
         self._try_start_loading()
         self._try_start_dump()
+        self._release_standby()  # smart dispatch sends a parked truck to replace it
 
     def _clear_blockage(self):
         self.blockage = None
@@ -523,7 +617,24 @@ class MineEngine:
                 - self.ore_in_trucks_t() - self.rom_inventory_t - self.production_t)
 
     def projection(self) -> dict:
-        return projection(self.scenario, self.truck_count)
+        return projection(self.scenario, self.truck_count, self.dispatch)
+
+    def dispatch_status(self) -> dict:
+        need = trucks_required(self.scenario)
+        available = sum(t.state != "breakdown" for t in self.trucks)
+        in_cycle, standby = len(self._in_cycle()), sum(t.state == "standby" for t in self.trucks)
+        basis = (f"a {need['free_cycle_min']:.1f} min free cycle must feed the {need['server']} "
+                 f"({need['server_tph']:.0f} t/h)")
+        if self.dispatch == "fixed":
+            if need["trucks"] < available:
+                reason = f"All {available} available trucks cycle, but {basis} needs only {need['trucks']}; the rest queue."
+            else:
+                reason = f"All {available} available trucks are needed: {basis} needs {need['trucks']}."
+        elif need["trucks"] >= available:
+            reason = f"All {available} available trucks are needed: {basis} needs {need['trucks']}."
+        else:
+            reason = f"{need['trucks']} of {available} available trucks needed: {basis}; {standby} parked on the ready line."
+        return {"required": need["trucks"], "in_cycle": in_cycle, "standby": standby, "reason": reason}
 
     def projected_throughput_tph(self) -> float:
         return self.projection()["throughput_tph"]
@@ -532,6 +643,7 @@ class MineEngine:
     def _shares(delta: dict, span: float) -> dict:
         truck_s = delta["truck_s"]
         active_s = truck_s - delta["down_s"]
+        operating_s = active_s - delta["standby_s"]
 
         def pct(part, whole):
             return 100.0 * part / whole if whole > 0 else 0.0
@@ -542,7 +654,10 @@ class MineEngine:
             "truck_queue_pct": pct(delta["excavator_queue_s"] + delta["crusher_queue_s"], truck_s),
             "truck_blocked_pct": pct(delta["blocked_s"], truck_s),
             "truck_down_pct": pct(delta["down_s"], truck_s),
-            "travel_share_pct": pct(delta["travel_s"], active_s),
+            "truck_standby_pct": pct(delta["standby_s"], truck_s),
+            "operating_fleet_utilization_pct": pct(delta["productive_s"], operating_s),
+            "truck_operating_h_per_kt": operating_s / 3.6 / delta["production_t"] if delta["production_t"] > 0 else 0.0,
+            "travel_share_pct": pct(delta["travel_s"], operating_s),
             "excavator_utilization_pct": pct(delta["excavator_busy_s"], span),
             "dump_bay_utilization_pct": pct(delta["dump_busy_s"], span),
             "crusher_utilization_pct": pct(delta["crusher_busy_s"], span),
@@ -632,6 +747,7 @@ class MineEngine:
             kpi = self.kpis()
             live = self.live_bottleneck()
             plan = self.projection()
+            dispatch = self.dispatch_status()
             baseline = projection("baseline", self.truck_count)["throughput_tph"]
             capacity = crusher_capacity_tph(self.scenario)
             moving = [t for t in self.trucks if t.state in TRAVEL_STATES]
@@ -663,6 +779,8 @@ class MineEngine:
                     "bottleneck": self.metric(plan["bottleneck"]),
                     "bottleneck_live": self.metric(live["constraint"]),
                     "bottleneck_live_reason": self.metric(live["reason"]),
+                    "truck_operating_h_per_kt": self.metric(kpi["truck_operating_h_per_kt"], "h/kt"),
+                    "operating_fleet_utilization": self.metric(kpi["operating_fleet_utilization_pct"], "%"),
                 },
                 "excavator-01": {
                     "state": self.metric("loading" if self.excavator_truck else "ready"),
@@ -707,6 +825,12 @@ class MineEngine:
                     "crusher_capacity_tph": self.metric(plan["limits_tph"][CRUSHER], "t/h"),
                     "bottleneck_reason": self.metric(plan["reason"]),
                     "breakdown_location": self.metric(self.breakdown_location),
+                    "dispatch_policy": self.metric(self.dispatch),
+                    "dispatch_description": self.metric(DISPATCH_POLICIES[self.dispatch]),
+                    "trucks_required": self.metric(dispatch["required"]),
+                    "trucks_in_cycle": self.metric(dispatch["in_cycle"]),
+                    "trucks_standby": self.metric(dispatch["standby"]),
+                    "dispatch_reason": self.metric(dispatch["reason"]),
                 },
             }
             for truck in self.trucks:

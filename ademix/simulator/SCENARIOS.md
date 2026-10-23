@@ -1,6 +1,6 @@
 # Ademix What-If Scenario Engine
 
-This file describes how the four operating conditions change the discrete-event model in `engine.py`, how the active constraint (bottleneck) is identified, and what the scenarios produce compared with normal operations. The model structure, parameters and their sources are in `MODEL.md`.
+This file describes how the four operating conditions change the discrete-event model in `engine.py`, how the active constraint (bottleneck) is identified, and what the scenarios produce compared with normal operations. Section 7 adds Scenario C, smart dispatch: a dispatch policy that can be combined with any of the four conditions. The model structure, parameters and their sources are in `MODEL.md`.
 
 **All figures here are synthetic simulation output.** They are not measurements from an operating mine. They have not been validated against site data and make no claim of engineering or safety accuracy.
 
@@ -207,3 +207,95 @@ These tests verify that the code implements the stated model consistently. They 
   - Short windows can show a temporary constraint, such as "available truck fleet" while trucks are bunched after a blockage.
 - **Single scenario at a time:** scenarios are mutually exclusive (one active condition), which keeps comparisons controlled; combinations are not modelled.
 - **Dump point:** with the current parameters it can never be the bottleneck.
+
+## 7. Scenario C: smart dispatch
+
+The architecture's What-If Scenario Engine has three scenario families:
+
+| Diagram | In the model |
+|---|---|
+| Scenario A: normal operations (baseline) | condition `baseline`, dispatch `fixed` |
+| Scenario B: fault injection and breakdown | conditions `truck_breakdown`, `road_closure`, `crusher_slowdown` |
+| Scenario C: smart dispatch (optimized) | dispatch `smart`, combinable with any condition |
+| Dynamic bottleneck analysis | `projection()` and `live_bottleneck()` (section 2) |
+
+Dispatch is a **policy**, not an operating condition, so it is a separate switch: `POST /api/dispatch {"policy": "smart"}` or `{"policy": "fixed"}`. This lets the twin answer "what does smart dispatch change during a breakdown?" as well as "what does it change in normal operations?".
+
+### The dispatch rule
+
+The section 3 results show the fleet is over-trucked: with six trucks, the excavator is the constraint and trucks queue for about 14 minutes per cycle. Smart dispatch removes that surplus without touching the constraint.
+
+1. **Required fleet.** It is computed from the steady-state model, with C the slowest single server (excavator, dump bay or crusher) and T the free cycle (load + dump + travel at the current road speed):
+
+   n = ⌈C × T / (payload × 3600)⌉
+
+   For normal operations, C = 770 t/h, T = 22.36 min and the payload is 77 t, so n = ⌈3.73⌉ = 4. The crusher slowdown gives 3, and the road restriction 8, which is more than the six trucks available.
+2. **Parking.** An empty truck arriving at the face parks on a ready line beside the excavator (state `standby`) if more than n trucks are cycling. Trucks that are broken down or held behind a blockage do not count as cycling.
+3. **Protecting the bottleneck.** When the excavator is the binding server and would otherwise stand idle, it loads a parked truck at once.
+4. **Release.** Parked trucks rejoin the loading queue as soon as the cycling count falls below n. This happens on a breakdown, when trucks are held behind a road blockage, on a scenario change, or on a switch back to `fixed`.
+
+Rule 3 is needed. Without it, smart dispatch lost 7–9 % of first-hour production after a breakdown on the haul road: a parked truck sat beside an idle excavator while the cycling trucks were still bunched after the blockage. The ready line is at the face, not the dump, because parked trucks at the dump would be on the wrong side of a road blockage to feed the excavator.
+
+### Results (`python compare_scenarios.py`)
+
+Every run uses the same 4 h warm-up; the policy and the condition switch at the same moment. Each cell reads fixed → smart.
+
+**Truck operating hours per kt** is the time trucks spend in the cycle (not parked or broken down) per 1,000 t crushed. It is a proxy for engine hours, and so for fuel and maintenance. The model does not compute fuel for idling or queueing, so no fuel saving is claimed.
+
+### Steady state: hours 2–9 after the switch
+
+| Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
+|---|---:|---:|---:|---:|
+| Trucks needed (model) | 4 | 4 | 8 | 3 |
+| Production t | 6,160 → 6,160 (+0.0%) | 6,194 → 6,194 (+0.0%) | 5,163 → 5,163 (+0.0%) | 3,960 → 3,960 (-0.0%) |
+| Throughput t/h | 770.0 → 770.0 (+0.0%) | 774.3 → 774.3 (+0.0%) | 645.3 → 645.3 (+0.0%) | 495.0 → 495.0 (-0.0%) |
+| Truck operating h per kt | 7.79 → 5.19 (-33.3%) | 6.46 → 5.17 (-20.0%) | 9.30 → 9.30 (+0.0%) | 12.12 → 6.06 (-50.0%) |
+| Truck time parked % | 0.0 → 33.3 (new) | 0.0 → 16.7 (new) | 0.0 → 0.0 (—) | 0.0 → 50.0 (new) |
+| Operating-truck util. % | 62.1 → 93.2 (+50.0%) | 74.5 → 93.2 (+25.0%) | 100.0 → 100.0 (+0.0%) | 43.9 → 87.3 (+98.7%) |
+| Wait at face min | 13.6 → 1.6 (-88.0%) | 7.6 → 1.6 (-78.5%) | 0.0 → 0.0 (—) | 3.4 → 0.0 (-100.0%) |
+| Wait at crusher min | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) | 25.4 → 3.2 (-87.2%) |
+| Excavator util. % | 100.0 → 100.0 (+0.0%) | 100.0 → 100.0 (+0.0%) | 84.4 → 84.4 (+0.0%) | 72.1 → 70.1 (-2.7%) |
+
+### Transient: first 1 h after the switch
+
+| Metric | Normal operations | Truck HT-01 breakdown | Main road restriction | Crusher capacity −45% |
+|---|---:|---:|---:|---:|
+| Trucks needed (model) | 4 | 4 | 8 | 3 |
+| Production t | 770 → 770 (+0.0%) | 582 → 582 (+0.0%) | 584 → 584 (+0.0%) | 490 → 490 (-0.0%) |
+| Throughput t/h | 770.0 → 770.0 (+0.0%) | 581.6 → 581.6 (+0.0%) | 584.4 → 584.4 (+0.0%) | 489.7 → 489.7 (-0.0%) |
+| Truck operating h per kt | 7.79 → 5.43 (-30.4%) | 8.60 → 7.88 (-8.3%) | 10.27 → 10.27 (+0.0%) | 12.25 → 6.98 (-43.1%) |
+| Truck time parked % | 0.0 → 30.4 (new) | 0.0 → 6.9 (new) | 0.0 → 0.0 (—) | 0.0 → 43.1 (new) |
+| Operating-truck util. % | 62.1 → 89.2 (+43.6%) | 58.7 → 64.1 (+9.1%) | 92.3 → 92.3 (+0.0%) | 62.1 → 93.2 (+50.1%) |
+| Wait at face min | 13.6 → 4.0 (-70.4%) | 8.8 → 6.2 (-30.2%) | 4.6 → 4.6 (+0.0%) | 13.6 → 3.4 (-75.0%) |
+| Wait at crusher min | 0.0 → 0.0 (—) | 0.8 → 0.8 (+0.0%) | 0.0 → 0.0 (—) | 0.0 → 0.0 (—) |
+| Excavator util. % | 100.0 → 100.0 (+0.0%) | 79.9 → 79.9 (+0.0%) | 88.6 → 88.6 (+0.0%) | 100.0 → 85.5 (-14.5%) |
+
+With smart dispatch, first-hour production after a breakdown is identical to the fixed fleet at all 12 trigger times in the sensitivity sweep (section 3), including the four road failures.
+
+### What the results say
+
+These are model results for the stated assumptions:
+
+- **Smart dispatch does not raise throughput.** Throughput is set by the bottleneck, and the dispatcher does not change any server.
+- **It produces the same tonnage with about a third fewer truck operating hours** in normal operations: 4 trucks cycle and 2 are parked. Queueing at the face falls from 13.6 to 1.6 min per cycle.
+- **The gain is largest when the crusher is slowed** (−50 % truck hours). Only 3 trucks are needed, and the 25 min wait at the dump almost disappears.
+- **During a truck breakdown** the reserve covers the lost truck at once, and production is never below the fixed fleet.
+- **Under the road restriction there is nothing to optimize.** The model needs 8 trucks and 6 exist, so none is parked. This is a fleet-sizing signal for the planner.
+
+### Verification
+
+`python -m unittest test_engine` adds 7 tests in `DispatchTests`:
+
+- the required fleet is checked against the hand calculation;
+- unknown policies are rejected;
+- production is equal and truck hours are never higher in every condition, with mass conserved;
+- parked trucks are empty and stopped at the face, and the twin fields agree;
+- the road restriction parks no truck;
+- a breakdown releases a parked truck, and smart is never below fixed in first-hour production for road failures;
+- switching back to `fixed` releases every parked truck.
+
+### Limitations
+
+- **Required fleet:** it comes from the deterministic steady-state model, with no allowance for variability in load, travel or dump times. A real dispatcher would hold a margin.
+- **What the dispatcher controls:** only how many trucks cycle and when a parked truck is released. It does not assign trucks among several excavators (there is one), route around the blockage, or optimize speed.
+- **Parked trucks:** they are assumed to be available instantly when released, and parked time is treated as engine-off.
