@@ -1240,7 +1240,19 @@ export function IngestionLayer() {
   // Circuit position of truck i in one snapshot; trucks sharing a waiting state line up by rank.
   const circuitIn = (get: Getter, i: number, rank: number) => {
     const t = `truck-0${i + 1}`
-    return circuitPosition(String(get(`${t}.state`) ?? 'hauling'), num(get(`${t}.route_progress_pct`)), num(get(`${t}.heading`)) >= 0 ? 1 : -1, rank)
+    const state = String(get(`${t}.state`) ?? 'hauling')
+    const s = circuitPosition(state, num(get(`${t}.route_progress_pct`)), num(get(`${t}.heading`)) >= 0 ? 1 : -1, rank)
+    if (state !== 'hauling' && state !== 'returning') return s
+    // The simulator reports a truck as travelling until it reaches the dump or the face, so an arriving
+    // truck would drive onto trucks already waiting there. Stop it at the back of the queue instead.
+    const others = Array.from({ length: 6 }, (_, k) => k === i ? '' : String(get(`truck-0${k + 1}.state`)))
+    const count = (wanted: string) => others.filter(v => v === wanted).length
+    if (state === 'hauling') {
+      const waiting = count('queued_at_crusher')
+      return waiting || count('dumping') ? Math.min(s, (100 - LOOP_PCT - waiting * QUEUE_SPACING_PCT) / 100) : s
+    }
+    const waiting = count('queued_at_excavator')
+    return waiting || count('loading') ? Math.min(s, 1 + (100 - (LOOP_PCT + waiting * QUEUE_SPACING_PCT)) / 100) : s
   }
   const replayRanks = replayQueues.current.ranks
   const rowGetter = (r: number): Getter => key => log.rows[Math.min(Math.max(r, 0), log.rows.length - 1)]?.[index(key)]
