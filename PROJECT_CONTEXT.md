@@ -233,23 +233,35 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
-### Lock — Codex — C4 model-truth contract — 2026-10-24
+### Handoff — Codex — C4 model-truth contract — 2026-10-24
 
 ```text
 Owner: Ahmad + Codex
+Status: nonvisual truth contract complete and tested; Why trust this? UI remains deferred until B6 and C2–C3
 Branch: codex/c4-model-truth-contract (from origin/codex/ademix 8609421)
-Task: freeze a concise machine-readable truth contract from existing verified model evidence while B1–B6
-  remain with Professor + Claude.
+Implementation commit: 8552566
 Exact files: ademix/data/evidence/model_truth.json; ademix/data/build_data_layer.py;
   ademix/data/test_data_layer.py; ademix/data/telemetry/manifest.json;
   ademix/frontend/public/data/ingestion.json; ademix/simulator/MODEL_TRUTH_CONTRACT.md;
   PROJECT_CONTEXT.md.
 Contract: additive static schema `ademix.model-truth.v1`; no new twin, field, API route, formula, scenario,
   simulation behavior or OpenEgiz delivery change. Live values remain authoritative from returned twins.
-Frontend ownership: no React, CSS, 3D or presentation source will be edited. The future Why trust this?
-  view starts only after accepted B6 integration and the required C sequence reaches C4 UI work.
-Expected handoff: verified/not-validated statement, live joins, formulas, units, provenance categories,
-  assumptions, safe/prohibited claims, deterministic bundle, tests, limitations and commit SHA.
+Contract contents: mandatory verified/not-validated/synthetic wording; five live joins for mass-balance error,
+  observed rolling throughput, projected steady capacity, planned bottleneck and live constraint; five principal
+  formulas; nine sourced/derived/assumption/scenario-input parameters; explicit safe and prohibited claims.
+Unavailable behavior: a missing returned field displays unavailable. Mass balance must never show success when
+  its field is absent; observed throughput and projected capacity must never be substituted or blended.
+Evidence: all parameter values/units/categories join to the register; all live features exist in the engine
+  snapshot and join to exact twin kind, telemetry unit and origin. The generated bundle exposes `modelTruth`.
+Tests actually run: 41 data/schema/regeneration checks pass; 72 simulator/API tests pass; TypeScript/Vite
+  production build passes with the existing non-fatal >500 kB chunk warning. No React/CSS/3D source changed.
+Limitations: this is a concise view of existing evidence, not new validation. The conceptual deterministic
+  model omits site calibration, surveyed geometry, rolling resistance, stochastic failures, alternate routes,
+  crusher electricity and safety certification. It does not support measured or guaranteed claims.
+Next C4 step: after accepted B6 integration and completion of C1–C3 UI, consume `modelTruth` in the optional
+  Why trust this? view. Do not begin that frontend work early.
+Integration instruction: fast-forward into codex/ademix, rerun combined suites/build and generated-bundle
+  verification, then push codex/ademix. Do not merge to main.
 ```
 
 ### Handoff — Codex — C1 twin relationship contract — 2026-10-24
@@ -681,6 +693,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | 2026-10-23 | Codex | Completed A4 two-way-road breakdown consistency | Same-direction followers stop behind HT-01 while opposing traffic continues; directional Ditto fields, hauling/returning tests, tow/reset behavior and regenerated evidence are ready for integration |
 | 2026-10-23 | Codex | Completed A5 combined release verification | Full fixed/smart four-condition live matrix, clean reset, 107 automated checks, production build, clean Docker start and judge smoke all pass; Ubuntu and human visual approval remain explicit gates |
 | 2026-10-24 | Codex | Completed C1 twin relationship contract | Exactly 11 existing twins and 38 truthful hierarchy/material/movement/control links are validated and bundled for the optional Mine model explorer; no live behavior or frontend source changed |
+| 2026-10-24 | Codex | Completed the nonvisual C4 model-truth contract | Verified/not-validated wording, live evidence joins, formulas, provenance categories, assumptions, unavailable behavior and prohibited claims are validated and bundled without frontend changes |
 
 ## Decisions
 
