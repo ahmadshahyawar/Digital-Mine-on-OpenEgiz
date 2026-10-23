@@ -104,3 +104,20 @@
 @media (max-width: 760px) { .ig-breakdown-alert { top: 112px; } }
 .ig-pit-card small { display: block; margin-top: 4px; white-space: normal; font-size: 10px; line-height: 1.4; color: #f3d9a4; }
 .ig-pit-card em { white-space: normal; text-align: right; }
+.ig-wi-cards { display: grid; gap: 6px; }
+.ig-wi-card { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; align-items: center; padding: 7px 8px; border-radius: 8px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .04); color: var(--ig-ink); font: inherit; text-align: left; cursor: pointer; }
+.ig-wi-card:disabled { cursor: default; opacity: .75; }
+.ig-wi-card > b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .1); font-size: 12px; }
+.ig-wi-card > span { display: grid; font-size: 12px; font-weight: 600; }
+.ig-wi-card small { font-size: 10px; font-weight: 400; color: var(--ig-dim); }
+.ig-wi-card.on { border-color: #4fd1c5; background: rgba(79, 209, 197, .14); }
+.ig-wi-card.on > b { background: #4fd1c5; color: #062320; }
+.ig-wi-card.busy { opacity: .6; }
+.ig-wi-faults { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.ig-wi-faults button { padding: 4px 7px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 10.5px; cursor: pointer; }
+.ig-wi-faults button.on { border-color: #ff5149; background: rgba(255, 81, 73, .2); }
+.ig-wi-faults button:disabled { cursor: default; opacity: .7; }
+.ig-wi-bottleneck { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; align-items: baseline; padding: 7px 8px; border-radius: 7px; background: rgba(255, 255, 255, .04); }
+.ig-wi-bottleneck span { font-size: 10px; color: var(--ig-dim); }
+.ig-wi-bottleneck b { font-size: 12px; text-transform: capitalize; }
+.ig-wi-bottleneck p { grid-column: 1 / -1; }
