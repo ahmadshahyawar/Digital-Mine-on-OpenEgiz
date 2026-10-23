@@ -6,7 +6,7 @@ Status: **Verify** = already implemented or previously tested; verify the final 
 
 Ownership: Ahmad/Codex owns simulation, API, data and tests; Professor/Claude owns frontend and visual changes. One designated integrator owns shared release files. Record a task lock and handoff in `PROJECT_CONTEXT.md` before implementation.
 
-The concrete two-person work split and cross-layer handoff sequence are in `TEAM_WORK_PLAN.md`. Use this checklist for acceptance tests and the work plan for who changes which files.
+The concrete two-person work split and cross-layer handoff sequence are in `TEAM_WORK_PLAN.md`. Use this checklist for acceptance tests and the work plan for who changes which files. After the feature tasks, use `03_AI_JUDGE_READINESS.md` for the final builder, evidence, presentation, integrity, rubric-rehearsal and submission checks.
 
 ## P0 — Protect the submission first
 
@@ -20,7 +20,7 @@ The concrete two-person work split and cross-layer handoff sequence are in `TEAM
 
 - [ ] **3. Prove the complete OpenEgiz path on the release candidate.** Codex — Verify.
   - Work: retain simulator → MQTT → Eclipse Ditto → API → frontend as the production path. Keep LIVE, DEMO and REPLAY distinct.
-  - Test: run `ademix/simulator/smoke_check.py` using the documented container command; require `source=eclipse-ditto`, 11 twins and the current 128-field/unit contract. Observe the LIVE badge in the browser. Stop/restart a dependency on a disposable stand: show loss of live state honestly and recover without false LIVE labeling.
+  - Test: run `ademix/simulator/smoke_check.py` using the documented container command; require `source=eclipse-ditto`, 11 twins and the current 141-field/unit contract. Observe the LIVE badge in the browser. Stop/restart a dependency on a disposable stand: show loss of live state honestly and recover without false LIVE labeling.
 
 - [ ] **4. Reconcile all final documentation and presentation.** Integrator — Fix/Verify.
   - Work: update `presentation.pdf`, README, SUBMISSION and relevant context sections to match the final stand. Preserve Concept wording. Remove stale rerouting claims and obsolete figures; distinguish road restriction from closure. Resolve stale ownership/handoff statements without erasing history.

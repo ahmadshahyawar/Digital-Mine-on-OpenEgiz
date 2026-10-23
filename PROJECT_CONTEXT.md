@@ -752,6 +752,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - The shared integration branch is currently `origin/codex/ademix`; Ahmad + Codex remain the designated integrator. Feature branches are pushed for handoff, while official `main` remains reserved for the final accepted release.
 - No application behavior was changed. These planning files are intended for GitHub so future AI sessions receive the workflow directly from the repository.
 
+### AI judge readiness tasks — 2026-10-24
+
+- Added `03_AI_JUDGE_READINESS.md` as a shared final verification layer, based on the official evaluation path: literal README build, build report, source, SUBMISSION, presentation and runtime inspection.
+- Defined eight numbered tasks with owners and pass tests: frozen Ubuntu candidate, claim-to-evidence index, three-minute decision route, candidate-accurate presentation, software-rendering evidence, adversarial truth/integrity audit, independent rubric rehearsal and verified submission on official `main`.
+- Kept workstream boundaries explicit: Ahmad + Codex own release/evidence/integrity work; Professor + Claude own the opening experience, presentation and visual-performance acceptance; both reconcile a strict rubric rehearsal.
+- These tasks add no new runtime claim and do not mark any release gate complete. The latest local/Windows verification remains 107 automated checks, 11 Ditto twins and 141 required fields/units; native Ubuntu, final frontend acceptance, presentation reconciliation and official `main` are still open.
+- `git fetch origin` succeeded at the start of this session. No missing `origin/main` commit was reported, and no organizer update was found in the fetched commit range.
+
 ## Handoff Template
 
 Copy and complete this block after each work session:

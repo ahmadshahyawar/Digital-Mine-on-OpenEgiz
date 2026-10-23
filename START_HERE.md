@@ -39,6 +39,7 @@ Do not stack a dependent feature on an old unintegrated branch. Do not push unfi
 5. `COLLABORATION.md`
 6. `TEAM_WORK_PLAN.md`
 7. `01_AHMAD_CODEX_WORK.md` or `02_PROFESSOR_CLAUDE_WORK.md`
+8. `03_AI_JUDGE_READINESS.md` for the shared final verification and submission tasks
 
 ## Handoff required after every pushed feature
 
