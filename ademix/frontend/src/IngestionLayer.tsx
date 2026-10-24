@@ -19,7 +19,16 @@ type Bundle = {
   weather: { note: string; columns: string[]; rows: number[][] }
   dispatchComparison?: DispatchEvidence
   twinRelationships?: RelationshipContract
+  decisionExplanation?: DecisionEvidence
   productionRecovery?: RecoveryEvidence
+}
+// A8/A9 decision explanation (DECISION_EXPLANATION_CONTRACT.md, schema v1). Rendered only when the bundle carries it.
+type FleetRow = { trucks: number; throughput_tph: number; loading_queue_trucks_avg: number; crusher_queue_trucks_avg: number; truck_operating_h_per_1000_t: number; bottleneck: string }
+type DecisionEvidence = {
+  schema_version: string; source_label: string; claim: string
+  questions: Record<string, { question: string; answer: string; recommended_action: string; comparison?: FleetRow[]
+    studies?: Record<string, { unit: string; category: string; baseline_value: number; cases: { value: number; recommended_active_trucks: number; plateau_observed: boolean }[] }> }>
+  presentation_contract: { rounding: { throughput_tph: number; queues_trucks: number; truck_h_per_1000_t: number } }
 }
 // C1 twin relationship contract (TWIN_RELATIONSHIP_CONTRACT.md, schema v1). Only the fields used here.
 type RelationshipNode = { id: string; thing_id: string; label: string; kind: string; parent_thing_id: string | null; state_feature: string }
@@ -1140,7 +1149,7 @@ const clockSince = (seconds: number) => `${Math.floor(seconds / 3600)}:${String(
  * the same-start baseline as a thin control line, and only the supplied event markers. Period 2 (after reset)
  * is drawn separately. The history is static, so replay speed or pausing cannot change it.
  */
-function RecoveryTimelinePanel({ evidence, onClose }: { evidence?: RecoveryEvidence; onClose: () => void }) {
+function RecoveryTimelinePanel({ evidence, onClose, embedded = false }: { evidence?: RecoveryEvidence; onClose: () => void; embedded?: boolean }) {
   if (evidence?.schema_version !== 'ademix.production-recovery.v1') {
     return <section className="ig-panel ig-inline ig-evidence" aria-label="Breakdown timeline">
       <h2>Breakdown timeline <button className="ig-x" onClick={onClose} aria-label="Close timeline">×</button></h2>
@@ -1172,7 +1181,7 @@ function RecoveryTimelinePanel({ evidence, onClose }: { evidence?: RecoveryEvide
   const sameSpan = control.filter(c => c.sim_time_s <= incident[incident.length - 1].sim_time_s)
   const lost = made(sameSpan) - made(incident)
   return <section className="ig-panel ig-inline ig-evidence ig-timeline" aria-label="Breakdown timeline">
-    <h2>Breakdown timeline <button className="ig-x" onClick={onClose} aria-label="Close timeline">×</button></h2>
+    {!embedded && <h2>Breakdown timeline <button className="ig-x" onClick={onClose} aria-label="Close timeline">×</button></h2>}
     <p>Saved model history, not live: HT-01 breaks down at 0:00 and the stand runs {Math.round((reset?.sim_time_s ?? t1) - t0) / 3600} h before a reset. Samples every {evidence.methodology.sample_s / 60} simulated minutes.</p>
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Observed rolling throughput, projected capacity and events over simulated time">
       {reset && <rect x={x(reset.sim_time_s)} y={T} width={x(t1) - x(reset.sim_time_s)} height={H - T - B} fill="rgba(127,180,255,.08)"/>}
@@ -1431,6 +1440,120 @@ function TwinCard({ twin, label, frame, onClose }: { twin: string; label: string
     <p>Twin <code>org.openegiz.ademix:{twin}</code> · {keys.length} returned features</p>
     {keys.length === 0 ? <p className="ig-unavailable">State unavailable: this twin is not in the current data.</p>
       : <dl>{keys.slice(0, 14).map(k => <React.Fragment key={k}><dt>{k.replace(/_/g, ' ')}</dt><dd>{show(frame.at(`${twin}.${k}`))}</dd></React.Fragment>)}</dl>}
+  </section>
+}
+
+const CONDITION_LABEL: Record<string, string> = { baseline: 'Normal operations', truck_breakdown: 'Truck HT-01 breakdown', road_closure: 'Main road restriction', crusher_slowdown: 'Crusher capacity −45 %' }
+const SavedTag = () => <em className="ig-src ig-src-saved">saved model evidence · synthetic · not measured</em>
+const LiveTag = ({ source }: { source: string }) => <em className="ig-src ig-src-live">live · {source === 'eclipse-ditto' ? 'Eclipse Ditto' : 'local demo simulator'}</em>
+
+/**
+ * C2: one Decision workspace. Live twin values (now) are kept apart from saved model evidence (A2 matched comparison,
+ * A3 recovery history, A8/A9 fleet-size explanation when bundled). The recommendation is read from the evidence for the
+ * active condition, never computed here; "Apply" uses the real dispatch control.
+ */
+function DecisionWorkspace({ frame, live, source, bundle, onClose }: {
+  frame: Frame; live: boolean; source: string; bundle: Bundle; onClose: () => void
+}) {
+  const [applying, setApplying] = React.useState(false)
+  const [failure, setFailure] = React.useState('')
+  const condition = live ? String(frame.at('scenario-controller.active') ?? 'baseline') : 'baseline'
+  const policy = live ? String(frame.at('scenario-controller.dispatch_policy') ?? 'fixed') : 'fixed'
+  const { cycling, parked, down } = fleetSplit(frame)
+  const bottleneckNow = String(frame.at('mine-01.bottleneck_live') ?? '—')
+  const planned = String(frame.at('scenario-controller.bottleneck') ?? '—')
+  const v = (key: string, digits = 0) => { const x = frame.at(key); return x === null || x === undefined || x === '' ? '—' : fmt(num(x), digits) }
+
+  const a2 = bundle.dispatchComparison?.schema_version === 'ademix.dispatch-comparison.v1' ? bundle.dispatchComparison : undefined
+  const steady = a2?.scenarios[condition]?.periods.steady
+  const decision = bundle.decisionExplanation?.schema_version === 'ademix.decision-explanation.v1' ? bundle.decisionExplanation : undefined
+  const question = decision?.questions[condition === 'truck_breakdown' ? 'baseline' : condition]
+  // Recommendation: the A8/A9 contract's text when bundled; otherwise the A2 smart outcome for this condition.
+  let action: string | null = null
+  let basis = ''
+  if (question && condition !== 'truck_breakdown') { action = question.recommended_action; basis = `Fleet-size evidence: ${question.answer}` }
+  else if (steady) {
+    const smart = steady.smart, fixed = steady.fixed
+    const keep = Math.round(smart.cycling_trucks_avg), park = Math.round(smart.standby_trucks_avg)
+    action = park > 0
+      ? `Use Smart Dispatch: cycle ${keep} trucks and park ${park} as ready reserves.`
+      : `Keep all ${keep} available trucks cycling; parking any would cost output.`
+    basis = park > 0
+      ? `Saved matched run (${steady.window_h} h): output ${fmt(fixed.throughput_tph, 0)} → ${fmt(smart.throughput_tph, 0)} t/h, truck-hours per 1,000 t ${fmt(fixed.truck_operating_h_per_kt, 2)} → ${fmt(smart.truck_operating_h_per_kt, 2)}.`
+      : `Saved matched run (${steady.window_h} h): Smart Dispatch finds no surplus truck here; both policies give ${fmt(smart.throughput_tph, 0)} t/h.`
+  }
+  // The policy to apply comes from the evidence (does Smart Dispatch park any truck here?), not from the wording.
+  const wantSmart = steady ? Math.round(steady.smart.standby_trucks_avg) > 0 : false
+  const alreadyApplied = wantSmart ? policy === 'smart' : policy !== 'smart'
+  const apply = async () => {
+    setApplying(true); setFailure('')
+    try {
+      const response = await fetch('/api/dispatch', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policy: wantSmart ? 'smart' : 'fixed' }) })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    } catch (reason) { setFailure(`Request failed (${String(reason)}).`) } finally { setApplying(false) }
+  }
+  const rows: [string, string, number][] = [['Output', 'throughput_tph', 0], ['Trucks cycling', 'cycling_trucks_avg', 1], ['Trucks parked', 'standby_trucks_avg', 1],
+    ['Wait at loading face, min', 'loading_wait_min', 1], ['Wait at crusher, min', 'crusher_wait_min', 1], ['Truck-hours per 1,000 t', 'truck_operating_h_per_kt', 2]]
+  const r = decision?.presentation_contract.rounding
+
+  return <section className="ig-panel ig-inline ig-decision" aria-label="Decision workspace">
+    <h2>Decision <button className="ig-x" onClick={onClose} aria-label="Close and return to the mine">×</button></h2>
+    <p>What limits production, what to do, and the evidence behind it. <button className="ig-linkish" onClick={onClose}>Back to the 3D mine</button></p>
+
+    <h3>Now <LiveTag source={source}/></h3>
+    {!live ? <p className="ig-unavailable">Live values need the running stand; the replay shows saved evidence only.</p> : <>
+      <p className="ig-now">{CONDITION_LABEL[condition] ?? condition} · {policy === 'smart' ? 'Smart Dispatch' : 'fixed fleet'}</p>
+      <div className="ig-gauges">
+        <div><span>Output now</span><b>{v('mine-01.throughput_tph')} <small>t/h</small></b></div>
+        <div><span>Limits output now (measured)</span><b>{CONSTRAINT_NAME[bottleneckNow] ?? bottleneckNow}</b></div>
+        <div><span>Trucks cycling · parked · down</span><b>{cycling} <small>· {parked} · {down}</small></b></div>
+        <div><span>Truck-hours per 1,000 t (live)</span><b>{v('mine-01.truck_operating_h_per_kt', 2)} <small>h</small></b></div>
+        <div><span>Wait at face · crusher</span><b>{v('excavator-01.average_wait_min', 1)} <small>· {v('crusher-01.average_wait_min', 1)} min</small></b></div>
+        <div><span>Planned constraint (model)</span><b>{CONSTRAINT_NAME[planned] ?? planned}</b></div>
+      </div></>}
+
+    <h3>Recommended action <SavedTag/></h3>
+    {action ? <div className="ig-reco">
+      <p><b>{action}</b></p>
+      <p>{basis}</p>
+      {live && <div className="ig-reco-actions">
+        {alreadyApplied ? <span className="ig-ok">In force now (confirmed by the twins).</span>
+          : <button onClick={apply} disabled={applying}>{applying ? 'Applying…' : wantSmart ? 'Apply: Smart Dispatch on' : 'Apply: fixed fleet'}</button>}
+        {failure && <span className="ig-unavailable">{failure}</span>}
+      </div>}
+    </div> : <p className="ig-unavailable">Unavailable: no saved evidence for this condition, so no recommendation is shown.</p>}
+
+    <h3>Fixed vs Smart, {CONDITION_LABEL[condition] ?? condition} <SavedTag/></h3>
+    {steady ? <table className="ig-fuel-compare">
+      <thead><tr><th>{steady.window_h} h matched window</th><th>Fixed</th><th>Smart</th></tr></thead>
+      <tbody>{rows.map(([label, key, d]) => <tr key={key}><td>{label}</td><td>{fmt(steady.fixed[key], d)}</td><td>{fmt(steady.smart[key], d)}</td></tr>)}</tbody>
+    </table> : <p className="ig-unavailable">Unavailable.</p>}
+
+    <h3>Fleet size and assumptions (A8/A9) <SavedTag/></h3>
+    {!decision ? <p className="ig-unavailable">Unavailable in this build: the fleet-size explanation is not yet in the frontend data bundle (requested from Ahmad + Codex).</p> : <>
+      {(['baseline', 'road_closure', 'crusher_slowdown'] as const).map(k => {
+        const q = decision.questions[k]
+        if (!q) return null
+        return <details key={k} open={k === (condition === 'truck_breakdown' ? 'baseline' : condition)} className="ig-q">
+          <summary>{q.question}</summary>
+          <p>{q.answer} <b>{q.recommended_action}</b></p>
+          {q.comparison && <table className="ig-fuel-compare"><thead><tr><th>Trucks</th><th>Output t/h</th><th>Face queue</th><th>Crusher queue</th><th>Truck-h / kt</th></tr></thead>
+            <tbody>{q.comparison.map(c => <tr key={c.trucks}><td>{c.trucks}</td><td>{fmt(c.throughput_tph, r?.throughput_tph ?? 1)}</td>
+              <td>{fmt(c.loading_queue_trucks_avg, r?.queues_trucks ?? 2)}</td><td>{fmt(c.crusher_queue_trucks_avg, r?.queues_trucks ?? 2)}</td>
+              <td>{fmt(c.truck_operating_h_per_1000_t, r?.truck_h_per_1000_t ?? 2)}</td></tr>)}</tbody></table>}
+        </details>
+      })}
+      {decision.questions.sensitivity && <details className="ig-q"><summary>{decision.questions.sensitivity.question}</summary>
+        <p>{decision.questions.sensitivity.answer} <b>{decision.questions.sensitivity.recommended_action}</b></p>
+        {Object.entries(decision.questions.sensitivity.studies ?? {}).map(([name, st]) => <p key={name} className="ig-foot-note">
+          {name.replace(/_/g, ' ')} ({st.category}, baseline {st.baseline_value} {st.unit}): {st.cases.map(c => `${c.value} → ${c.recommended_active_trucks} trucks${c.plateau_observed ? '' : ' (no plateau)'}`).join(' · ')}</p>)}
+      </details>}
+      <p className="ig-foot-note">{decision.claim}</p></>}
+
+    <h3>Breakdown and recovery <SavedTag/></h3>
+    <RecoveryTimelinePanel evidence={bundle.productionRecovery} onClose={onClose} embedded/>
+    <p className="ig-foot-note">Live values change every 2 s; saved evidence never changes and is not rewritten by a reset.</p>
   </section>
 }
 
@@ -1919,6 +2042,7 @@ export function IngestionLayer() {
   const [timelineOpen, setTimelineOpen] = React.useState(false)
   const [guideOpen, setGuideOpen] = React.useState(false)
   const [modelOpen, setModelOpen] = React.useState(false)
+  const [decisionOpen, setDecisionOpen] = React.useState(false)
   const [twinCard, setTwinCard] = React.useState<string | null>(null)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
@@ -2052,7 +2176,7 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  const rightOpen = selected !== null || twinCard !== null || modelOpen || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
+  const rightOpen = selected !== null || twinCard !== null || modelOpen || decisionOpen || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
   // Selecting a model node opens the same live twin: trucks are selected in 3D, other equipment gets a card and focus.
   const selectTwin = (id: string) => {
     if (id.startsWith('truck-')) {
@@ -2108,7 +2232,8 @@ export function IngestionLayer() {
       onView={v => v === 'truck'
         ? goTo(trucks.current[0]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(18, 26, 22))
         : goTo(VIEWS[v].target, VIEWS[v].offset)}/>}
-    {rightOpen && <div className={`ig-rstack${modelOpen ? ' ig-rstack-wide' : ''}`}>
+    {rightOpen && <div className={`ig-rstack${modelOpen || decisionOpen ? ' ig-rstack-wide' : ''}`}>
+      {decisionOpen && <DecisionWorkspace frame={frame} live={live} source={liveSource} bundle={bundle} onClose={() => setDecisionOpen(false)}/>}
       {twinCard && <TwinCard twin={twinCard} frame={frame} onClose={() => setTwinCard(null)}
         label={bundle.twinRelationships?.nodes.find(n => n.id === twinCard)?.label ?? twinCard}/>}
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
@@ -2134,6 +2259,7 @@ export function IngestionLayer() {
 
     <nav className="ig-views" aria-label="Camera and layers">
       <button id="ig-guide-start" className="ig-guide-start" onClick={() => setGuideOpen(true)} disabled={guideOpen}>Guided demo ▶</button>
+      <button id="ig-open-decision" className={`ig-decision-btn${decisionOpen ? ' on' : ''}`} aria-pressed={decisionOpen} onClick={() => setDecisionOpen(o => !o)}>Decision</button>
       <button id="ig-open-model" className={modelOpen ? 'on' : ''} aria-pressed={modelOpen} onClick={() => setModelOpen(o => !o)}>Mine model</button>
       {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => { goTo(v.target, v.offset); if (id === 'overview') { setSelected(null); setTwinCard(null) } }}>{v.label}</button>)}
       <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"

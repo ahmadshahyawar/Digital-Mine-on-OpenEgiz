@@ -271,3 +271,22 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-truck-card code { font-size: 10px; color: var(--ig-accent); }
 @media (max-width: 1180px) { .ig-rstack.ig-rstack-wide { width: 420px; } }
 @media (max-width: 760px) { .ig-rstack.ig-rstack-wide { width: auto; } }
+/* C2 Decision workspace: live and saved evidence are labelled differently. */
+.ig-decision h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cfe; }
+.ig-src { padding: 1px 6px; border-radius: 4px; font-size: 9px; font-style: normal; letter-spacing: .04em; text-transform: none; }
+.ig-src-live { color: #062320; background: #38ef9d; }
+.ig-src-saved { color: #f3d9a4; background: rgba(240, 184, 90, .18); border: 1px solid rgba(240, 184, 90, .5); }
+.ig-now { font-size: 13px !important; color: var(--ig-ink) !important; font-weight: 600; }
+.ig-decision .ig-gauges b { font-size: 15px; text-transform: capitalize; }
+.ig-decision .ig-gauges b small { font-size: 10px; font-weight: 400; color: var(--ig-dim); text-transform: none; }
+.ig-reco { display: grid; gap: 4px; padding: 9px 11px; border-radius: 8px; background: rgba(79, 209, 197, .1); border: 1px solid var(--ig-accent); }
+.ig-reco p { font-size: 12px !important; color: var(--ig-ink) !important; }
+.ig-reco b { font-size: 14px; color: #fff; }
+.ig-reco-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ig-reco-actions button { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--ig-accent); background: var(--ig-accent); color: #06231e; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ig-q summary { cursor: pointer; font-size: 12px; color: var(--ig-ink); }
+.ig-q p { margin: 4px 0 !important; }
+.ig-linkish { padding: 0; border: 0; background: none; color: var(--ig-accent); font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.ig-decision .ig-timeline { padding: 0; border: 0; background: none; }
+.ig-views > button.ig-decision-btn { border-color: #f0b85a; }
+.ig-views > button.ig-decision-btn.on { color: #f0b85a; }
