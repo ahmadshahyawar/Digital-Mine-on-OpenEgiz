@@ -1,0 +1,14 @@
+B2 live check on the local demo simulator (ADEMIX_DEMO_MODE=1, engine at origin/codex/ademix 5f2db02), 2026-10-24.
+Procedure: Smart Dispatch until 4 operating trucks; POST /api/shift/reset (shift 3); after 3600 simulated s POST /api/dispatch fixed; stop at 7200 s.
+
+API at the switch:
+switch fixed {"dispatch":"fixed","status":"activated"} {"sim_time_s": 56440.0, "shift_id": 3, "shift_elapsed_s": 3600.0, "shift_fuel_l": 281.9, "shift_co2_kg": 754.65, "current_fuel_rate_lph": 381.1, "operating_trucks_fuel_count": 6}
+
+API at the end of the two hours (this run's 2 s logger skipped the 7200 s sample; the panel line below shows it):
+Same procedure in the first run (shift 2): {"sim_time_s": 51280.0, "shift_id": 2, "shift_elapsed_s": 7200.0, "shift_fuel_l": 663.0, "shift_co2_kg": 1774.85, "current_fuel_rate_lph": 381.1, "operating_trucks_fuel_count": 6}
+
+Panel text read from the page at the moment its own /api/state poll returned shift_elapsed_s 7200 (headless Chrome, CDP):
+{"elapsed":7200,"shift_id":3,"api_fuel":663,"api_co2":1774.85,"shown":["663.0 L","1,774.9 kg","381.1 L/h · 6 trucks + excavator","0.495 L/t","4.96 kWh/t"]}
+
+The screenshot b2-desktop-fuel-two-hour.png was captured one update later (2 h 01 min, 671.5 L).
+Earlier shift-reset check from the in-app browser: clicking Start new shift moved shift_id 1 -> 2 and the panel restarted at 3.1 L (API 3.13 L).

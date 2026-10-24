@@ -172,3 +172,36 @@ body:has(.ig-shell) { min-width: 0; }
   .ig-bar .ig-read { display: none; } /* the key figures above already show these */
   .ig-bar .ig-clock { white-space: normal; font-size: 11px; }
 }
+/* B2 fuel and CO2: published estimates, saved comparison and value-kind tags. */
+.ig-fuel h3 { margin: 4px 0 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cfe; }
+.ig-fuel-list { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; margin: 0; font-size: 12px; align-items: baseline; }
+.ig-fuel-list dt { color: var(--ig-dim); }
+.ig-fuel-list dd { margin: 0; text-align: right; }
+.ig-fuel-list .ig-val { font-size: 15px; }
+.ig-kind { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 4px; font-size: 9px; font-style: normal; letter-spacing: .04em; vertical-align: 1px; white-space: nowrap; }
+.ig-kind-simulated { color: #bfe9ff; background: rgba(94, 200, 242, .18); }
+.ig-kind-derived { color: #d9c8ff; background: rgba(160, 130, 240, .2); }
+.ig-kind-assumed { color: #f3d9a4; background: rgba(240, 184, 90, .18); }
+.ig-shift { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ig-shift button { margin-left: auto; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-ink); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-unavailable { color: #ffcf8a !important; }
+.ig-dim { color: var(--ig-dim); }
+.ig-fuel-compare { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ig-fuel-compare th { font-weight: 400; font-size: 10px; color: var(--ig-dim); text-align: right; padding: 0 3px 3px; }
+.ig-fuel-compare td { text-align: right; padding: 3px; border-top: 1px solid rgba(79, 209, 197, .15); white-space: nowrap; }
+.ig-fuel-compare td:first-child, .ig-fuel-compare th:first-child { text-align: left; white-space: normal; }
+.ig-why { margin: 0; padding-left: 15px; display: grid; gap: 4px; font-size: 11px; line-height: 1.45; color: var(--ig-dim); }
+.ig-sources { padding-left: 0; list-style: none; }
+.ig-sources .ig-kind { margin: 0 4px 0 0; }
+/* Right-hand column: selected truck, fuel and CO2, sensor readings. */
+.ig-rstack { position: absolute; top: 96px; right: 22px; width: 360px; max-height: calc(100vh - 176px); overflow: auto; display: grid; gap: 10px; align-content: start; z-index: 30; }
+.ig-rstack .ig-truck-card { position: static; width: auto; }
+.ig-total { font-size: 15px; font-weight: 600; color: #fff; }
+.ig-total small { font-size: 10px; font-weight: 400; color: var(--ig-dim); }
+@media (max-width: 1180px) { .ig-rstack { top: 168px; width: 320px; } }
+@media (max-width: 760px) {
+  .ig-rstack { top: auto; left: 12px; right: 12px; width: auto; bottom: 132px; max-height: 44vh; z-index: 42; }
+  .ig-rstack .ig-panel { background: #08130f; }
+  /* One panel at a time on a phone: a right-hand panel replaces the scenario panel until it is closed. */
+  .ig-has-right .ig-stack { display: none; }
+}

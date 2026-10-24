@@ -17,9 +17,18 @@ type Bundle = {
   logs: Record<string, Log>
   register: RegisterRow[]
   weather: { note: string; columns: string[]; rows: number[][] }
+  dispatchComparison?: DispatchEvidence
+}
+// A2 matched fixed-versus-smart evidence (DISPATCH_COMPARISON_CONTRACT.md, schema v1). Only the fields used here.
+type PolicyMetrics = Record<string, number>
+type DispatchEvidence = {
+  schema_version: string
+  claim: string
+  methodology: { steady_window_h: number; fuel_basis: string }
+  scenarios: Record<string, { label: string; periods: Record<'transient' | 'steady', { window_h: number; fixed: PolicyMetrics; smart: PolicyMetrics }> }>
 }
 type Weather = Record<string, number>
-type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
+type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'esg' | 'weather' | 'safety'
 type Frame = {
   at: (key: string) => string | number | null
   atMix: (key: string) => number
@@ -29,7 +38,7 @@ type Frame = {
 }
 type Getter = (key: string) => unknown
 
-const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
+const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet advisor'], ['esg', 'Fuel & CO₂'], ['weather', 'Weather'], ['safety', 'Safety']]
 const STATUS_COLOR: Record<string, string> = {
   sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
   synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b', external_reference: '#5ec8f2',
@@ -1070,25 +1079,119 @@ function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
   </section>
 }
 
-/** Energy and CO2 per tonne from the sourced fuel rates and IPCC diesel factors. */
-function EsgPanel({ frame, reg, hours }: { frame: Frame; reg: Reg; hours: number }) {
-  const running = Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(s => s !== 'breakdown' && s !== 'standby').length
-  const litresPerHour = running * reg('truck_fuel_consumption_lph') + reg('excavator_fuel_consumption_lph')
-  const tph = num(frame.at('mine-01.throughput_tph'))
-  const perTonne = tph > 0 ? litresPerHour / tph : 0
-  const co2PerHour = litresPerHour * reg('diesel_co2_kg_per_l')
-  const shiftCo2 = co2PerHour * hours / 1000
-  return <section className="ig-panel ig-inline" aria-label="Energy and emissions">
-    <h2>Energy &amp; ESG</h2>
-    <div className="ig-gauges">
-      <div><span>Diesel use</span><Flash value={litresPerHour.toFixed(0)}>{litresPerHour.toFixed(0)} <small>L/h</small></Flash></div>
-      <div><span>Diesel per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? perTonne.toFixed(2) : '—'} <small>L/t</small></Flash></div>
-      <div><span>Energy per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? (perTonne * reg('diesel_energy_kwh_per_l')).toFixed(1) : '—'} <small>kWh/t</small></Flash></div>
-      <div><span>CO₂ per tonne</span><Flash value={perTonne.toFixed(2)}>{tph > 0 ? (perTonne * reg('diesel_co2_kg_per_l')).toFixed(2) : '—'} <small>kg/t</small></Flash></div>
-      <div><span>CO₂ rate</span><Flash value={co2PerHour.toFixed(0)}>{co2PerHour.toFixed(0)} <small>kg/h</small></Flash></div>
-      <div><span>CO₂ this shift</span><Flash value={shiftCo2.toFixed(1)}>{shiftCo2.toFixed(1)} <small>t</small></Flash></div>
-    </div>
-    <p className="ig-foot-note">Diesel only: {running} trucks × {reg('truck_fuel_consumption_lph')} L/h + excavator {reg('excavator_fuel_consumption_lph')} L/h (Caterpillar handbook, medium load); {reg('diesel_co2_kg_per_l')} kg CO₂/L from IPCC 2006 defaults. Crusher electricity is excluded because its power rating is not available.</p>
+const KIND_LABEL = { simulated: 'simulated', derived: 'derived here', assumed: 'assumed' } as const
+type Kind = keyof typeof KIND_LABEL
+const KindTag = ({ kind }: { kind: Kind }) => <em className={`ig-kind ig-kind-${kind}`}>{KIND_LABEL[kind]}</em>
+
+const fmt = (value: number, digits = 0) => value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+const simTime = (seconds: number) => `${Math.floor(seconds / 3600)} h ${String(Math.floor(seconds / 60) % 60).padStart(2, '0')} min`
+
+/**
+ * Fuel and CO2 (B2). Shift totals and the current rate are the A1 twin fields on mine-01, shown as published
+ * (FUEL_CO2_CONTRACT.md); nothing here re-integrates history from the current fleet. The baseline comparison
+ * is the A2 matched 8 h model evidence. Values are labelled simulated (model output), derived here (simple
+ * arithmetic on listed fields) or assumed (published comparable-equipment rates and factors). None is measured.
+ */
+function FuelPanel({ frame, reg, evidence, live, condition, policy }: {
+  frame: Frame; reg: Reg; evidence?: DispatchEvidence; live: boolean; condition: string; policy: string
+}) {
+  const [pending, setPending] = React.useState(false)
+  const [failure, setFailure] = React.useState('')
+  const field = (key: string) => {
+    const raw = frame.at(`mine-01.${key}`)
+    return raw === null || raw === undefined || raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw)
+  }
+  const fuel = field('shift_fuel_l')
+  const co2 = field('shift_co2_kg')
+  const rate = field('current_fuel_rate_lph')
+  const trucks = field('operating_trucks_fuel_count')
+  const elapsed = field('shift_elapsed_s')
+  const shiftId = field('shift_id')
+  const basis = frame.at('mine-01.fuel_estimate_basis')
+  const tph = field('throughput_tph')
+  const perTonne = rate !== null && tph !== null && tph > 0 ? rate / tph : null
+  const available = fuel !== null && co2 !== null
+
+  // Baseline (normal operations, fixed fleet) versus the active condition and policy, same matched 8 h window.
+  const knownEvidence = evidence?.schema_version === 'ademix.dispatch-comparison.v1' ? evidence : undefined
+  const steady = (name: string) => knownEvidence?.scenarios[name]?.periods.steady
+  const base = steady('baseline')?.fixed
+  const activeWindow = steady(condition)
+  const active = activeWindow?.[policy === 'smart' ? 'smart' : 'fixed']
+  const isBaseline = condition === 'baseline' && policy !== 'smart'
+  const co2Factor = reg('diesel_co2_kg_per_l')
+  const change = (a: number, b: number) => b === 0 ? '—' : `${a >= b ? '+' : ''}${fmt(100 * (a - b) / b, 1)} %`
+  const label = knownEvidence?.scenarios[condition]?.label ?? condition.replace(/_/g, ' ')
+
+  const newShift = async () => {
+    setPending(true)
+    setFailure('')
+    try {
+      const response = await fetch('/api/shift/reset', { method: 'POST' })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    } catch (reason) {
+      setFailure(`Shift reset failed (${String(reason)}).`)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return <section className="ig-panel ig-inline ig-fuel" aria-label="Fuel and CO2">
+    <h2>Fuel &amp; CO₂ · estimated</h2>
+    <p>{live ? 'From the mine-01 twin, refreshed every 2 s.' : 'From the recorded synthetic log.'} Model estimates, not meter readings.</p>
+    {!available && <p className="ig-unavailable">{live
+      ? 'Shift fuel and CO₂ are not in the latest twin state yet; they appear as soon as the simulator publishes them.'
+      : 'This recorded log does not contain shift fuel totals.'}</p>}
+    <dl className="ig-fuel-list">
+      <dt>Estimated shift fuel <KindTag kind="simulated"/></dt>
+      <dd className="ig-total">{fuel === null ? '—' : fmt(fuel, 1)} <small>L</small></dd>
+      <dt>Estimated tank-to-wheel CO₂ <KindTag kind="simulated"/></dt>
+      <dd className="ig-total">{co2 === null ? '—' : fmt(co2, 1)} <small>kg</small></dd>
+      <dt>Fuel rate now <KindTag kind="simulated"/></dt>
+      <dd><Flash value={rate}>{rate === null ? '—' : fmt(rate, 1)} <small>L/h{trucks !== null ? ` · ${trucks} trucks + excavator` : ''}</small></Flash></dd>
+      <dt>Fuel per tonne now <KindTag kind="derived"/></dt>
+      <dd>{perTonne === null ? <span className="ig-dim">— no ore processed</span> : <>{fmt(perTonne, 3)} <small>L/t</small></>}</dd>
+      <dt>Diesel energy per tonne now <KindTag kind="derived"/></dt>
+      <dd>{perTonne === null ? <span className="ig-dim">—</span> : <>{fmt(perTonne * reg('diesel_energy_kwh_per_l'), 2)} <small>kWh/t</small></>}</dd>
+    </dl>
+    <p className="ig-shift">Shift {shiftId === null ? '—' : shiftId} · {elapsed === null ? '—' : simTime(elapsed)} simulated
+      {live && <button onClick={newShift} disabled={pending}>{pending ? 'Starting…' : 'Start new shift'}</button>}</p>
+    {failure && <p className="ig-unavailable">{failure}</p>}
+
+    <h3>Against normal operations · {isBaseline ? 'what Smart Dispatch would change' : `now: ${label}${policy === 'smart' ? ' with Smart Dispatch' : ''}`}</h3>
+    {!knownEvidence || !base
+      ? <p className="ig-unavailable">Saved comparison evidence is unavailable or has an unknown version.</p>
+      : (() => {
+        // At baseline with the fixed fleet, show the Smart Dispatch alternative from the same evidence.
+        const other = isBaseline ? steady('baseline')?.smart : active
+        if (!other) return <p className="ig-unavailable">No saved evidence for this condition.</p>
+        return <table className="ig-fuel-compare">
+          <thead><tr><th/><th>Normal · fixed</th><th>{isBaseline ? 'Normal · smart' : policy === 'smart' ? 'Active · smart' : 'Active · fixed'}</th><th>Change</th></tr></thead>
+          <tbody>
+            <tr><td>Fuel per 1,000 t <KindTag kind="simulated"/></td><td>{fmt(base.estimated_fuel_l_per_kt, 0)} L</td><td>{fmt(other.estimated_fuel_l_per_kt, 0)} L</td><td>{change(other.estimated_fuel_l_per_kt, base.estimated_fuel_l_per_kt)}</td></tr>
+            <tr><td>CO₂ per 1,000 t <KindTag kind="derived"/></td><td>{fmt(base.estimated_fuel_l_per_kt * co2Factor, 0)} kg</td><td>{fmt(other.estimated_fuel_l_per_kt * co2Factor, 0)} kg</td><td>{change(other.estimated_fuel_l_per_kt, base.estimated_fuel_l_per_kt)}</td></tr>
+            <tr><td>Fuel in {knownEvidence.methodology.steady_window_h} h <KindTag kind="simulated"/></td><td>{fmt(base.estimated_fuel_l, 0)} L</td><td>{fmt(other.estimated_fuel_l, 0)} L</td><td>{change(other.estimated_fuel_l, base.estimated_fuel_l)}</td></tr>
+            <tr><td>Output <KindTag kind="simulated"/></td><td>{fmt(base.throughput_tph, 0)} t/h</td><td>{fmt(other.throughput_tph, 0)} t/h</td><td>{change(other.throughput_tph, base.throughput_tph)}</td></tr>
+          </tbody>
+        </table>
+      })()}
+    <p className="ig-foot-note">Saved model evidence: matched {knownEvidence?.methodology.steady_window_h ?? 8} h steady window from one common start state (A2). Not live, not measured.</p>
+
+    <h3>Why the numbers change</h3>
+    <ul className="ig-why">
+      <li>Fuel accrues for every truck with its engine running, including trucks queuing or held behind a blockage, plus the excavator. Parked (Smart Dispatch) and broken-down trucks add none{trucks !== null ? ` — ${trucks} trucks are counted now` : ''}.</li>
+      <li>A scenario or dispatch change alters the rate from that moment only; totals so far are kept. Only Start new shift sets them to zero.</li>
+      <li>Fewer engines running for the same tonnes lowers fuel per tonne; a slower road or crusher spreads the same engine hours over fewer tonnes.</li>
+    </ul>
+
+    <h3>Where the numbers come from</h3>
+    <ul className="ig-why ig-sources">
+      <li><KindTag kind="assumed"/> {reg('truck_fuel_consumption_lph')} L/h per truck and {reg('excavator_fuel_consumption_lph')} L/h excavator. Basis reported by the twin: {typeof basis === 'string' ? basis : 'not reported'}.</li>
+      <li><KindTag kind="assumed"/> {co2Factor} kg CO₂ per litre and {reg('diesel_energy_kwh_per_l')} kWh per litre: IPCC 2006 diesel defaults (tank-to-wheel CO₂ only).</li>
+      <li><KindTag kind="simulated"/> shift totals and rate: the simulator integrates the rate over each event interval.</li>
+      <li><KindTag kind="derived"/> per-tonne and per-1,000 t CO₂ values: the fields above divided or multiplied here.</li>
+      <li>Measured: none. Excluded: crusher electricity, upstream fuel supply, CH₄ and N₂O. The trucks' tank % is a separate synthetic display signal and is not used.</li>
+    </ul>
   </section>
 }
 
@@ -1204,7 +1307,7 @@ function SensorPanel({ frame, live, source }: { frame: Frame; live: boolean; sou
     return typeof raw === 'number' ? raw.toFixed(digits) : String(raw ?? '—').replace(/_/g, ' ')
   }
   const rom = num(frame.at('crusher-01.rom_inventory_t'))
-  return <section className="ig-panel ig-right" aria-label="Sensor readings">
+  return <section className="ig-panel ig-inline ig-sensors" aria-label="Sensor readings">
     <h2>{live ? 'Live sensor readings' : 'Sensor readings · replay'}</h2>
     <p>{live ? (source === 'eclipse-ditto' ? 'From the Eclipse Ditto twins, refreshed every 2 seconds.' : 'From the local demo simulator (not via OpenEgiz), refreshed every 2 seconds.') : 'From the recorded synthetic log; values change as the replay plays.'} Highlighted values just changed.</p>
     <table className="ig-sensors-table">
@@ -1444,7 +1547,8 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  return <main className="ig-shell">
+  const rightOpen = selected !== null || layers.has('esg') || layers.has('sensors')
+  return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
         onPointerMissed={() => setSelected(null)}>
@@ -1472,17 +1576,22 @@ export function IngestionLayer() {
     <div className="ig-stack">
       <WhatIfPanel frame={frame} live={live}/>
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
-      {layers.has('fleet') && <EsgPanel frame={frame} reg={reg} hours={hours}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
       {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
     </div>
-    {layers.has('sensors') && <SensorPanel frame={frame} live={live} source={liveSource}/>}
+
 
     <BreakdownAlert frame={frame} reg={reg}/>
     <KpiStrip frame={frame}/>
-    {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
+    {rightOpen && <div className="ig-rstack">
+      {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
       onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
+      {layers.has('esg') && <FuelPanel frame={frame} reg={reg} evidence={bundle.dispatchComparison} live={live}
+        condition={live ? liveScenario : scenario} policy={live ? String(frame.at('scenario-controller.dispatch_policy') ?? 'fixed') : 'fixed'}/>}
+      {layers.has('sensors') && <SensorPanel frame={frame} live={live} source={liveSource}/>}
+    </div>}
+
 
     <header className="ig-title">
       <span>ADEMIX · DISPATCHER VIEW</span>
@@ -1503,7 +1612,7 @@ export function IngestionLayer() {
       </div>}
     </nav>
 
-    {layers.size > 0 && <div className="ig-key" aria-label="Value status">
+    {(layers.has('specs') || layers.has('sensors')) && <div className="ig-key" aria-label="Value status">
       {[['sourced', 'OpenMines'], ['external_reference', 'Cat handbook'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic']].map(([s, l]) =>
         <span key={s}><i style={{ background: STATUS_COLOR[s] }}/>{l}</span>)}
       <span className="ig-lane"><b style={{ color: '#5ec8f2' }}>▲</b>empty in · inner lane</span>
