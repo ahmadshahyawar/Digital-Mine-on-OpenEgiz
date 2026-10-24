@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C3 spatial scenario cause and effect — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/c3-show-effect (from origin/codex/ademix 39f3da6, C2 integrated)
+Task: C3. "Show effect" for an active disruption: focus the affected place (failed HT-01 and its held followers /
+  the restricted haul road / crusher, ROM bin and dump queue), mark it in the scene from returned state, and show a
+  short causal chain built from live twin fields that matches the model and road contracts (lane blockage only on
+  the failed truck's lane; road_closure is a both-lane speed restriction with no reroute). Camera control and
+  Overview recovery preserved.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c3/*
+Contracts consumed: ROAD_BREAKDOWN_CONTRACT.md, SCENARIOS.md semantics, existing twin fields (no change).
+Expected handoff: commit SHA, build, per-scenario focus/text checks against the API, screenshots, limitations.
+```
+
 ### Lock — Claude — C2 dispatcher Decision workspace — 2026-10-24
 
 ```text
