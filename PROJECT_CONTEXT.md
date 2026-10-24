@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C4 visible model trust and limitations — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Branch: claude/c4-why-trust (from origin/codex/ademix 3eee7e5, C3 integrated)
+Task: C4. Optional "Why trust this?" section inside the Decision workspace from modelTruth (ademix.model-truth.v1):
+  the required verified/not-validated headline verbatim, status statements, five live indicators joined by thing_id
+  + feature (mass balance pass only when the returned field exists and |error| <= 1e-6 t, else Unavailable; observed
+  and projected never substituted), principal formulas, key parameters with provenance categories, automated checks,
+  safe and prohibited claims, link to the Specifications view.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c4/*
+Contract consumed: MODEL_TRUTH_CONTRACT.md (no change).
+Expected handoff: commit SHA, build, contract-equality check, missing-field check, screenshots, limitations.
+```
+
 ### Status summary — Professor + Claude B/C work — 2026-10-24 (written before context compaction)
 
 ```text
