@@ -233,6 +233,50 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B5 operational animation and road acceptance — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b5-operations-road (from origin/codex/ademix 7ddc060)
+Task: B5. Present the A4 two-way road contract: affected lane from road-main.blockage_lane / blockage_heading and
+  the two directional blocked counters (never inferred from screen position, opposing lane never shown closed,
+  road_closure always a speed restriction); in-scene marking of only the blocked lane; breakdown banner wording
+  per contract; reset clears every warning. Then accept the operational story: loading passes and payload,
+  dumping into the ROM bin, queue spacing, standby parking and both breakdown directions, with captured evidence.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b5/*
+Contract consumed: ROAD_BREAKDOWN_CONTRACT.md (ademix.road-breakdown.v1), no change.
+Expected handoff: commit SHA, build, live checks for both lanes and reset, cycle evidence, limitations.
+```
+
+Handoff — Professor + Claude — B5 operational animation and road acceptance — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B5 — Operational animation and road acceptance
+Branch: claude/b5-operations-road (from origin/codex/ademix 7ddc060)
+Commit SHA: 70fbc5d (lock on the branch)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b5/{b5-crusher-bound-blocked.png,b5-face-bound-blocked.png,b5-after-reset.png,
+  b5-crusher-dumping-clean-pad.png,b5-loading-face-smart.png,b5-checks.txt}; PROJECT_CONTEXT.md
+Contract consumed (unchanged): ROAD_BREAKDOWN_CONTRACT.md (ademix.road-breakdown.v1) — road-main.blockage_lane,
+  blockage_heading, blocked_trucks, blocked_crusher_bound_trucks, blocked_face_bound_trucks, blockage, state.
+What changed: banner wording per contract (blocked lane named, opposing traffic continues; after tow "both lanes open,
+  out of service until Normal operations"; off-road failure blocks nothing); BlockedLane marks only the affected lane
+  from the failed truck back to its followers, opposite lane labelled open; failed-truck pull-over keys on
+  blockage_lane (not the road_closure speed restriction); failed/held trucks cancel any shown dwell and catch up 3×;
+  loop-road link triangles wound upward with upward normals (removes dark triangles across the crusher pad).
+Commands/checks actually run: tsc -b PASS; vite build PASS. Live on the demo simulator (integrated engine): crusher-bound
+  failure → blockage_lane crusher_bound, heading 1, held 1/0, banner + lane tags matched; face-bound failure →
+  face_bound, heading −1, held 0/1 then 2, banner + tags matched, followers drawn behind on the crusher side; tow →
+  "towed clear; both lanes open"; UI reset (A) → banner/lane/breakdown tags gone and twin lane none, heading 0,
+  counters 0, road open, no blocked/breakdown truck. Loading face (Smart) and crusher-while-dumping views captured.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; the drawn trucks still follow the twin forward-only and
+  can trail it by a few seconds after a dwell (now shortened for failures only); a full empty→load→haul→dump→return cycle
+  of one truck was observed across separate captures, not recorded as one continuous video.
+Request to Ahmad + Codex: none.
+Integration instruction: merge claude/b5-operations-road into codex/ademix.
+```
+
 ### Integration result — Codex — B4 recovery timeline — 2026-10-24
 
 - Integrated `origin/claude/b4-recovery-timeline` (`732d66c`, implementation `7826833`) into
