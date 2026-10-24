@@ -1635,6 +1635,15 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ## Handoff Template
 
+### Verified C5 complete judge-journey integration — 2026-10-25
+
+- Integrated completed Professor + Claude branch `origin/claude/c5-judge-journey` (implementation `ea3282c`, handoff `29c9c8f`) into `codex/ademix`. Its merge base is verified C4 commit `e34c546`; changes are limited to Professor-owned frontend files, C5 evidence, and this shared context. No simulator, API, twin, data, or OpenEgiz contract changed.
+- Combined checks passed: frontend TypeScript/Vite production build; 92 simulator/API tests; 48 data-layer tests; Docker UI rebuild; judge smoke against `source=eclipse-ditto`, all 11 twins, and all 143 required fields/units.
+- The complete live scenario verifier passed baseline, lane-specific HT-01 breakdown with the opposing lane open, road restriction at 10.72 km/h, crusher slowdown at 495 t/h, all four Smart Dispatch allocations, and final fixed/baseline reset with no stale breakdown, blockage, or standby state.
+- Professor + Claude's full-route evidence covers opening mine → breakdown → Show effect → Decision → Why trust this? → Overview at desktop, mid, and narrow sizes, plus keyboard/Escape behavior and B1–C4 regressions. Their automated audit reports no overlay collisions, off-screen panels, or estimated contrast failures at the tested sizes.
+- Remaining release acceptance is explicitly human: Ahmad should walk the live route at `http://127.0.0.1:4173`, confirm the opening view and recommendation are understandable, and note any visual issue before candidate freeze. Real-phone, screen-reader, and keyboard-only canvas-truck access remain unverified; Mine model nodes provide keyboard access to every twin. The existing non-fatal Vite large-chunk warning remains.
+- B1–B6 and required C1–C5 are now combined and live-tested on the shared branch. Official `main` remains unchanged; final release/J1–J8 gates still apply before submission.
+
 ### Verified C4 model-trust view integration — 2026-10-25
 
 - Integrated completed Professor + Claude branch `origin/claude/c4-why-trust` (implementation `cb92be9`, handoff `112e06d`) into `codex/ademix`. Its merge base is verified C3 commit `3eee7e5`; changes are limited to Professor-owned frontend files, C4 evidence, and this shared context. The authoritative model-truth schema and simulator/API behavior were not changed.
