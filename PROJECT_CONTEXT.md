@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C1 visible mine model and relationships — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/c1-mine-model (from origin/codex/ademix 104d2a5, B1–B6 integrated)
+Task: C1. Optional "Mine model" panel built only from twinRelationships (ademix.twin-relationships.v1): the 11
+  contract nodes joined to live /api/state by thing_id with their state_feature value (or "State unavailable"),
+  the 38 directed relationships drawn by category (material solid, movement dotted, control dashed and distinct,
+  hierarchy optional), loading face → truck → haul road → crusher readable; selecting a node opens the same live
+  twin (truck card + 3D selection, or a twin card + camera focus); immediate return to Overview.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c1/*
+Contract consumed: TWIN_RELATIONSHIP_CONTRACT.md (no change).
+Expected handoff: commit SHA, build, node/edge/join checks, per-node selection check, screenshots, limitations.
+```
+
 ### Lock — Claude — B6 guided three-minute demonstration — 2026-10-24
 
 ```text
