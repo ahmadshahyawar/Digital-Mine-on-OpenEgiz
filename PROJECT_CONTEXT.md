@@ -233,6 +233,60 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B2 fuel and ESG presentation — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b2-fuel-esg (from origin/codex/ademix 5f2db02)
+Task: B2. Replace the Fleet & ESG panel's frontend-recomputed fuel/CO2 with the A1 contract: estimated shift
+  fuel, estimated tank-to-wheel CO2, current fuel rate and operating-truck count from mine-01; baseline versus
+  active condition/policy from the A2 matched 8 h evidence (estimated_fuel_l, estimated_fuel_l_per_kt);
+  a plain explanation of why values change; explicit simulated / derived / assumed labels (nothing measured);
+  safe unavailable states; optional new-shift button using POST /api/shift/reset.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b2/*
+Contracts consumed: FUEL_CO2_CONTRACT.md (A1), DISPATCH_COMPARISON_CONTRACT.md (A2). No field renamed or added.
+Expected handoff: commit SHA, build, live API-vs-UI check, screenshots, limitations.
+```
+
+Handoff — Professor + Claude — B2 fuel and ESG presentation — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B2 — Correct fuel and ESG presentation
+Branch: claude/b2-fuel-esg (from origin/codex/ademix 5f2db02)
+Commit SHA: 4e5e338 (lock 72c923e)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b2/{b2-desktop-fuel-smart.png,b2-desktop-fuel-two-hour.png,b2-desktop-fuel-breakdown.png,
+  b2-phone-375-fuel.png,b2-live-two-hour-check.txt}; PROJECT_CONTEXT.md (this entry)
+Contracts consumed (unchanged): FUEL_CO2_CONTRACT.md — mine-01 shift_fuel_l, shift_co2_kg,
+  current_fuel_rate_lph, operating_trucks_fuel_count, shift_id, shift_elapsed_s, fuel_estimate_basis and
+  POST /api/shift/reset; DISPATCH_COMPARISON_CONTRACT.md — dispatchComparison schema v1, steady window
+  estimated_fuel_l, estimated_fuel_l_per_kt, throughput_tph. Register values used for labels/derivations:
+  truck/excavator L/h, diesel_co2_kg_per_l 2.677, diesel_energy_kwh_per_l 10.03.
+What changed: new optional "Fuel & CO₂" layer (Fleet & ESG split into Fleet advisor + Fuel & CO₂). The old ESG
+  panel recomputed L/h and a shift CO2 total from the current fleet × elapsed time; it is removed. Totals and
+  rate are displayed as published; per-tonne fuel/energy are derived here and show "—" when throughput is 0;
+  normal operations vs the active condition/policy come from A2 (unknown schema → "unavailable"); every value is
+  tagged simulated / derived here / assumed and "Measured: none" plus exclusions are stated. Start new shift calls
+  the reset endpoint. Truck card, sensors and fuel panel now share a right-hand column; phones show one panel.
+Commands/checks actually run: tsc -b PASS; vite build PASS (existing >500 kB chunk warning only).
+  Live (local demo simulator, 5f2db02 engine): UI = /api/state field-for-field within display rounding
+  (e.g. 4526.62 L → 4,526.6 L; 12117.76 kg → 12,117.8 kg; 381.1 L/h, 6 trucks; 381.1/770 → 0.495 L/t);
+  Start new shift moved shift_id 1→2 and restarted totals (3.13 L → 3.1 L); two-hour reproduction
+  (Smart 4 operating 1 h → fixed 6 operating 1 h) reached exactly 663.0 L / 1774.85 kg at 7200 s and the panel
+  text read 663.0 L / 1,774.9 kg at that poll; dispatch change kept the running total (281.9 L at 3600 s, then
+  accruing at 381.1 L/h); comparison rows equal A2 (baseline fixed 494.9 → smart 366.1 L/kt, −26.0 %;
+  breakdown fixed 430.5 L/kt, −13.0 % vs normal).
+Screenshot paths: evidence/claude-b2/*.png (desktop 1440×900 via headless Chrome/DevTools; phone 375×812).
+Known limitations / unverified: zero-throughput "—" path checked by code review only (live throughput never
+  reached 0); the two-hour screenshot was taken one update after the 663.0 L text check (shows 671.5 L at
+  2 h 01 min); comparison is the saved 8 h steady window, not the live shift; CO₂ per 1,000 t is derived here
+  as A2 L/kt × 2.677; not run on Docker/Eclipse Ditto.
+Request to Ahmad + Codex: none required. Optional: if the team wants CO₂ in the A2 evidence itself, add
+  estimated_co2_kg / estimated_co2_kg_per_kt to dispatchComparison so the UI no longer derives it.
+Integration instruction: merge claude/b2-fuel-esg into codex/ademix (frontend + evidence + this entry).
+```
+
 ### Lock — Claude — B1 simplify the opening operator view — 2026-10-24
 
 ```text
