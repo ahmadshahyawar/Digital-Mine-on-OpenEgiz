@@ -205,3 +205,14 @@ body:has(.ig-shell) { min-width: 0; }
   /* One panel at a time on a phone: a right-hand panel replaces the scenario panel until it is closed. */
   .ig-has-right .ig-stack { display: none; }
 }
+/* B3 fixed-versus-smart evidence. */
+.ig-wi-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.ig-wi-evidence { color: var(--ig-accent); border-color: var(--ig-accent); }
+.ig-evidence h2 { display: flex; align-items: center; }
+.ig-x { margin-left: auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-ink); font-size: 15px; line-height: 1; cursor: pointer; }
+.ig-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.ig-tabs button { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .04); color: var(--ig-dim); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-tabs button.on { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); }
+.ig-tabs-small button { font-size: 10px; padding: 3px 7px; }
+.ig-evidence-table td small { color: var(--ig-dim); font-size: 9px; }
+.ig-evidence-table th:first-child { color: var(--ig-ink); }
