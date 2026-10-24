@@ -21,6 +21,18 @@ type Bundle = {
   twinRelationships?: RelationshipContract
   decisionExplanation?: DecisionEvidence
   productionRecovery?: RecoveryEvidence
+  modelTruth?: ModelTruth
+}
+// C4 model-truth contract (MODEL_TRUTH_CONTRACT.md, schema v1). Static wording only; live values come from the twins.
+type TruthIndicator = { id: string; label: string; thing_id: string; feature: string; unit: string | null; category: string; formula: string; success_rule?: string; unavailable_behavior: string }
+type ModelTruth = {
+  schema_version: string; title: string
+  status: { verification: string; validation: string; telemetry: string; safety: string }
+  live_indicators: TruthIndicator[]
+  principal_formulas: { id: string; expression: string; result_parameter?: string; unit: string }[]
+  key_parameters: { parameter_id: string; label: string; value: number; unit: string; category: string; source: string }[]
+  evidence: { automated_checks: string[]; current_live_source: string; specifications_path: string; telemetry_dictionary_path: string; model_document_path: string; provenance_manifest_path: string }
+  safe_claims: string[]; prohibited_claims: string[]
 }
 // A8/A9 decision explanation (DECISION_EXPLANATION_CONTRACT.md, schema v1). Rendered only when the bundle carries it.
 type FleetRow = { trucks: number; throughput_tph: number; loading_queue_trucks_avg: number; crusher_queue_trucks_avg: number; truck_operating_h_per_1000_t: number; bottleneck: string }
@@ -1452,8 +1464,68 @@ const LiveTag = ({ source }: { source: string }) => <em className="ig-src ig-src
  * A3 recovery history, A8/A9 fleet-size explanation when bundled). The recommendation is read from the evidence for the
  * active condition, never computed here; "Apply" uses the real dispatch control.
  */
-function DecisionWorkspace({ frame, live, source, bundle, onClose }: {
-  frame: Frame; live: boolean; source: string; bundle: Bundle; onClose: () => void
+// The contract's required headline, verbatim (it must keep both "verified" and "not validated").
+const TRUTH_HEADLINE = 'Verified against documented formulas and invariants; not validated against production data from an operating mine. Telemetry is synthetic model output delivered through OpenEgiz.'
+const CATEGORY_WORDS: Record<string, string> = { sourced: 'Sourced (OpenMines)', derived: 'Derived from sourced values', assumption: 'Team assumption', scenario_input: 'What-if input', kpi: 'KPI from this run', analytical: 'Analytical projection' }
+const TRUTH_NAMESPACE = 'org.openegiz.ademix:'
+
+/** C4: why the model can be trusted, and where it cannot. Wording from modelTruth; values joined by thing_id + feature. */
+function WhyTrust({ truth, frame, live, onSpecs }: { truth?: ModelTruth; frame: Frame; live: boolean; onSpecs: () => void }) {
+  if (truth?.schema_version !== 'ademix.model-truth.v1') return <p className="ig-unavailable">The model-truth contract is missing or has an unknown version, so nothing is shown.</p>
+  const value = (ind: TruthIndicator) => {
+    if (!live || !ind.thing_id.startsWith(TRUTH_NAMESPACE)) return null
+    const x = frame.at(`${ind.thing_id.slice(TRUTH_NAMESPACE.length)}.${ind.feature}`)
+    return x === null || x === undefined || x === '' ? null : x
+  }
+  const groups = ['sourced', 'derived', 'assumption', 'scenario_input']
+  return <div className="ig-trust">
+    <p className="ig-trust-head"><b>{TRUTH_HEADLINE}</b></p>
+    <ul className="ig-trust-status">
+      <li><b>Verification.</b> {truth.status.verification}</li>
+      <li><b>Validation.</b> {truth.status.validation}</li>
+      <li><b>Telemetry.</b> {truth.status.telemetry}</li>
+      <li><b>Safety.</b> {truth.status.safety}</li>
+    </ul>
+    <table className="ig-fuel-compare ig-trust-live">
+      <thead><tr><th>Live check</th><th>Now</th><th>Category</th></tr></thead>
+      <tbody>{truth.live_indicators.map(ind => {
+        const x = value(ind)
+        let shown: React.ReactNode = <span className="ig-unavailable">Unavailable</span>
+        if (x !== null) {
+          const text = typeof x === 'number' ? `${ind.id === 'mass_balance' ? x.toExponential(1) : fmt(x, 0)}${ind.unit ? ` ${ind.unit}` : ''}`
+            : CONSTRAINT_NAME[String(x)] ?? String(x)
+          // Mass balance passes only on a returned numeric field within the contract's 0.000001 t tolerance.
+          shown = ind.id === 'mass_balance'
+            ? (typeof x === 'number' && Math.abs(x) <= 0.000001 ? <span className="ig-ok">Pass · {text}</span> : <span className="ig-unavailable">Outside tolerance · {String(x)}</span>)
+            : text
+        }
+        return <tr key={ind.id} data-indicator={ind.id}><td><b>{ind.label}</b><br/><small>{ind.formula}{ind.success_rule ? ` · pass if ${ind.success_rule}` : ''}</small></td>
+          <td>{shown}</td><td>{CATEGORY_WORDS[ind.category] ?? ind.category}</td></tr>
+      })}</tbody>
+    </table>
+    <p className="ig-foot-note">Observed throughput is measured over the last hour of the run; projected capacity is the steady-state model. They are different quantities and are never substituted for each other.</p>
+    <details className="ig-q"><summary>Principal formulas</summary>
+      <ul className="ig-trust-formulas">{truth.principal_formulas.map(f => <li key={f.id}><b>{f.id.replace(/_/g, ' ')}</b> ({f.unit}): <code>{f.expression}</code></li>)}</ul>
+    </details>
+    <details className="ig-q"><summary>Key parameters and where they come from</summary>
+      {groups.map(g => {
+        const list = truth.key_parameters.filter(k => k.category === g)
+        return list.length ? <div key={g} className="ig-trust-group" data-category={g}><h4>{CATEGORY_WORDS[g]}</h4>
+          <ul>{list.map(k => <li key={k.parameter_id} data-parameter={k.parameter_id}>{k.label}: <b>{k.value} {k.unit}</b> <small>· {k.source}</small></li>)}</ul></div> : null
+      })}
+    </details>
+    <details className="ig-q"><summary>Automated checks and limits</summary>
+      <p>Checks: {truth.evidence.automated_checks.join(' · ')}.</p>
+      <p>Safe to say:</p><ul>{truth.safe_claims.map(c => <li key={c}>{c}</li>)}</ul>
+      <p>Not claimed:</p><ul className="ig-trust-no">{truth.prohibited_claims.map(c => <li key={c}>{c}</li>)}</ul>
+      <p className="ig-foot-note">Sources: {truth.evidence.specifications_path}, {truth.evidence.telemetry_dictionary_path}, {truth.evidence.model_document_path}, {truth.evidence.provenance_manifest_path}. Live: {truth.evidence.current_live_source}.</p>
+    </details>
+    <button className="ig-linkish" onClick={onSpecs}>Show equipment specifications on the mine ▸</button>
+  </div>
+}
+
+function DecisionWorkspace({ frame, live, source, bundle, onClose, onSpecs }: {
+  frame: Frame; live: boolean; source: string; bundle: Bundle; onClose: () => void; onSpecs: () => void
 }) {
   const [applying, setApplying] = React.useState(false)
   const [failure, setFailure] = React.useState('')
@@ -1553,6 +1625,10 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose }: {
 
     <h3>Breakdown and recovery <SavedTag/></h3>
     <RecoveryTimelinePanel evidence={bundle.productionRecovery} onClose={onClose} embedded/>
+
+    <details className="ig-why" id="ig-why-trust"><summary>Why trust this?</summary>
+      <WhyTrust truth={bundle.modelTruth} frame={frame} live={live} onSpecs={onSpecs}/>
+    </details>
     <p className="ig-foot-note">Live values change every 2 s; saved evidence never changes and is not rewritten by a reset.</p>
   </section>
 }
@@ -2351,7 +2427,8 @@ export function IngestionLayer() {
         : goTo(VIEWS[v].target, VIEWS[v].offset)}/>}
     {rightOpen && <div className={`ig-rstack${modelOpen || decisionOpen ? ' ig-rstack-wide' : ''}`}>
       {effectOpen && <EffectPanel frame={frame} condition={liveScenario} onClose={() => setEffectOpen(false)}/>}
-      {decisionOpen && <DecisionWorkspace frame={frame} live={live} source={liveSource} bundle={bundle} onClose={() => setDecisionOpen(false)}/>}
+      {decisionOpen && <DecisionWorkspace frame={frame} live={live} source={liveSource} bundle={bundle} onClose={() => setDecisionOpen(false)}
+        onSpecs={() => setLayers(prev => new Set(prev).add('specs'))}/>}
       {twinCard && <TwinCard twin={twinCard} frame={frame} onClose={() => setTwinCard(null)}
         label={bundle.twinRelationships?.nodes.find(n => n.id === twinCard)?.label ?? twinCard}/>}
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
