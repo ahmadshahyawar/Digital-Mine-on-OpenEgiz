@@ -233,6 +233,25 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Integration — Codex — B5 operational animation and road acceptance — 2026-10-24
+
+- Owner/branch: Ahmad + Codex, `codex/integrate-b5`, based on shared integration `7ddc060`.
+- Merged `origin/claude/b5-operations-road` (`30f8794`, implementation `70fbc5d`) without conflicts;
+  merge commit `de5429f`. Preserved B1–B4, the standby-bay access fix and all backend/data contracts.
+- Frontend changes: contract-driven directional lane overlay and banner; pull-over keyed to actual blockage lane;
+  interrupted dwell cancellation and quicker visual catch-up for failed/held trucks; loop-road surface normals.
+- Verification: 92 simulator/API/evidence tests PASS; 47 data-contract tests PASS; host TypeScript/Vite production
+  build PASS (existing non-fatal large-chunk warning). UI-only Docker image rebuild/start PASS and healthy.
+  Live smoke PASS with Eclipse Ditto, 11 twins and 143 fields/units. Full Fixed/Smart four-condition live matrix
+  PASS, with required/cycling/standby counts 4/4/2, 4/4/1, 8/6/0 and 3/3/3; clean fixed/baseline reset PASS.
+- Browser check: rebuilt UI reports LIVE Eclipse Ditto, advancing simulated time and changed condition/KPI values
+  during the matrix; fresh final-reset screenshot `evidence/claude-b5/b5-integrated-live-reset.png`.
+- Reviewed Professor's supplied screenshots for crusher-bound and face-bound failures and `b5-checks.txt`.
+- Limitations retained: drawn trucks may trail returned state by a few seconds, with 3× catch-up for failure/held
+  states; the supplied full-cycle observation consists of separate captures, not a continuous recording.
+- Handoff: publish the tested integration to `origin/codex/ademix`, then Professor + Claude start B6
+  from that exact shared state. Do not merge to official main or mark final human/Ubuntu acceptance complete.
+
 ### Lock — Claude — B5 operational animation and road acceptance — 2026-10-24
 
 ```text
