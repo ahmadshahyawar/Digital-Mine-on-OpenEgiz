@@ -425,16 +425,26 @@ function SafetyBerms() {
         join = point
         if (Math.hypot(point.x - centre.x, point.z - centre.z) >= r) break
       }
-      const gapAt = Math.atan2(join.z - centre.z, join.x - centre.x)
-      const halfGap = Math.atan((ROAD_HALF_WIDTH + 1.4) / r) * 1.1
-      const points: THREE.Vector3[] = []
-      for (let k = 0; k <= 96; k++) {
-        const a = gapAt + halfGap + (Math.PI * 2 - 2 * halfGap) * k / 96
-        points.push(new THREE.Vector3(centre.x + Math.cos(a) * r, centre.y + .35, centre.z + Math.sin(a) * r))
+      const gaps = [{ at: Math.atan2(join.z - centre.z, join.x - centre.x), half: Math.atan((ROAD_HALF_WIDTH + 1.4) / r) * 1.1 }]
+      // The face loop also opens towards the standby bay, the full width of the bay, so parked trucks have a way in.
+      if (end === 1) {
+        const bay = STANDBY_BAY.middle
+        gaps.push({ at: Math.atan2(bay.z - centre.z, bay.x - centre.x), half: Math.atan(9.4 / r) * 1.15 })
       }
-      return along(points)
+      const open = (a: number) => gaps.some(g => Math.abs(Math.atan2(Math.sin(a - g.at), Math.cos(a - g.at))) < g.half)
+      // Walk round the circle and keep each closed stretch as its own windrow.
+      const segments: THREE.Vector3[][] = []
+      let current: THREE.Vector3[] = []
+      const start = gaps[0].at + gaps[0].half
+      for (let k = 0; k <= 240; k++) {
+        const a = start + Math.PI * 2 * k / 240
+        if (open(a)) { if (current.length > 1) segments.push(current); current = []; continue }
+        current.push(new THREE.Vector3(centre.x + Math.cos(a) * r, centre.y + .35, centre.z + Math.sin(a) * r))
+      }
+      if (current.length > 1) segments.push(current)
+      return segments.map(along)
     }
-    return [road(-1), ...loops.map(loopBerm)]
+    return [road(-1), ...loops.flatMap(loopBerm)]
   }, [])
   return <group>{tubes.map((g, i) => <mesh key={i} geometry={g}><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>)}</group>
 }
@@ -637,7 +647,9 @@ function StandbyBay({ parked, labels }: { parked: number; labels: boolean }) {
   return <group>
     <group position={middle} rotation={[0, yaw, 0]}>
       <mesh position={[0, -.55, 0]}><boxGeometry args={[16.6, 1.3, 8.2]}/><meshStandardMaterial color="#4a4339" roughness={1}/></mesh>
-      <mesh position={[0, -.6, -5.6]}><boxGeometry args={[12, 1.3, 3.2]}/><meshStandardMaterial color="#544c41" roughness={1}/></mesh>
+      {/* Paved access apron, the full width of the bay, joining the face loop through the gap in its windrow. */}
+      <mesh position={[0, -.58, -7.2]}><boxGeometry args={[16.6, 1.3, 6.6]}/><meshStandardMaterial color="#504a40" roughness={.98}/></mesh>
+      {[-8.1, 8.1].map(x => <mesh key={x} position={[x, .12, -7.2]}><boxGeometry args={[.16, .02, 6.4]}/><meshBasicMaterial color="#d9d2c0"/></mesh>)}
       {Array.from({ length: 5 }, (_, k) => <mesh key={k} position={[(k - 2) * 3.7, .11, .4]}><boxGeometry args={[.16, .02, 6]}/><meshBasicMaterial color="#e8e2cf"/></mesh>)}
       <mesh position={[0, .11, -2.6]}><boxGeometry args={[15, .02, .16]}/><meshBasicMaterial color="#e8e2cf"/></mesh>
       <mesh position={[0, .45, 4.5]}><boxGeometry args={[17, .9, 1]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>
@@ -645,7 +657,7 @@ function StandbyBay({ parked, labels }: { parked: number; labels: boolean }) {
     </group>
     {labels && slots.map((slot, k) => <Html key={k} center distanceFactor={110} position={slot.clone().addScaledVector(out, 3.4).add(new THREE.Vector3(0, .4, 0))} zIndexRange={[15, 0]}>
       <div className="ig-bay-no">{k + 1}</div></Html>)}
-    {(labels || parked > 0) && <Html center distanceFactor={90} position={middle.clone().addScaledVector(out, 5).add(new THREE.Vector3(0, 3.2, 0))} zIndexRange={[20, 0]}>
+    {(labels || parked > 0) && <Html center distanceFactor={50} position={middle.clone().addScaledVector(out, 5).add(new THREE.Vector3(0, 3.2, 0))} zIndexRange={[20, 0]}>
       <div className="ig-sign-label">Standby bay · engines off · {parked} parked</div></Html>}
   </group>
 }
@@ -954,7 +966,8 @@ type ViewRequest = { target: THREE.Vector3; offset: THREE.Vector3; n: number }
 const VIEWS: Record<string, { label: string; target: THREE.Vector3; offset: THREE.Vector3 }> = {
   overview: { label: 'Overview', target: new THREE.Vector3(0, -6, 0), offset: new THREE.Vector3(84, 84, 96) },
   // Looking steeply down into the pit so the walls do not block the view of the face.
-  face: { label: 'Loading face', target: haulRoadPoint(1), offset: new THREE.Vector3(6, 40, 20) },
+  // Aimed between the loop and the standby bay so the excavator, the queue and parked trucks are all in view.
+  face: { label: 'Loading face', target: haulRoadPoint(1).lerp(STANDBY_BAY.middle, .35), offset: new THREE.Vector3(8, 50, 26) },
   crusher: { label: 'Crusher', target: haulRoadPoint(0), offset: new THREE.Vector3(-26, 30, 24) },
 }
 
