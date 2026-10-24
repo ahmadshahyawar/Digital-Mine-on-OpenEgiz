@@ -233,6 +233,12 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+Owner: Ahmad + Codex
+Branch: `codex/a8-a9-decision-contract`
+Exact files: `ademix/data/build_decision_explanation.py`, `ademix/data/test_decision_explanation.py`, `ademix/data/evidence/decision_explanation.json`, `ademix/data/DECISION_EXPLANATION_CONTRACT.md`, `ademix/data/DATA_CARD.md`, `PROJECT_CONTEXT.md`
+Purpose: freeze a frontend-ready A8/A9 explanation contract for the existing Decision workspace without editing Professor-owned frontend files.
+Expected handoff: Professor + Claude consume the generated JSON exactly, keep saved evidence separate from live state, and show unavailable instead of fabricating missing values.
+
 ### Lock — Claude — B2 fuel and ESG presentation — 2026-10-24
 
 ```text
