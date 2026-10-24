@@ -1090,6 +1090,12 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Verification: all 42 data-layer tests pass, including exact audit-item, unit, confidence and evidence-path checks. The existing 80 simulator/API tests also pass. No generated frontend data artifact was changed while B2 frontend work was active.
 - Integration note: a completed `origin/claude/b2-fuel-esg` handoff appeared after this audit began. Integrate and test B2 after this independent audit is committed, before starting A8 fleet-sizing work.
 
+### Verified B2 integration — 2026-10-24
+
+- Integrated completed Professor + Claude branch `origin/claude/b2-fuel-esg` after the independent source/unit audit. Its implementation changes are limited to Professor-owned `IngestionLayer.tsx`, `ingestion.css`, B2 evidence and this shared handoff; no Codex simulator or data-contract code was overwritten.
+- Combined verification passed: 80 simulator/API tests, 42 data-layer tests and the frontend TypeScript/Vite production build. The rebuilt Docker stack reached healthy state; the judge smoke check passed real `eclipse-ditto` state, all 11 twins and all 143 required fields/units.
+- The full live fixed/smart scenario matrix passed baseline, breakdown, road restriction and crusher slowdown plus clean reset. B2 is therefore integrated before A8 fleet-sizing work begins.
+
 Copy and complete this block after each work session:
 
 ```text
