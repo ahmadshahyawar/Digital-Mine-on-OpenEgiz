@@ -7,12 +7,14 @@ This file records every external dataset, code reference, model, texture, and vi
 ### OpenMines — North Pit Mine configuration
 
 - Source: <https://github.com/370025263/openmines>
+- Audited upstream commit: `acd77e23de2c3b743485ec87cabdbbf7779ceb3e`
 - File: `ademix/data/openmines/north_pit_mine.json`
 - Upstream path: `openmines/src/conf/north_pit_mine.json`
 - License: MIT
 - Copyright: Copyright (c) 2023 stone meng
 - License copy: `ademix/data/openmines/LICENSE`
-- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. This has not been re-checked against the upstream repository. `ademix/data/test_data_layer.py` verifies the stored file.
+- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. On 24 October 2026 the LF-normalized file was checked byte-for-byte against the audited upstream commit and matched. `ademix/data/test_data_layer.py` verifies the stored file.
+- Unit evidence: `ademix/data/OPENMINES_UNIT_AUDIT.md` and `ademix/data/registry/openmines_unit_evidence.csv` distinguish units explicitly stated by upstream code from units established through executable equations.
 - Derived data: `ademix/data/fleet/` (equipment and route-distance tables extracted from this file) and `ademix/data/registry/parameters.csv` (field-level traceability). See `ademix/data/DATA_CARD.md`.
 - Use: calibration reference for fleet size, truck capacity, truck speed, shovel capacity/cycle time, dump time, route distances, and road-repair event parameters.
 - Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for judge-environment performance. It does not claim to reproduce the full OpenMines simulation.

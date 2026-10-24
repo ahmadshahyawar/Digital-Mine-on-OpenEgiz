@@ -58,6 +58,7 @@ TWINS = json.loads((DATA.parent / "simulator" / "twins.json").read_text(encoding
 RELATIONSHIPS = json.loads((DATA / "topology" / "twin_relationships.json").read_text(encoding="utf-8"))
 MODEL_TRUTH = json.loads((DATA / "evidence" / "model_truth.json").read_text(encoding="utf-8"))
 MANIFEST = json.loads((DATA / "telemetry" / "manifest.json").read_text(encoding="utf-8"))
+UNIT_EVIDENCE = read_csv(DATA / "registry" / "openmines_unit_evidence.csv")
 
 
 def value(parameter_id):
@@ -73,6 +74,26 @@ class SourceIntegrityTests(unittest.TestCase):
 
     def test_source_license_is_present(self):
         self.assertIn("MIT", (DATA / "openmines" / "LICENSE").read_text(encoding="utf-8"))
+
+    def test_openmines_units_have_audited_upstream_evidence(self):
+        expected = {
+            "truck_capacity": "t",
+            "truck_speed": "km/h",
+            "road_distance": "km",
+            "shovel_tons": "t",
+            "shovel_cycle_time": "min",
+            "dumper_cycle_time": "min",
+            "road_repair_lambda": "1/min",
+            "road_repair_duration": "min",
+        }
+        actual = {row["item"]: row for row in UNIT_EVIDENCE}
+        self.assertEqual(set(actual), set(expected))
+        for item, unit in expected.items():
+            with self.subTest(item=item):
+                self.assertEqual(actual[item]["model_unit"], unit)
+                self.assertIn(actual[item]["status"], {"confirmed_explicit", "confirmed_executable_semantics"})
+                self.assertRegex(actual[item]["upstream_evidence"], r"openmines/src/.+\.py:\d+")
+                self.assertTrue(actual[item]["reason"])
 
 
 class RegisterTests(unittest.TestCase):
