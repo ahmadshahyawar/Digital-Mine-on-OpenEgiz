@@ -216,3 +216,17 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-tabs-small button { font-size: 10px; padding: 3px 7px; }
 .ig-evidence-table td small { color: var(--ig-dim); font-size: 9px; }
 .ig-evidence-table th:first-child { color: var(--ig-ink); }
+/* B4 production and recovery timeline. */
+.ig-timeline svg { width: 100%; height: auto; display: block; }
+.ig-axis { font-size: 9px; fill: #9db3aa; }
+.ig-badge { font-size: 8px; font-weight: 700; fill: #10201b; }
+.ig-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10px; color: var(--ig-dim); }
+.ig-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.ig-legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid #4fd1c5; }
+.ig-legend .ig-line-dash { border-top: 2px dashed #f0b85a; }
+.ig-legend .ig-line-thin { border-top: 1px solid #9db3aa; }
+.ig-events { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 11px; color: var(--ig-ink); }
+.ig-events li { display: grid; grid-template-columns: 16px 34px 1fr; gap: 6px; align-items: baseline; }
+.ig-events b { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; color: #10201b; }
+.ig-events span { color: var(--ig-dim); }
+.ig-timeline-summary dd { font-size: 12px; }

@@ -18,6 +18,16 @@ type Bundle = {
   register: RegisterRow[]
   weather: { note: string; columns: string[]; rows: number[][] }
   dispatchComparison?: DispatchEvidence
+  productionRecovery?: RecoveryEvidence
+}
+// A3 production and recovery history (HISTORY_CONTRACT.md, schema v1). Only the fields used here.
+type RecoverySample = { period_id: number; sim_time_s: number; elapsed_s: number; observed_rolling_throughput_tph: number
+  projected_steady_capacity_tph: number; production_t: number; active_scenario: string; road_state: string; blocked_trucks: number }
+type RecoveryEvent = { period_id: number; sim_time_s: number; kind: string; label: string }
+type RecoveryEvidence = {
+  schema_version: string; claim: string; methodology: { sample_s: number; recovery_rule: string }
+  baseline: { samples: RecoverySample[] }
+  breakdown_recovery: { events: RecoveryEvent[]; periods: { period_id: number; label: string; samples: RecoverySample[] }[] }
 }
 // A2 matched fixed-versus-smart evidence (DISPATCH_COMPARISON_CONTRACT.md, schema v1). Only the fields used here.
 type PolicyMetrics = Record<string, number>
@@ -1099,13 +1109,99 @@ function DispatchEvidencePanel({ evidence, reg, liveCondition, onClose }: {
   </section>
 }
 
+const EVENT_COLOR: Record<string, string> = {
+  period_started: '#9db3aa', breakdown_started: '#ff5149', road_cleared: '#f0b85a', throughput_recovered: '#38ef9d', reset: '#7fb4ff',
+}
+const clockSince = (seconds: number) => `${Math.floor(seconds / 3600)}:${String(Math.round(seconds / 60) % 60).padStart(2, '0')}`
+
+/**
+ * B4: production loss and recovery after the HT-01 breakdown, plotted from the saved A3 history only
+ * (HISTORY_CONTRACT.md). Simulated time on x; observed rolling throughput solid, projected steady capacity dashed,
+ * the same-start baseline as a thin control line, and only the supplied event markers. Period 2 (after reset)
+ * is drawn separately. The history is static, so replay speed or pausing cannot change it.
+ */
+function RecoveryTimelinePanel({ evidence, onClose }: { evidence?: RecoveryEvidence; onClose: () => void }) {
+  if (evidence?.schema_version !== 'ademix.production-recovery.v1') {
+    return <section className="ig-panel ig-inline ig-evidence" aria-label="Breakdown timeline">
+      <h2>Breakdown timeline <button className="ig-x" onClick={onClose} aria-label="Close timeline">×</button></h2>
+      <p className="ig-unavailable">Saved history is missing or has an unknown version, so nothing is shown.</p>
+    </section>
+  }
+  const periods = evidence.breakdown_recovery.periods
+  const events = evidence.breakdown_recovery.events
+  const control = evidence.baseline.samples
+  const all = periods.flatMap(p => p.samples)
+  const t0 = all[0].sim_time_s
+  const t1 = all[all.length - 1].sim_time_s
+  const values = [...all.flatMap(x => [x.observed_rolling_throughput_tph, x.projected_steady_capacity_tph]), ...control.map(x => x.observed_rolling_throughput_tph)]
+  const yMin = Math.floor((Math.min(...values) - 30) / 50) * 50
+  const yMax = Math.ceil((Math.max(...values) + 10) / 50) * 50
+  const W = 340, H = 190, L = 34, R = 8, T = 26, B = 22
+  const x = (t: number) => L + (t - t0) / (t1 - t0) * (W - L - R)
+  const y = (v: number) => T + (yMax - v) / (yMax - yMin) * (H - T - B)
+  const path = (samples: RecoverySample[], key: 'observed_rolling_throughput_tph' | 'projected_steady_capacity_tph') =>
+    samples.map((p, i) => `${i ? 'L' : 'M'}${x(p.sim_time_s).toFixed(1)},${y(p[key]).toFixed(1)}`).join(' ')
+  const reset = events.find(e => e.kind === 'reset')
+  // Events sharing an instant get stacked badges so none hides another.
+  const marked = events.filter(e => e.kind !== 'period_started')
+  const stacked = marked.map((e, i) => ({ ...e, n: i + 1, row: marked.slice(0, i).filter(o => o.sim_time_s === e.sim_time_s).length }))
+  // Derived summary (arithmetic on the supplied samples only).
+  const incident = periods[0].samples
+  const lowest = incident.reduce((a, b) => b.observed_rolling_throughput_tph < a.observed_rolling_throughput_tph ? b : a)
+  const made = (samples: RecoverySample[]) => samples[samples.length - 1].production_t - samples[0].production_t
+  const sameSpan = control.filter(c => c.sim_time_s <= incident[incident.length - 1].sim_time_s)
+  const lost = made(sameSpan) - made(incident)
+  return <section className="ig-panel ig-inline ig-evidence ig-timeline" aria-label="Breakdown timeline">
+    <h2>Breakdown timeline <button className="ig-x" onClick={onClose} aria-label="Close timeline">×</button></h2>
+    <p>Saved model history, not live: HT-01 breaks down at 0:00 and the stand runs {Math.round((reset?.sim_time_s ?? t1) - t0) / 3600} h before a reset. Samples every {evidence.methodology.sample_s / 60} simulated minutes.</p>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Observed rolling throughput, projected capacity and events over simulated time">
+      {reset && <rect x={x(reset.sim_time_s)} y={T} width={x(t1) - x(reset.sim_time_s)} height={H - T - B} fill="rgba(127,180,255,.08)"/>}
+      {Array.from({ length: (yMax - yMin) / 50 + 1 }, (_, k) => yMin + k * 50).map(v => <g key={v}>
+        <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,.08)"/>
+        <text x={L - 4} y={y(v) + 3} textAnchor="end" className="ig-axis">{v}</text>
+      </g>)}
+      {Array.from({ length: Math.floor((t1 - t0) / 3600) + 1 }, (_, h) => <text key={h} x={x(t0 + h * 3600)} y={H - 6} textAnchor="middle" className="ig-axis">{h} h</text>)}
+      <text x={L} y={T - 14} className="ig-axis">t/h</text>
+      <path d={path(control, 'observed_rolling_throughput_tph')} fill="none" stroke="#9db3aa" strokeWidth={1} opacity={.7}/>
+      {periods.map(p => <g key={p.period_id}>
+        <path d={path(p.samples, 'projected_steady_capacity_tph')} fill="none" stroke="#f0b85a" strokeWidth={1.5} strokeDasharray="5 4"/>
+        <path d={path(p.samples, 'observed_rolling_throughput_tph')} fill="none" stroke="#4fd1c5" strokeWidth={2.2}/>
+      </g>)}
+      {stacked.map(e => <g key={e.n}>
+        <line x1={x(e.sim_time_s)} x2={x(e.sim_time_s)} y1={T} y2={H - B} stroke={EVENT_COLOR[e.kind] ?? '#fff'} strokeWidth={1} strokeDasharray="2 2"/>
+        <circle cx={x(e.sim_time_s) + e.row * 13} cy={T - 4 + 0} r={6} fill={EVENT_COLOR[e.kind] ?? '#fff'}/>
+        <text x={x(e.sim_time_s) + e.row * 13} y={T - 1} textAnchor="middle" className="ig-badge">{e.n}</text>
+      </g>)}
+      <circle cx={x(lowest.sim_time_s)} cy={y(lowest.observed_rolling_throughput_tph)} r={3} fill="#4fd1c5" stroke="#fff"/>
+    </svg>
+    <div className="ig-legend">
+      <span><i className="ig-line-solid"/>Observed, rolling 1 h</span>
+      <span><i className="ig-line-dash"/>Projected steady capacity</span>
+      <span><i className="ig-line-thin"/>Same start, no breakdown</span>
+    </div>
+    <ol className="ig-events">
+      {stacked.map(e => <li key={e.n}><b style={{ background: EVENT_COLOR[e.kind] }}>{e.n}</b>
+        <span>{clockSince(e.sim_time_s - t0)}</span>{e.label}</li>)}
+    </ol>
+    <dl className="ig-fuel-list ig-timeline-summary">
+      <dt>Lowest observed <KindTag kind="derived"/></dt>
+      <dd>{fmt(lowest.observed_rolling_throughput_tph, 1)} t/h at {clockSince(lowest.sim_time_s - t0)}</dd>
+      <dt>Ore processed in {clockSince(incident[incident.length - 1].sim_time_s - t0)} h, breakdown vs no breakdown <KindTag kind="derived"/></dt>
+      <dd>{fmt(made(incident), 0)} vs {fmt(made(sameSpan), 0)} t ({lost >= 0 ? '−' : '+'}{fmt(Math.abs(lost), 0)} t)</dd>
+    </dl>
+    <p className="ig-foot-note">The observed line is a one-hour rolling average, so it lags the stoppage: the recovered marker follows the
+      supplied rule ({evidence.methodology.recovery_rule}), and the average still dips while the hour that contains the stoppage
+      passes. Shaded: after reset, a separate period. {evidence.claim}</p>
+  </section>
+}
+
 const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
 
 /**
  * What-If Scenario Engine: A normal operations, B fault injection, C smart dispatch, and the dynamic
  * bottleneck. Every figure is read from the simulator's twins; the buttons only send the request.
  */
-function WhatIfPanel({ frame, live, onEvidence }: { frame: Frame; live: boolean; onEvidence: () => void }) {
+function WhatIfPanel({ frame, live, onEvidence, onTimeline }: { frame: Frame; live: boolean; onEvidence: () => void; onTimeline: () => void }) {
   const [details, setDetails] = React.useState(false)
   const [busy, setBusy] = React.useState('')
   const [failure, setFailure] = React.useState('')
@@ -1156,6 +1252,7 @@ function WhatIfPanel({ frame, live, onEvidence }: { frame: Frame; live: boolean;
     <div className="ig-wi-row">
       <button className="ig-wi-more" aria-expanded={details} onClick={() => setDetails(d => !d)}>{details ? 'Hide details' : 'Details'} {details ? '▴' : '▾'}</button>
       <button id="ig-open-evidence" className="ig-wi-more ig-wi-evidence" onClick={onEvidence}>Fixed vs Smart evidence ▸</button>
+      <button id="ig-open-timeline" className="ig-wi-more ig-wi-evidence" onClick={onTimeline}>Breakdown timeline ▸</button>
     </div>
     {details && <>
     <div className="ig-gauges">
@@ -1517,6 +1614,7 @@ export function IngestionLayer() {
   const [layersOpen, setLayersOpen] = React.useState(false)
   const [selected, setSelected] = React.useState<number | null>(null)
   const [evidenceOpen, setEvidenceOpen] = React.useState(false)
+  const [timelineOpen, setTimelineOpen] = React.useState(false)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
   const head = React.useRef(46)
@@ -1647,7 +1745,7 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  const rightOpen = selected !== null || evidenceOpen || layers.has('esg') || layers.has('sensors')
+  const rightOpen = selected !== null || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
   return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
@@ -1674,7 +1772,7 @@ export function IngestionLayer() {
       </Canvas>
     </div>
     <div className="ig-stack">
-      <WhatIfPanel frame={frame} live={live} onEvidence={() => setEvidenceOpen(o => !o)}/>
+      <WhatIfPanel frame={frame} live={live} onEvidence={() => setEvidenceOpen(o => !o)} onTimeline={() => setTimelineOpen(o => !o)}/>
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
@@ -1687,6 +1785,7 @@ export function IngestionLayer() {
     {rightOpen && <div className="ig-rstack">
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
       onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
+      {timelineOpen && <RecoveryTimelinePanel evidence={bundle.productionRecovery} onClose={() => setTimelineOpen(false)}/>}
       {evidenceOpen && <DispatchEvidencePanel evidence={bundle.dispatchComparison} reg={reg} onClose={() => setEvidenceOpen(false)}
         liveCondition={live ? String(frame.at('scenario-controller.active') ?? liveScenario) : null}/>}
       {layers.has('esg') && <FuelPanel frame={frame} reg={reg} evidence={bundle.dispatchComparison} live={live}
