@@ -296,3 +296,15 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-effect-tag { color: #10201b; background: rgba(240, 184, 90, .92); }
 /* The view buttons wrap to three rows on desktop; the right-hand column starts below them. */
 @media (min-width: 1181px) { .ig-rstack { top: 132px; max-height: calc(100vh - 212px); } }
+/* C4 why trust this. */
+.ig-why { margin-top: 6px; border: 1px solid #7fb3ff; border-radius: 8px; padding: 6px 10px; background: rgba(127, 179, 255, .06); }
+.ig-why > summary { cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #a9cbff; }
+.ig-trust { display: grid; gap: 6px; margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--ig-ink); }
+.ig-trust p, .ig-trust ul { margin: 0; }
+.ig-trust ul { padding-left: 18px; }
+.ig-panel .ig-trust-head { font-size: 12px; padding: 7px 9px; border-left: 3px solid #a9cbff; background: rgba(127, 179, 255, .1); color: #eef5ff; }
+.ig-trust-live td small { color: var(--ig-dim); font-size: 10px; }
+.ig-trust-live td:nth-child(2) { white-space: nowrap; }
+.ig-trust code { font-size: 11px; color: #cfe; word-break: break-word; }
+.ig-trust h4 { margin: 4px 0 2px; font-size: 11px; color: #cfe; }
+.ig-trust-no li { color: #ffb3a6; }
