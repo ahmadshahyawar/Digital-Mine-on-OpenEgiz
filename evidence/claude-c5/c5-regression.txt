@@ -1,0 +1,17 @@
+C5 regression run — 2026-10-25 — headless Chrome on the local demo simulator (ADEMIX_DEMO_MODE=1), build of claude/c5-judge-journey
+Judge route (c5-audit-{desk,mid,narrow}.json, screenshots c5-<size>-<step>.png at 1440x900, 1024x768, 390x844):
+  opening → HT-01 breakdown → Show effect → Decision → Why trust this? → Overview
+  overlay boxes overlapping: 0 at every step and size (before C5: alert under the wide Decision column at 1440,
+    source pill over KPIs, alert over Scenarios and right column over status bar at 1024, Scenarios over view buttons at 390)
+  off-screen overlay boxes: 0; text below 4.5:1 against its panel over the light ground (automated estimate): 0
+  keyboard: Enter on Decision opens it with focus inside the workspace; Escape closes all panels, focus returns to Overview
+  Overview: camera to the whole mine and every optional panel/card closed (technical layers unchanged)
+B3 Fixed vs Smart: 128/128 cells equal dispatchComparison
+B4 timeline: 137 points equal productionRecovery (≤2.42 s, ≤0.049 t/h), labels equal
+C1 mine model: 11 nodes, 38/38 edges, 11/11 states equal /api/state, every node opens its twin
+C2 Decision: 4 conditions × 12 cells equal A2, A8/A9 recommendations shown, Apply set dispatch_policy smart
+C3 Show effect: road restriction and crusher slowdown chains equal the page's /api/state values; breakdown in the route
+C4 Why trust this?: contract/API comparison 0 failures; missing field → Unavailable, 0.5 t → Outside tolerance
+B6 guided demo: 6/6 steps confirmed by returned twin state, Next disabled until confirmation, cancel leaves app usable
+Stand reset to baseline / fixed afterwards.
+Not covered here: Docker/Eclipse Ditto run (Codex), real phone, screen reader, Ahmad's human acceptance.

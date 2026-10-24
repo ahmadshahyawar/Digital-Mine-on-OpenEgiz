@@ -1384,12 +1384,20 @@ const EDGE_STYLE: Record<Relationship['category'], { color: string; dash?: strin
  * node joins the live twin by thing_id and shows its state_feature value, or "State unavailable". Selecting a node
  * opens that same live twin. No twin or relationship is invented here.
  */
+/** Moves keyboard focus into a panel when it opens, without scrolling the page. */
+function useFocusOnOpen<T extends HTMLElement>() {
+  const ref = React.useRef<T>(null)
+  React.useEffect(() => { ref.current?.focus({ preventScroll: true }) }, [])
+  return ref
+}
+
 function MineModelPanel({ contract, frame, live, source, onSelect, onClose }: {
   contract?: RelationshipContract; frame: Frame; live: boolean; source: string; onSelect: (id: string) => void; onClose: () => void
 }) {
   const [show, setShow] = React.useState<Record<Relationship['category'], boolean>>({ material: true, movement: true, control: true, hierarchy: false })
+  const focusRef = useFocusOnOpen<HTMLElement>()
   if (contract?.schema_version !== 'ademix.twin-relationships.v1') {
-    return <section className="ig-panel ig-inline ig-model" aria-label="Mine model">
+    return <section className="ig-panel ig-inline ig-model" aria-label="Mine model" tabIndex={-1} ref={focusRef}>
       <h2>Mine model <button className="ig-x" onClick={onClose} aria-label="Close mine model">×</button></h2>
       <p className="ig-unavailable">The relationship contract is missing or has an unknown version, so nothing is shown.</p>
     </section>
@@ -1408,7 +1416,7 @@ function MineModelPanel({ contract, frame, live, source, onSelect, onClose }: {
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 + bend
     return `M${x1},${y1} Q${mx},${my} ${x2},${y2}`
   }
-  return <section className="ig-panel ig-inline ig-model" aria-label="Mine model">
+  return <section className="ig-panel ig-inline ig-model" aria-label="Mine model" tabIndex={-1} ref={focusRef}>
     <h2>Mine model <button className="ig-x" onClick={onClose} aria-label="Close mine model">×</button></h2>
     <p>{contract.node_count} twins from the relationship contract, {live ? `${joined} joined to live state from ${source === 'eclipse-ditto' ? 'Eclipse Ditto' : 'the local demo simulator (not via OpenEgiz)'}` : `${joined} found in the recorded log`}. Click a twin to open it.</p>
     <svg viewBox={`0 0 ${MODEL_W} ${MODEL_H}`} role="img" aria-label="Twins and their relationships">
@@ -1529,6 +1537,7 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose, onSpecs }: {
 }) {
   const [applying, setApplying] = React.useState(false)
   const [failure, setFailure] = React.useState('')
+  const focusRef = useFocusOnOpen<HTMLElement>()
   const condition = live ? String(frame.at('scenario-controller.active') ?? 'baseline') : 'baseline'
   const policy = live ? String(frame.at('scenario-controller.dispatch_policy') ?? 'fixed') : 'fixed'
   const { cycling, parked, down } = fleetSplit(frame)
@@ -1569,7 +1578,7 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose, onSpecs }: {
     ['Wait at loading face, min', 'loading_wait_min', 1], ['Wait at crusher, min', 'crusher_wait_min', 1], ['Truck-hours per 1,000 t', 'truck_operating_h_per_kt', 2]]
   const r = decision?.presentation_contract.rounding
 
-  return <section className="ig-panel ig-inline ig-decision" aria-label="Decision workspace">
+  return <section className="ig-panel ig-inline ig-decision" aria-label="Decision workspace" tabIndex={-1} ref={focusRef}>
     <h2>Decision <button className="ig-x" onClick={onClose} aria-label="Close and return to the mine">×</button></h2>
     <p>What limits production, what to do, and the evidence behind it. <button className="ig-linkish" onClick={onClose}>Back to the 3D mine</button></p>
 
@@ -1694,7 +1703,8 @@ function effectChain(frame: Frame, condition: string): { title: string; where: s
 
 function EffectPanel({ frame, condition, onClose }: { frame: Frame; condition: string; onClose: () => void }) {
   const chain = effectChain(frame, condition)
-  return <section className="ig-panel ig-inline ig-effect" aria-label="Scenario effect">
+  const focusRef = useFocusOnOpen<HTMLElement>()
+  return <section className="ig-panel ig-inline ig-effect" aria-label="Scenario effect" tabIndex={-1} ref={focusRef}>
     <h2>Effect · {chain?.title ?? 'Normal operations'} <button className="ig-x" onClick={onClose} aria-label="Close effect">×</button></h2>
     {!chain ? <p>No disruption is active, so there is no effect to show. Start one in the Scenarios panel.</p> : <>
       <p>Where: {chain.where}. Values are the returned twin state, updated every 2 s.</p>
@@ -2287,6 +2297,22 @@ export function IngestionLayer() {
       .then(setBundle).catch(reason => setError(String(reason)))
   }, [])
   const log = bundle?.logs[scenario]
+  // Back to the whole mine: closes the optional workspaces and cards; technical layers stay as chosen.
+  const closeWorkspaces = () => {
+    setSelected(null); setTwinCard(null); setEffectOpen(false); setDecisionOpen(false); setModelOpen(false)
+    setTimelineOpen(false); setEvidenceOpen(false); setLayersOpen(false)
+  }
+  // Escape returns to the mine; focus goes back to the controls if it was inside a panel that closes.
+  React.useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || (event.target as HTMLElement | null)?.closest?.('input, select, textarea')) return
+      const inPanel = !!(document.activeElement as HTMLElement | null)?.closest?.('.ig-rstack, .ig-layers')
+      closeWorkspaces()
+      if (inPanel) document.getElementById('ig-view-overview')?.focus({ preventScroll: true })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   if (error) return <div className="ig-shell ig-msg">Could not load the ingestion data ({error}).</div>
   if (!bundle || !log) return <div className="ig-shell ig-msg">Loading the North Pit data layer…</div>
 
@@ -2382,7 +2408,7 @@ export function IngestionLayer() {
     else if (id === 'crusher-01') goTo(VIEWS.crusher.target, VIEWS.crusher.offset)
     else goTo(VIEWS.overview.target, VIEWS.overview.offset)
   }
-  return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}${guideOpen ? ' ig-has-guide' : ''}`}>
+  return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}${rightOpen && (modelOpen || decisionOpen) ? ' ig-has-wide' : ''}${guideOpen ? ' ig-has-guide' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
         onPointerMissed={() => { setSelected(null); setTwinCard(null) }}>
@@ -2456,7 +2482,7 @@ export function IngestionLayer() {
       <button id="ig-guide-start" className="ig-guide-start" onClick={() => setGuideOpen(true)} disabled={guideOpen}>Guided demo ▶</button>
       <button id="ig-open-decision" className={`ig-decision-btn${decisionOpen ? ' on' : ''}`} aria-pressed={decisionOpen} onClick={() => setDecisionOpen(o => !o)}>Decision</button>
       <button id="ig-open-model" className={modelOpen ? 'on' : ''} aria-pressed={modelOpen} onClick={() => setModelOpen(o => !o)}>Mine model</button>
-      {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => { goTo(v.target, v.offset); if (id === 'overview') { setSelected(null); setTwinCard(null) } }}>{v.label}</button>)}
+      {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => { goTo(v.target, v.offset); if (id === 'overview') closeWorkspaces() }}>{v.label}</button>)}
       <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"
         onClick={() => setLayersOpen(o => !o)}>Technical layers{layers.size ? ` · ${layers.size}` : ''} {layersOpen ? '▴' : '▾'}</button>
       {layersOpen && <div id="ig-layer-list" className="ig-layers" role="group" aria-label="Technical layers: data and asset ingestion">

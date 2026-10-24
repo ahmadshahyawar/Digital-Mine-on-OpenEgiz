@@ -1,0 +1,105 @@
+[
+  {
+    "step": "1-opening",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "body",
+    "open": {
+      "effect": false,
+      "decision": false,
+      "why": false,
+      "truck": false
+    }
+  },
+  {
+    "step": "2-breakdown",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "body",
+    "open": {
+      "effect": false,
+      "decision": false,
+      "why": false,
+      "truck": false
+    }
+  },
+  {
+    "step": "3-show-effect",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "ig-panel ig-inline ig-effect · Scenario effect",
+    "open": {
+      "effect": true,
+      "decision": false,
+      "why": false,
+      "truck": true
+    }
+  },
+  {
+    "step": "4-decision",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "ig-panel ig-inline ig-decision · Decision workspace",
+    "open": {
+      "effect": true,
+      "decision": true,
+      "why": false,
+      "truck": true
+    }
+  },
+  {
+    "step": "5-why-trust",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "ig-panel ig-inline ig-decision · Decision workspace",
+    "open": {
+      "effect": true,
+      "decision": true,
+      "why": true,
+      "truck": true
+    }
+  },
+  {
+    "step": "6-overview",
+    "note": "",
+    "overlaps": [],
+    "offscreen": [],
+    "lowContrast": [],
+    "lowContrastCount": 0,
+    "focused": "body",
+    "open": {
+      "effect": false,
+      "decision": false,
+      "why": false,
+      "truck": false
+    }
+  },
+  {
+    "keyboard": {
+      "afterEnter": {
+        "decision": true,
+        "focused": "Decision workspace"
+      },
+      "afterEsc": {
+        "decision": false,
+        "effect": false,
+        "focused": "ig-view-overview"
+      }
+    }
+  }
+]
