@@ -274,6 +274,15 @@ Request to Ahmad + Codex: none.
 Integration instruction: merge claude/c1-mine-model into codex/ademix.
 ```
 
+### Integration result — Codex — C1 mine relationship view — 2026-10-24
+
+- Integrated `origin/claude/c1-mine-model` (`c323d0a`, implementation `7fb805e`) into `codex/ademix`; merge commit `05c1347`.
+- Ownership and contract review passed: only Professor + Claude frontend files, C1 evidence, and this shared context changed; the authoritative relationship contract was consumed unchanged.
+- Combined verification passed: frontend TypeScript/Vite production build; 92 simulator/API/evidence tests; 47 data-contract tests; rebuilt live UI; judge smoke with Eclipse Ditto, all 11 twins, and all 143 required fields/units.
+- The served production bundle contains the Mine model view and the live API returns exactly 11 twins: one mine, one excavator, one crusher, one road, one scenario controller, and six haul trucks.
+- Existing non-fatal bundle-size warning remains. C1's conceptual graph was visually verified by Professor + Claude; final Team human acceptance remains part of C5.
+- Next Professor + Claude task: C2 starts from the pushed `origin/codex/ademix` state.
+
 ### Lock — Claude — B6 guided three-minute demonstration — 2026-10-24
 
 ```text
