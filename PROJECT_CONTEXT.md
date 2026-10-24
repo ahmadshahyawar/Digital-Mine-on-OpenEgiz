@@ -1104,6 +1104,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Reproduce with `python ademix/simulator/fleet_sizing.py --write`. The fixture records production, throughput, bottleneck, cycle time, both queues and waits, fleet/excavator/crusher utilization, operating truck-hours, trips and mass-balance error with explicit units and a synthetic/not-measured warning.
 - Verification: all 86 simulator/API/evidence tests and all 42 data-layer tests pass; fixture regeneration is byte-for-byte, production reconciles to the common window, truck-hours reconcile per 1,000 t, every mass-balance error is zero, and the default live engine still exposes six truck twins.
 
+### A9 one-at-a-time sensitivity evidence handoff — 2026-10-24
+
+- Owner/branch: Ahmad + Codex on `codex/a9-sensitivity`; optional backend evidence only. No frontend file, live runtime configuration, simulator default, twin topology or control behavior changed.
+- Reused A8's full fresh-engine 2–6 truck curve while varying exactly one input at a time: one-way route length (2.0/3.2/5.0 km), loading duration (6/9/12 min per truck), or crusher capacity (500/700/900 t/h). Every alternative is explicitly a planning case, not a sourced site measurement.
+- Model boundaries are visible: route length changes the recommendation from 3 to 4 to at least 6 trucks; slower loading changes it from 4 to 3; crusher capacity changes it from 3 at 500 t/h to 4 at 700–900 t/h. The 5 km route has no observed plateau through six trucks and is labelled accordingly rather than presented as an optimum.
+- Reproduce with `python ademix/simulator/sensitivity.py --write`. The generator temporarily changes one engine constant in a guarded context and restores it even on failure; the fixture records input units/categories, all 45 underlying runs, queues, bottlenecks, throughput, truck-hours and mass balance.
+- Verification: all 92 simulator/API/evidence tests and all 42 data-layer tests pass. Tests prove byte-for-byte regeneration, one changed input per case, a changed recommendation in every study, reconciled production/throughput, zero mass-balance error and restored live defaults.
+
 Copy and complete this block after each work session:
 
 ```text
