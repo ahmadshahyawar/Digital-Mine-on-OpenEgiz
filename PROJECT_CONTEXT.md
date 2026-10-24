@@ -248,6 +248,40 @@ Contract consumed: MODEL_TRUTH_CONTRACT.md (no change).
 Expected handoff: commit SHA, build, contract-equality check, missing-field check, screenshots, limitations.
 ```
 
+Handoff — Professor + Claude — C4 visible model trust and limitations — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Task: C4 — Visible model trust and limitations
+Branch: claude/c4-why-trust (from origin/codex/ademix 3eee7e5)
+Commit SHA: cb92be9 (lock feabd38)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-c4/{c4-live-1440.png,c4-missing-1440.png,c4-bad-1440.png,c4-live-390.png,c4-specs-link-1440.png,
+  c4-ui-*.json,c4-check.json}; PROJECT_CONTEXT.md
+Contract consumed (unchanged): MODEL_TRUTH_CONTRACT.md / bundle modelTruth (ademix.model-truth.v1): status,
+  live_indicators (thing_id, feature, unit, category, formula, success_rule), principal_formulas, key_parameters,
+  evidence, safe_claims, prohibited_claims. Required headline taken verbatim from the contract document.
+What changed: collapsible "Why trust this?" at the end of the Decision workspace (closed by default): headline;
+  verification / validation / telemetry / safety statements; live-check table joined by full thing_id + feature
+  (mass balance "Pass" only when the returned field is numeric and |e| <= 0.000001 t, "Outside tolerance" otherwise,
+  "Unavailable" when absent or in replay; observed and projected rows independent, never substituted); principal
+  formulas; key parameters grouped Sourced (OpenMines) / Derived / Team assumption / What-if input with sources;
+  automated checks, "Safe to say" and "Not claimed" lists, source paths; a button that opens the Specifications layer.
+Commands/checks actually run: tsc -b PASS; vite build PASS (existing chunk warning). Headless Chrome on the demo
+  simulator, compared with the bundle and the page's own /api/state response (c4-check.json, 0 failures): headline
+  verbatim; 4/4 status lines; 5 indicators in contract order with label, formula, success rule and category; observed
+  900 t/h and projected 770 t/h equal the API; mass balance 0 → Pass; 5/5 formulas with units; 9/9 parameters in
+  their category with value, unit and source (crusher 900 t/h and ROM 600 t under Team assumption; 10.72 km/h,
+  20 min, 0.55 under What-if input); 4/4 prohibited claims only under "Not claimed"; no positive measured/guarantee/
+  certified wording; Specifications layer opens. Test harness rewriting /api/state: field removed → "Unavailable";
+  field 0.5 t → "Outside tolerance · 0.5"; no Pass in either. 390 px: headline and five rows present, mine and
+  controls visible.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; the replay (offline) mode shows every live check
+  as Unavailable by design; the required headline is the contract document's text (it is not a bundle field).
+Request to Ahmad + Codex: none. Optional: add the required headline to model_truth.json so the UI reads it from data.
+Integration instruction: merge claude/c4-why-trust into codex/ademix. C5 starts after integration.
+```
+
 ### Status summary — Professor + Claude B/C work — 2026-10-24 (written before context compaction)
 
 ```text
