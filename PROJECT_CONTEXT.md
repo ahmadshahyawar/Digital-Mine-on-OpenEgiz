@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B1 simplify the opening operator view — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b1-opening-view (from origin/codex/ademix 49a1d7a)
+Task: B1. Default view (IngestionLayer) opens on the mine with four operator KPIs (production now,
+  bottleneck now, trucks cycling/parked, the relevant queue wait), compact always-visible scenario controls,
+  and technical layers (specifications, sensors, topology, data flow, fleet/ESG, weather, safety) off until
+  chosen. Adds Overview / Loading face / Crusher camera presets and truck selection with its live twin state.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css
+Contract: consumes existing twin fields only; no simulator, data or API change.
+Expected handoff: commit SHA, build result, desktop + narrow screenshots, untested items.
+```
+
 ### Handoff — Codex — A6 authoritative simulation clock backend — 2026-10-24
 
 ```text
