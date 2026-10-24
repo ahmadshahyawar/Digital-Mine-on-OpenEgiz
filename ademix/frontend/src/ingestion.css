@@ -235,3 +235,20 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-lane-blocked { color: #fff; background: rgba(176, 30, 30, .9); text-transform: capitalize; }
 .ig-lane-open { color: #062320; background: rgba(56, 239, 157, .85); }
 .ig-alert-detail { font-size: 11px; color: #ffb3ad !important; }
+/* B6 guided demonstration card. */
+.ig-views > button.ig-guide-start { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); font-weight: 600; }
+.ig-views > button.ig-guide-start:disabled { opacity: .5; }
+.ig-guide { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%); z-index: 46; width: min(560px, calc(100vw - 24px));
+  display: grid; gap: 7px; padding: 12px 14px; border-radius: 10px; background: rgba(6, 16, 14, .94); border: 1px solid var(--ig-accent); box-shadow: 0 6px 24px rgba(0, 0, 0, .4); }
+.ig-guide-head { display: flex; align-items: baseline; gap: 10px; }
+.ig-guide-head b { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ig-accent); }
+.ig-guide-head span { font-size: 15px; font-weight: 600; }
+.ig-guide p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ig-ink); }
+.ig-guide-status { font-size: 11px; color: var(--ig-dim); }
+.ig-guide-confirmed { color: #8ff0bf; }
+.ig-guide-failed { color: #ff9c92; }
+.ig-guide-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.ig-guide-actions button { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 12px; cursor: pointer; }
+.ig-guide-actions .ig-guide-next { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); font-weight: 600; }
+.ig-guide-actions button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) { .ig-guide { bottom: 96px; } .ig-has-guide .ig-stack { display: none; } }

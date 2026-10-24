@@ -1207,6 +1207,131 @@ function RecoveryTimelinePanel({ evidence, onClose }: { evidence?: RecoveryEvide
   </section>
 }
 
+/**
+ * B6: guided three-minute demonstration. Each step sends the real request (POST /api/scenario or /api/dispatch),
+ * then waits until the returned twin state confirms it before the viewer may continue. Saved-evidence steps only
+ * open the existing B3/B4 panels. Nothing is animated or faked; cancel stops the guide and leaves the stand as it is.
+ */
+type GuideStep = {
+  title: string
+  run?: () => Promise<void>
+  confirmed: (frame: Frame) => boolean
+  waitingFor: string
+  text: (frame: Frame) => string
+  view?: 'overview' | 'face' | 'crusher' | 'truck'
+  open?: 'timeline' | 'evidence'
+}
+const post = async (path: string, body: object) => {
+  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (!response.ok) throw new Error(`${path} HTTP ${response.status}`)
+}
+const anyTruck = (frame: Frame, state: string) => Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).some(v => v === state)
+const atNormal = (frame: Frame) => frame.at('scenario-controller.active') === 'baseline' && frame.at('scenario-controller.dispatch_policy') === 'fixed'
+  && !anyTruck(frame, 'breakdown') && !anyTruck(frame, 'blocked') && laneBlockage(frame).lane === 'none'
+const constraintName = (frame: Frame) => { const b = String(frame.at('mine-01.bottleneck_live') ?? '—'); return (CONSTRAINT_NAME[b] ?? b).toLowerCase() }
+
+const GUIDE: GuideStep[] = [
+  {
+    title: 'Normal operations',
+    run: async () => { await post('/api/scenario', { scenario: 'baseline' }); await post('/api/dispatch', { policy: 'fixed' }) },
+    confirmed: atNormal, waitingFor: 'normal operations, fixed fleet and no breakdown in the twins', view: 'overview',
+    text: f => `North Pit runs six haul trucks between one excavator at the pit floor and the crusher. Right now ${num(f.at('mine-01.throughput_tph')).toFixed(0)} t/h is processed and the ${constraintName(f)} limits output: ${num(f.at('excavator-01.queue_length'))} truck${num(f.at('excavator-01.queue_length')) === 1 ? ' is' : 's are'} queuing at the loading face.`,
+  },
+  {
+    title: 'A truck breaks down',
+    run: () => post('/api/scenario', { scenario: 'truck_breakdown' }),
+    confirmed: f => f.at('truck-01.state') === 'breakdown', waitingFor: 'HT-01 to report breakdown', view: 'truck',
+    text: f => {
+      const block = laneBlockage(f)
+      const where = String(f.at('scenario-controller.breakdown_location') ?? 'its position')
+      return block.lane === 'none'
+        ? `HT-01 has stopped (${where}). It is off the haul road, so no lane is blocked; the other five trucks keep working.`
+        : `HT-01 has stopped on the haul road (${where}). It blocks the ${LANE_WORDS[block.lane].lane}; ${block.held} truck${block.held === 1 ? ' is' : 's are'} held behind it while opposing traffic continues.`
+    },
+  },
+  {
+    title: 'What it costs',
+    confirmed: f => f.at('truck-01.state') === 'breakdown', waitingFor: 'HT-01 still reported down', open: 'timeline', view: 'overview',
+    text: f => {
+      const onRoad = String(f.at('scenario-controller.breakdown_location') ?? '').startsWith('haul road')
+      return `With five trucks the twin still expects ${num(f.at('scenario-controller.projected_throughput_tph')).toFixed(0)} t/h, because the excavator, not the fleet, sets the pace. ${onRoad
+        ? 'The saved timeline (right) shows this case in the model: output dips while HT-01 blocks its lane, then recovers after the tow.'
+        : 'This failure is off the road, so little is lost. The saved timeline (right) shows the costly case, a failure on the haul road: output dips while the lane is blocked, then recovers after the tow.'}`
+    },
+  },
+  {
+    title: 'Switch on Smart Dispatch',
+    run: () => post('/api/dispatch', { policy: 'smart' }),
+    confirmed: f => f.at('scenario-controller.dispatch_policy') === 'smart', waitingFor: 'dispatch policy smart in the twins', view: 'face',
+    text: f => {
+      const available = Array.from({ length: 6 }, (_, i) => f.at(`truck-0${i + 1}.state`)).filter(v => v !== 'breakdown').length
+      return `Smart Dispatch is on. The twin calculates that ${num(f.at('scenario-controller.trucks_required'))} trucks keep the excavator busy and ${available} are available; ${num(f.at('scenario-controller.trucks_in_cycle'))} are cycling and ${num(f.at('scenario-controller.trucks_standby'))} parked so far. Extra trucks park in the standby bay as they reach the face, engines off, and rejoin when needed.`
+    },
+  },
+  {
+    title: 'The evidence',
+    confirmed: f => f.at('scenario-controller.dispatch_policy') === 'smart', waitingFor: 'Smart Dispatch still on', open: 'evidence', view: 'overview',
+    text: () => 'The saved, matched model run (right) compares both policies from one identical start: Smart Dispatch keeps the same output with fewer truck-hours per 1,000 t, because the excavator, not the number of trucks, limits production.',
+  },
+  {
+    title: 'Recover and reset',
+    run: async () => { await post('/api/scenario', { scenario: 'baseline' }); await post('/api/dispatch', { policy: 'fixed' }) },
+    confirmed: atNormal, waitingFor: 'normal operations with no breakdown and no blocked lane', view: 'overview',
+    text: () => 'Back to normal operations: no breakdown, no blocked lane, fixed fleet. Recommendation for the dispatcher: while the excavator is the constraint, run Smart Dispatch — keep the needed trucks cycling and park the rest.',
+  },
+]
+
+function GuidedDemo({ frame, live, onClose, onView, onOpen }: {
+  frame: Frame; live: boolean; onClose: () => void
+  onView: (view: 'overview' | 'face' | 'crusher' | 'truck') => void; onOpen: (panel: 'timeline' | 'evidence' | null) => void
+}) {
+  const [index, setIndex] = React.useState(0)
+  const [attempt, setAttempt] = React.useState(0)
+  const [phase, setPhase] = React.useState<'sending' | 'waiting' | 'confirmed' | 'failed'>('sending')
+  const [error, setError] = React.useState('')
+  const [confirmedAt, setConfirmedAt] = React.useState<number | null>(null)
+  const started = React.useRef(0)
+  const step = GUIDE[index]
+  React.useEffect(() => {
+    let cancelled = false
+    setPhase('sending'); setError(''); setConfirmedAt(null)
+    started.current = performance.now()
+    onOpen(step.open ?? null)
+    if (step.view) onView(step.view)
+    ;(async () => {
+      try { if (step.run) await step.run() } catch (reason) { if (!cancelled) { setPhase('failed'); setError(String(reason)) }; return }
+      if (!cancelled) setPhase('waiting')
+    })()
+    return () => { cancelled = true }
+  }, [index, attempt])
+  // Confirmation comes only from returned twin state, re-checked on every poll.
+  React.useEffect(() => {
+    if (phase !== 'waiting') return
+    if (step.confirmed(frame)) { setPhase('confirmed'); setConfirmedAt(num(frame.at('mine-01.sim_time_s'))); if (step.view === 'truck') onView('truck') }
+    else if (performance.now() - started.current > 60000) { setPhase('failed'); setError(`No confirmation within 60 s (waiting for ${step.waitingFor}).`) }
+  })
+  if (!live) return <section className="ig-guide" role="dialog" aria-label="Guided demo">
+    <p>The guided demo needs the running stand: it uses the real controls and waits for the twins. The recorded replay cannot confirm steps.</p>
+    <div className="ig-guide-actions"><button onClick={onClose}>Close</button></div>
+  </section>
+  const last = index === GUIDE.length - 1
+  return <section className="ig-guide" role="dialog" aria-label="Guided demo" aria-live="polite">
+    <div className="ig-guide-head"><b>Guided demo · {index + 1}/{GUIDE.length}</b><span>{step.title}</span></div>
+    <p>{phase === 'confirmed' ? step.text(frame) : phase === 'failed' ? error : `${phase === 'sending' ? 'Sending the command' : 'Waiting for the twins to confirm'}: ${step.waitingFor}…`}</p>
+    <div className={`ig-guide-status ig-guide-${phase}`}>{phase === 'confirmed'
+      ? `Confirmed by the returned twin state at simulated ${(num(confirmedAt) / 3600).toFixed(2)} h`
+      : phase === 'failed' ? 'Not confirmed' : 'Not confirmed yet'}</div>
+    <div className="ig-guide-actions">
+      {index > 0 && <button onClick={() => setIndex(i => i - 1)} disabled={phase === 'sending'}>Back</button>}
+      {phase === 'failed' && <button onClick={() => setAttempt(a => a + 1)}>Retry</button>}
+      {last
+        ? <button className="ig-guide-next" disabled={phase !== 'confirmed'} onClick={onClose}>Finish</button>
+        : <button className="ig-guide-next" disabled={phase !== 'confirmed'} onClick={() => setIndex(i => i + 1)}>Next ▸</button>}
+      <button onClick={onClose}>Cancel</button>
+    </div>
+  </section>
+}
+
 const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
 
 /**
@@ -1690,6 +1815,7 @@ export function IngestionLayer() {
   const [selected, setSelected] = React.useState<number | null>(null)
   const [evidenceOpen, setEvidenceOpen] = React.useState(false)
   const [timelineOpen, setTimelineOpen] = React.useState(false)
+  const [guideOpen, setGuideOpen] = React.useState(false)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
   const head = React.useRef(46)
@@ -1821,7 +1947,7 @@ export function IngestionLayer() {
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
   const rightOpen = selected !== null || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
-  return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}`}>
+  return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}${guideOpen ? ' ig-has-guide' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
         onPointerMissed={() => setSelected(null)}>
@@ -1858,6 +1984,11 @@ export function IngestionLayer() {
 
     <BreakdownAlert frame={frame} reg={reg}/>
     <KpiStrip frame={frame}/>
+    {guideOpen && <GuidedDemo frame={frame} live={live} onClose={() => { setGuideOpen(false) }}
+      onOpen={panel => { setTimelineOpen(panel === 'timeline'); setEvidenceOpen(panel === 'evidence') }}
+      onView={v => v === 'truck'
+        ? goTo(trucks.current[0]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(18, 26, 22))
+        : goTo(VIEWS[v].target, VIEWS[v].offset)}/>}
     {rightOpen && <div className="ig-rstack">
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
       onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
@@ -1880,6 +2011,7 @@ export function IngestionLayer() {
     </header>
 
     <nav className="ig-views" aria-label="Camera and layers">
+      <button id="ig-guide-start" className="ig-guide-start" onClick={() => setGuideOpen(true)} disabled={guideOpen}>Guided demo ▶</button>
       {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => goTo(v.target, v.offset)}>{v.label}</button>)}
       <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"
         onClick={() => setLayersOpen(o => !o)}>Technical layers{layers.size ? ` · ${layers.size}` : ''} {layersOpen ? '▴' : '▾'}</button>
