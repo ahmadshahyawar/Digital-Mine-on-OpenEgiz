@@ -233,6 +233,26 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Integration result — Codex — B4 recovery timeline — 2026-10-24
+
+- Integrated `origin/claude/b4-recovery-timeline` (`732d66c`, implementation `7826833`) into
+  `codex/integrate-b4` from shared integration `cf58d18`; merge commit `07e0c3c`. No conflicts or backend
+  behavior/contract changes. B3 and the accepted standby-bay access work are preserved.
+- Combined checks: 92 simulator/API/evidence tests PASS; 47 data/schema tests PASS; TypeScript/Vite production
+  build PASS (existing non-fatal large-chunk warning). Docker rebuild/start reached healthy state. Live smoke
+  passed Eclipse Ditto source, exactly 11 twins and all 143 required fields/units.
+- Full live Fixed/Smart four-condition matrix PASS, including required/cycling/standby counts 4/4/2,
+  4/4/1, 8/6/0 and 3/3/3; final reset PASS with no stale breakdown, blocked or standby state.
+- Browser acceptance on the rebuilt live stand: Breakdown timeline opens/closes; saved-model/not-live label,
+  separate observed/projected/control series, supplied event labels and summary are present. Fresh screenshot:
+  `evidence/claude-b4/b4-integrated-live.png`. Reviewed Claude's desktop and 375 px screenshots. Fresh fixture
+  arithmetic confirms 137 plotted points, minimum 687.6 t/h at 0:40 and 2,231 vs 2,310 t over three hours.
+- Known contract caveat retained: the supplied rolling-throughput recovery marker occurs at road clear before
+  the delayed rolling-average dip. B4 explains this; changing its recovery definition is a separate backend
+  task, not part of this frontend merge. Final Ubuntu/software-rendering and human release acceptance remain open.
+- Handoff: after this integration is pushed to `origin/codex/ademix`, Professor + Claude may start the next
+  incomplete B5 task from that updated shared branch; do not start from the old B4 branch. Official main unchanged.
+
 ### Lock — Claude — B4 production and recovery timeline — 2026-10-24
 
 ```text
