@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Branch: claude/c5-judge-journey (from origin/codex/ademix e34c546, C4 integrated)
+Task: C5. Make B1–B6 and C1–C4 one judge route: mine → affected assets (Show effect) → Decision evidence →
+  Why trust this? → Overview. Keep the simple default view; fix panel collisions, keyboard focus, contrast,
+  labels and narrow-view behaviour found by a full-route audit; re-check B1–B6/C1–C4 behaviour; final desktop and
+  narrow screenshots. No contract or backend change.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c5/*
+Expected handoff: commit SHA, build, route walk-through results, regression checks, screenshots, items left for
+  Ahmad's human acceptance.
+```
+
 ### Lock — Claude — C4 visible model trust and limitations — 2026-10-25
 
 ```text
