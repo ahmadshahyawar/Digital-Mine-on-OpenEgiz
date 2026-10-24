@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B4 production and recovery timeline — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b4-recovery-timeline (from origin/codex/ademix cf58d18)
+Task: B4. A "Breakdown timeline" panel plotting productionRecovery (A3 schema v1) on simulated time: observed
+  rolling throughput (solid), projected steady capacity (dashed), the baseline control run (thin), the supplied
+  event markers only (breakdown, road cleared, recovered, reset) and period 2 after reset kept separate; a short
+  derived summary (lowest observed, production after 3 h vs control); opened from the Scenarios panel.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b4/*
+Contract consumed: HISTORY_CONTRACT.md (no change).
+Expected handoff: commit SHA, build, fixture-vs-chart check, screenshots, limitations, recovery-marker note.
+```
+
 ### Lock — Claude — standby bay access (human visual review) — 2026-10-24
 
 ```text
