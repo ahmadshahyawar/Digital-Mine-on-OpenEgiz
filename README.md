@@ -51,6 +51,13 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 
 Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
 
+The default demonstration runs at **20 simulated seconds per wall-clock second**. The authoritative
+`sim_time_s`, `simulation_speed_multiplier`, and `simulation_mode` values are published on the `mine-01`
+twin through OpenEgiz; they are not independent frontend constants. Acceleration shortens demonstration
+waiting only—it does not change modeled travel, loading, dumping, production, queue, or recovery equations.
+The visible A6 clock/interpolation UI is intentionally deferred until the Professor + Claude B6 handoff is
+integrated; until then inspect the three fields through `/api/state`.
+
 ## Verify from the terminal
 
 Run the read-only judge smoke check. It waits for slow startup, requires the

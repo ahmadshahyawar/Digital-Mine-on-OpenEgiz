@@ -89,6 +89,19 @@ class ApiReliabilityTests(unittest.TestCase):
         self.assertEqual(simulator_app.engine.scenario, scenario_before)
         self.assertEqual(simulator_app.engine.production_t, production_before)
 
+    def test_health_and_demo_state_share_the_backend_clock(self):
+        simulator_app.engine = MineEngine(simulation_speed_multiplier=5, simulation_mode="local_demo")
+        simulator_app.engine.step(300)
+        health = simulator_app.health()
+        twins = {twin["thingId"]: twin for twin in simulator_app.demo_twins()}
+        clock = twins["org.openegiz.ademix:mine-01"]["features"]
+        self.assertEqual(health["sim_time_s"], 300)
+        self.assertEqual(health["simulation_speed_multiplier"], 5)
+        self.assertEqual(health["simulation_mode"], "local_demo")
+        self.assertEqual(clock["sim_time_s"]["properties"]["value"], 300)
+        self.assertEqual(clock["simulation_speed_multiplier"]["properties"]["value"], 5)
+        self.assertEqual(clock["simulation_mode"]["properties"]["value"], "local_demo")
+
 
 class FrontendReliabilityTests(unittest.TestCase):
     def test_ui_distinguishes_live_demo_and_replay_and_handles_poll_errors(self):

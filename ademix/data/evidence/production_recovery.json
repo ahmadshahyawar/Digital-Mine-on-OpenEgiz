@@ -9,7 +9,7 @@
     "warmup_h": 4,
     "breakdown_period_h": 3,
     "reset_period_h": 1,
-    "common_start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+    "common_start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
     "recovery_rule": "first 5-minute sample after road clear with observed rolling throughput >= 95% of projected steady capacity"
   },
   "field_sources": {
@@ -30,7 +30,7 @@
   },
   "baseline": {
     "period_id": 1,
-    "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+    "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
     "samples": [
       {
         "period_id": 1,
@@ -442,7 +442,7 @@
     ]
   },
   "breakdown_recovery": {
-    "start_state_sha256": "1fc02041ce7c3bec879da6f04359fabf19754f6236083cca2cf044ec5b765cec",
+    "start_state_sha256": "0b6cb24d55d6bf3343559005b7278e11819fdc84ce780b5250d42581dfadaaeb",
     "events": [
       {
         "period_id": 1,

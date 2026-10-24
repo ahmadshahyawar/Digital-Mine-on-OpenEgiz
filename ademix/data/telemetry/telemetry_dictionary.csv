@@ -5,6 +5,8 @@ mine,fleet_utilization,number,%,0,100,,kpi,Share of truck-time spent loading hau
 mine,average_cycle_min,number,min,0,,,kpi,Mean dump-to-dump cycle time including queueing since the scenario started.
 mine,active_scenario,string,,,,baseline|truck_breakdown|road_closure|crusher_slowdown,configuration,Active what-if condition.
 mine,sim_time_s,number,s,0,,,simulated_state,Simulated time since start.
+mine,simulation_speed_multiplier,number,x,0.000001,,,configuration,Configured ratio of simulated seconds advanced per wall-clock second; acceleration changes demonstration duration only.
+mine,simulation_mode,string,,,,openegiz_live|local_demo|offline_model,configuration,Backend-owned execution mode for truthful LIVE DEMO or offline evidence labeling.
 mine,throughput_avg_tph,number,t/h,0,900,,kpi,Processed tonnes divided by elapsed time since start.
 mine,excavated_t,number,t,0,,,simulated_state,Ore loaded by the excavator since start (excludes the opening loads).
 mine,delivered_t,number,t,0,,,simulated_state,Ore tipped into the ROM bin since start.

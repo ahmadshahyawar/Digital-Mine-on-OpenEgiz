@@ -233,6 +233,34 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Handoff — Codex — A6 authoritative simulation clock backend — 2026-10-24
+
+```text
+Owner: Ahmad + Codex
+Status: backend/data portion implemented and validated on its feature branch; not integrated because the newer
+  score-first gate 4c3ea13 requires accepted B1–B6, visible C1–C4 and combined C5 before A6 integration.
+Branch: codex/a6-simulation-clock (updated with origin/codex/ademix 4c3ea13)
+Implementation commit: 7064c87; merge commit: ee7dacd
+Exact files: README.md; PROJECT_CONTEXT.md; ademix/simulator/{engine.py,app.py,twins.json,test_engine.py,
+  test_reliability.py,MODEL.md,SIMULATION_CLOCK_CONTRACT.md}; ademix/data/{build_data_layer.py,
+  telemetry_dictionary.csv,telemetry/telemetry_dictionary.csv,telemetry/sensor_catalogue.csv,
+  telemetry/manifest.json,telemetry/logs/*.csv,evidence/fixed_vs_smart.json,
+  evidence/production_recovery.json}; ademix/frontend/public/data/ingestion.json.
+Contract: mine-01 retains sim_time_s and adds simulation_speed_multiplier (x) plus simulation_mode
+  (openegiz_live | local_demo | offline_model). The multiplier changes wall-clock demonstration speed only;
+  modeled time, travel/loading/dumping durations and production equations remain unchanged.
+Frontend ownership: no React, CSS, 3D, presentation or visual asset file will be edited. Visible clock label
+  and truck-interpolation consumption remain the final A6 step after accepted B6 transfers frontend ownership.
+Tests: 75 simulator/API tests PASS; 41 data/schema tests PASS; frontend production build PASS (619 modules,
+  existing >500 kB chunk warning only); Docker rebuild/start PASS; judge smoke PASS for health, Eclipse Ditto,
+  11 twins and 143 required fields/units; complete Fixed/Smart × four-scenario matrix and clean reset PASS.
+Live evidence: /api/health and the Ditto-returned mine-01 twin both report multiplier 20 and mode openegiz_live;
+  two returned-state samples advanced sim_time_s from 1360 to 1460 while remaining source=eclipse-ditto.
+Limitation recorded by the feature handoff: A6 was not complete at handoff time. After the score-first prerequisite integration,
+  Professor + Claude's hard-coded speed must be replaced by this returned field, the compact visible clock and
+  truthful unavailable fallback must be added, combined visual behavior checked, then A6 can enter codex/ademix.
+```
+
 ### Handoff — Team — Professor owns B1–B6 and visible C1–C5 — 2026-10-24
 
 ```text

@@ -8,7 +8,9 @@
       "fleet_utilization": {"properties": {"value": 0, "unit": "%"}},
       "average_cycle_min": {"properties": {"value": 0, "unit": "min"}},
       "active_scenario": {"properties": {"value": "baseline"}},
-      "sim_time_s": {"properties": {"value": 0, "unit": "s"}}
+      "sim_time_s": {"properties": {"value": 0, "unit": "s"}},
+      "simulation_speed_multiplier": {"properties": {"value": 20, "unit": "x"}},
+      "simulation_mode": {"properties": {"value": "openegiz_live"}}
     }
   },
   "org.openegiz.ademix:excavator-01": {
