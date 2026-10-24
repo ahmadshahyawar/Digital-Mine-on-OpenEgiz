@@ -288,6 +288,20 @@ Remaining limitation: cold-start reads on this Windows/Docker host were successf
   overlaps app.py, tests, sensor catalogue and generated ingestion data; resolve this commit on top and rerun gates.
 ```
 
+### Integration — Codex — A6 plus Ditto reliability — 2026-10-24
+
+```text
+Shared branch: codex/ademix. A6 integrated first at 5a3d264; Ditto reliability integrated at 91f66e3.
+Conflict resolution preserved A6's authoritative clock fields and health metadata plus the reliability fix's
+  bulk read, cache/readiness protection and two-second publish contract. Generated data was rebuilt from the
+  combined source. No Professor + Claude frontend source file was edited during resolution.
+Combined verification: 80 simulator/API tests PASS; 41 data/schema/regeneration tests PASS; frontend production
+  build PASS (619 modules, existing non-fatal >500 kB chunk warning); Docker build/start/health gates PASS;
+  judge smoke PASS with Eclipse Ditto, 11 twins and 143 fields/units; full fixed/smart × four-scenario matrix and
+  clean reset PASS. Official main remains untouched.
+Remaining release gate: clean Ubuntu 24.04 amd64 rehearsal and final combined visual acceptance before main.
+```
+
 ### Handoff — Team — Professor owns B1–B6 and visible C1–C5 — 2026-10-24
 
 ```text
