@@ -1,0 +1,122 @@
+[
+  {
+    "step": 1,
+    "secondsSinceStart": 5,
+    "beforeConfirmation": {
+      "status": "Confirmed by the returned twin state at simulated 17.12 h",
+      "nextDisabled": false,
+      "text": "North Pit runs six haul trucks between one excavator at the pit floor and the crusher. Right now 705 t/h is processed and the excavator limits output: 2 trucks are queuing at the loading face."
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 1/6 Normal operations",
+      "status": "Confirmed by the returned twin state at simulated 17.12 h",
+      "text": "North Pit runs six haul trucks between one excavator at the pit floor and the crusher. Right now 713 t/h is processed and the excavator limits output: 2 trucks are queuing at the loading face.",
+      "nextDisabled": false,
+      "panels": []
+    }
+  },
+  {
+    "step": 2,
+    "secondsSinceStart": 11,
+    "beforeConfirmation": {
+      "status": "Not confirmed yet",
+      "nextDisabled": true,
+      "text": "Waiting for the twins to confirm: HT-01 to report breakdown…"
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 2/6 A truck breaks down",
+      "status": "Confirmed by the returned twin state at simulated 17.17 h",
+      "text": "HT-01 has stopped (loading area, under the excavator). It is off the haul road, so no lane is blocked; the other five trucks keep working.",
+      "nextDisabled": false,
+      "panels": []
+    }
+  },
+  {
+    "step": 3,
+    "secondsSinceStart": 17,
+    "beforeConfirmation": {
+      "status": "Confirmed by the returned twin state at simulated 17.19 h",
+      "nextDisabled": false,
+      "text": "With five trucks the twin still expects 770 t/h, because the excavator, not the fleet, sets the pace. This failure is off the road, so little is lost. The saved timeline (right) shows the costly case, a failure on the haul road: output dips while the lane is blocked, then recovers after the tow."
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 3/6 What it costs",
+      "status": "Confirmed by the returned twin state at simulated 17.19 h",
+      "text": "With five trucks the twin still expects 770 t/h, because the excavator, not the fleet, sets the pace. This failure is off the road, so little is lost. The saved timeline (right) shows the costly case, a failure on the haul road: output dips while the lane is blocked, then recovers after the tow.",
+      "nextDisabled": false,
+      "panels": [
+        "Breakdown timeline"
+      ]
+    }
+  },
+  {
+    "step": 4,
+    "secondsSinceStart": 21,
+    "beforeConfirmation": {
+      "status": "Not confirmed yet",
+      "nextDisabled": true,
+      "text": "Waiting for the twins to confirm: dispatch policy smart in the twins…"
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 4/6 Switch on Smart Dispatch",
+      "status": "Confirmed by the returned twin state at simulated 17.22 h",
+      "text": "Smart Dispatch is on. The twin calculates that 4 trucks keep the excavator busy and 5 are available; 5 are cycling and 0 parked so far. Extra trucks park in the standby bay as they reach the face, engines off, and rejoin when needed.",
+      "nextDisabled": false,
+      "panels": []
+    }
+  },
+  {
+    "step": 5,
+    "secondsSinceStart": 26,
+    "beforeConfirmation": {
+      "status": "Confirmed by the returned twin state at simulated 17.24 h",
+      "nextDisabled": false,
+      "text": "The saved, matched model run (right) compares both policies from one identical start: Smart Dispatch keeps the same output with fewer truck-hours per 1,000 t, because the excavator, not the number of trucks, limits production."
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 5/6 The evidence",
+      "status": "Confirmed by the returned twin state at simulated 17.24 h",
+      "text": "The saved, matched model run (right) compares both policies from one identical start: Smart Dispatch keeps the same output with fewer truck-hours per 1,000 t, because the excavator, not the number of trucks, limits production.",
+      "nextDisabled": false,
+      "panels": [
+        "Fixed versus Smart Dispatch evidence"
+      ]
+    }
+  },
+  {
+    "step": 6,
+    "secondsSinceStart": 31,
+    "beforeConfirmation": {
+      "status": "Not confirmed yet",
+      "nextDisabled": true,
+      "text": "Waiting for the twins to confirm: normal operations with no breakdown and no blocked lane…"
+    },
+    "confirmed": {
+      "head": "GUIDED DEMO · 6/6 Recover and reset",
+      "status": "Confirmed by the returned twin state at simulated 17.28 h",
+      "text": "Back to normal operations: no breakdown, no blocked lane, fixed fleet. Recommendation for the dispatcher: while the excavator is the constraint, run Smart Dispatch — keep the needed trucks cycling and park the rest.",
+      "nextDisabled": false,
+      "panels": []
+    }
+  },
+  {
+    "finished": {
+      "guideGone": true,
+      "startEnabled": true
+    }
+  },
+  {
+    "cancel": {
+      "guideGone": true,
+      "startEnabled": true,
+      "scenarioButtonsEnabled": true,
+      "breakdownBannerStill": true
+    }
+  },
+  {
+    "manualResetAfterCancel": {
+      "breakdownBanner": false,
+      "aActive": "ig-wi-card on"
+    }
+  }
+]
