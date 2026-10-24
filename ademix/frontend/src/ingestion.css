@@ -93,9 +93,9 @@
 @media (max-width: 1100px) { .ig-stack { width: 250px; } }
 @media (max-width: 760px) { .ig-stack { left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 40vh; } }
 .ig-gauges .ig-val small { text-transform: none; }
-.ig-title, .ig-layers, .ig-bar, .ig-key { z-index: 40; }
+.ig-title, .ig-views, .ig-bar, .ig-key, .ig-kpis { z-index: 40; }
 /* Breakdown presentation: banner naming the affected truck and its consequence, plus the in-scene tag. */
-.ig-breakdown-alert { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 45; display: grid; gap: 2px; max-width: min(560px, calc(100vw - 32px));
+.ig-breakdown-alert { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); z-index: 45; display: grid; gap: 2px; max-width: min(560px, calc(100vw - 32px));
   padding: 9px 14px; border-radius: 9px; background: rgba(60, 8, 6, .92); border: 1px solid #ff5149; color: #ffe2df; font-size: 12px; box-shadow: 0 4px 18px rgba(0, 0, 0, .35); }
 .ig-breakdown-alert b { color: #fff; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .ig-breakdown-alert span { color: #ffc9c4; }
@@ -122,3 +122,53 @@
 .ig-wi-bottleneck b { font-size: 12px; text-transform: capitalize; }
 .ig-wi-bottleneck p { grid-column: 1 / -1; }
 .ig-bay-no { padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #1c1a16; background: #e8e2cf; }
+/* B1 opening view: key figures, camera views and the technical-layer menu. */
+/* The legacy command-centre stylesheet sets body { min-width: 1100px }; the dispatcher view must fit phones. */
+body:has(.ig-shell) { min-width: 0; }
+.ig-kpis { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(4, minmax(118px, 1fr)); gap: 6px; width: min(640px, calc(100vw - 640px)); min-width: 500px; }
+.ig-kpis > div { display: grid; gap: 1px; padding: 6px 10px; border-radius: 9px; background: var(--ig-glass); border: 1px solid var(--ig-line); }
+.ig-kpis span { font-size: 10px; letter-spacing: .05em; color: var(--ig-dim); white-space: nowrap; }
+.ig-kpis .ig-val { font-size: 17px; justify-self: start; padding: 0; line-height: 1.2; white-space: nowrap; }
+.ig-kpis .ig-val small { text-transform: none; }
+.ig-views { position: absolute; top: 18px; right: 22px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 300px; }
+.ig-views > button { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--ig-line); background: var(--ig-glass); color: var(--ig-ink); font-size: 12px; cursor: pointer; }
+.ig-views > button.on { border-color: var(--ig-accent); color: var(--ig-accent); }
+.ig-views .ig-layers { position: absolute; top: calc(100% + 6px); right: 0; display: grid; gap: 5px; width: 200px; max-width: none; padding: 10px; border-radius: 10px; background: var(--ig-glass); border: 1px solid var(--ig-line); }
+.ig-views .ig-layers p { margin: 0 0 2px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ig-dim); }
+.ig-views .ig-layers button { text-align: left; }
+.ig-right { top: 96px; }
+.ig-wi-line { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; font-size: 12px !important; color: var(--ig-ink) !important; }
+.ig-wi-line b { font-size: 15px; }
+.ig-wi-line span { color: var(--ig-dim); font-size: 11px; }
+.ig-wi-line .ig-neg { color: #ff9c92; }
+.ig-wi-more { justify-self: start; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-dim); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-stack .ig-whatif { gap: 7px; }
+.ig-truck-card { top: 96px; right: 22px; width: 250px; z-index: 41; }
+.ig-truck-card h2 { display: flex; align-items: center; gap: 7px; }
+.ig-truck-card h2 i { width: 9px; height: 9px; border-radius: 50%; }
+.ig-truck-card h2 span { margin-left: auto; font-size: 11px; letter-spacing: .04em; text-transform: capitalize; color: var(--ig-accent); }
+.ig-truck-card dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12px; }
+.ig-truck-card dt { color: var(--ig-dim); }
+.ig-truck-card dd { margin: 0; text-align: right; text-transform: capitalize; }
+.ig-truck-actions { display: flex; gap: 6px; }
+.ig-truck-actions button { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 11px; cursor: pointer; }
+@media (max-width: 1180px) { .ig-kpis { top: 92px; left: 22px; transform: none; width: auto; min-width: 0; right: 340px; } .ig-stack { top: 168px; } .ig-breakdown-alert { top: 160px; } }
+@media (max-width: 760px) {
+  .ig-title { top: 10px; left: 12px; right: 12px; }
+  .ig-title h1 { font-size: 20px; }
+  .ig-mode { font-size: 10px; letter-spacing: .03em; }
+  .ig-kpis { top: 116px; left: 12px; right: 12px; width: auto; min-width: 0; transform: none; grid-template-columns: repeat(2, 1fr); }
+  .ig-kpis > div { padding: 5px 8px; }
+  .ig-kpis .ig-val { font-size: 14px; }
+  .ig-views { top: auto; bottom: 58px; left: 12px; right: 12px; max-width: none; justify-content: flex-start; }
+  .ig-views > button { padding: 5px 9px; font-size: 11px; }
+  .ig-views .ig-layers { top: auto; bottom: calc(100% + 6px); right: auto; left: 0; }
+  .ig-stack { top: auto; left: 12px; right: 12px; width: auto; bottom: 100px; max-height: 32vh; }
+  .ig-stack .ig-foot-note { display: none; }
+  .ig-truck-card { top: auto; bottom: 100px; left: 12px; right: 12px; width: auto; }
+  .ig-right { bottom: 100px; }
+  .ig-breakdown-alert { top: 228px; }
+  .ig-bar { left: 12px; right: 12px; bottom: 10px; padding: 6px 10px; gap: 8px; }
+  .ig-bar .ig-read { display: none; } /* the key figures above already show these */
+  .ig-bar .ig-clock { white-space: normal; font-size: 11px; }
+}
