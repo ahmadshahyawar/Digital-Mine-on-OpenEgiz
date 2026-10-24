@@ -248,6 +248,32 @@ Contract consumed: TWIN_RELATIONSHIP_CONTRACT.md (no change).
 Expected handoff: commit SHA, build, node/edge/join checks, per-node selection check, screenshots, limitations.
 ```
 
+Handoff — Professor + Claude — C1 visible mine model and relationships — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: C1 — Visible mine model and relationships
+Branch: claude/c1-mine-model (from origin/codex/ademix 104d2a5)
+Commit SHA: 7fb805e
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-c1/{c1-mine-model.png,c1-after-node-clicks.png,c1-check.json}; PROJECT_CONTEXT.md
+Contract consumed (unchanged): TWIN_RELATIONSHIP_CONTRACT.md — twinRelationships schema v1: nodes (id, thing_id,
+  label, kind, state_feature), relationships (id, type, category, source, target, label). Live join by id/thing_id.
+What changed: "Mine model" button; SVG graph of the contract (excavator → trucks → road → crusher, mine above,
+  controller below); node state = live twin's state_feature or "State unavailable"; edge styles per category with
+  toggles and counts; node click opens the same live twin (truck → 3D selection + card with thing id; others → twin
+  card of returned features + camera focus); keyboard-focusable nodes; Overview clears selection; header names the
+  real source (Eclipse Ditto or the local demo simulator). Frame gained features(twin) to list returned fields.
+Commands/checks actually run: tsc -b PASS; vite build PASS. Headless Chrome on the demo simulator (c1-check.json):
+  11 nodes, 11 unique; 38/38 edges drawn with all categories on; every endpoint resolves; 11/11 node states equal
+  the live /api/state value; clicking each of the 11 nodes opened the matching twin (5 twin cards with thing ids,
+  6 truck cards HT-01…HT-06).
+Known limitations / unverified: not run on Docker/Eclipse Ditto (the header then reads "Eclipse Ditto"); the graph is
+  the contract's conceptual topology; mine-01's contract state feature is bottleneck_live, shown as-is.
+Request to Ahmad + Codex: none.
+Integration instruction: merge claude/c1-mine-model into codex/ademix.
+```
+
 ### Lock — Claude — B6 guided three-minute demonstration — 2026-10-24
 
 ```text
