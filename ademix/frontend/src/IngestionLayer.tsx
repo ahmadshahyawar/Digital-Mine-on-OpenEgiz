@@ -18,8 +18,13 @@ type Bundle = {
   register: RegisterRow[]
   weather: { note: string; columns: string[]; rows: number[][] }
   dispatchComparison?: DispatchEvidence
+  twinRelationships?: RelationshipContract
   productionRecovery?: RecoveryEvidence
 }
+// C1 twin relationship contract (TWIN_RELATIONSHIP_CONTRACT.md, schema v1). Only the fields used here.
+type RelationshipNode = { id: string; thing_id: string; label: string; kind: string; parent_thing_id: string | null; state_feature: string }
+type Relationship = { id: string; type: string; category: 'hierarchy' | 'material' | 'movement' | 'control'; source: string; target: string; label: string }
+type RelationshipContract = { schema_version: string; namespace: string; node_count: number; nodes: RelationshipNode[]; relationships: Relationship[] }
 // A3 production and recovery history (HISTORY_CONTRACT.md, schema v1). Only the fields used here.
 type RecoverySample = { period_id: number; sim_time_s: number; elapsed_s: number; observed_rolling_throughput_tph: number
   projected_steady_capacity_tph: number; production_t: number; active_scenario: string; road_state: string; blocked_trucks: number }
@@ -48,6 +53,8 @@ type Frame = {
   circuit: (truck: number) => number
   /** Where the data next places the truck on the circuit: the waypoint it drives towards. */
   target: (truck: number) => number
+  /** Feature names the returned twin (or the replay log) carries for one twin id, e.g. "crusher-01". */
+  features: (twin: string) => string[]
 }
 type Getter = (key: string) => unknown
 
@@ -1028,6 +1035,7 @@ function TruckCard({ index, frame, onFocus, onClose }: { index: number; frame: F
   const state = String(frame.at(`${id}.state`) ?? '')
   return <section className="ig-panel ig-truck-card" aria-label={`Truck HT-0${index + 1}`}>
     <h2><i style={{ background: TRUCK_COLOR[state] ?? '#38ef9d' }}/>HT-0{index + 1} <span>{read('state')}</span></h2>
+    <p>Twin <code>org.openegiz.ademix:{id}</code></p>
     <dl>
       <dt>Speed</dt><dd>{read('speed_kmh')} km/h</dd>
       <dt>Payload</dt><dd>{read('payload_t')} t</dd>
@@ -1329,6 +1337,100 @@ function GuidedDemo({ frame, live, onClose, onView, onOpen }: {
         : <button className="ig-guide-next" disabled={phase !== 'confirmed'} onClick={() => setIndex(i => i + 1)}>Next ▸</button>}
       <button onClick={onClose}>Cancel</button>
     </div>
+  </section>
+}
+
+// Layout of the mine model: ore flows left to right, the mine above, the controller below.
+const MODEL_W = 484, MODEL_H = 334
+const modelPosition = (node: RelationshipNode): [number, number] => {
+  if (node.kind === 'mine') return [MODEL_W / 2, 26]
+  if (node.id === 'excavator-01') return [60, 167]
+  if (node.id === 'road-main') return [304, 167]
+  if (node.id === 'crusher-01') return [424, 167]
+  if (node.id === 'scenario-controller') return [MODEL_W / 2, MODEL_H - 22]
+  const truck = Number(node.id.slice(-2)) - 1
+  return [182, 72 + truck * 38]
+}
+const EDGE_STYLE: Record<Relationship['category'], { color: string; dash?: string; width: number }> = {
+  material: { color: '#f0b85a', width: 1.6 },
+  movement: { color: '#4fd1c5', dash: '2 3', width: 1.3 },
+  control: { color: '#c497f5', dash: '6 4', width: 1.1 },
+  hierarchy: { color: '#9db3aa', dash: '1 4', width: .8 },
+}
+
+/**
+ * C1: the connected 11-twin mine model, drawn only from twinRelationships (TWIN_RELATIONSHIP_CONTRACT.md). Each
+ * node joins the live twin by thing_id and shows its state_feature value, or "State unavailable". Selecting a node
+ * opens that same live twin. No twin or relationship is invented here.
+ */
+function MineModelPanel({ contract, frame, live, source, onSelect, onClose }: {
+  contract?: RelationshipContract; frame: Frame; live: boolean; source: string; onSelect: (id: string) => void; onClose: () => void
+}) {
+  const [show, setShow] = React.useState<Record<Relationship['category'], boolean>>({ material: true, movement: true, control: true, hierarchy: false })
+  if (contract?.schema_version !== 'ademix.twin-relationships.v1') {
+    return <section className="ig-panel ig-inline ig-model" aria-label="Mine model">
+      <h2>Mine model <button className="ig-x" onClick={onClose} aria-label="Close mine model">×</button></h2>
+      <p className="ig-unavailable">The relationship contract is missing or has an unknown version, so nothing is shown.</p>
+    </section>
+  }
+  const byId = Object.fromEntries(contract.nodes.map(n => [n.id, n]))
+  const stateOf = (node: RelationshipNode) => {
+    const value = frame.at(`${node.id}.${node.state_feature}`)
+    return value === null || value === undefined || value === '' ? null : String(value).replace(/_/g, ' ')
+  }
+  const joined = contract.nodes.filter(n => frame.features(n.id).length > 0).length
+  const counts = contract.relationships.reduce((acc, r) => ({ ...acc, [r.category]: (acc[r.category] ?? 0) + 1 }), {} as Record<string, number>)
+  const edgePath = (r: Relationship) => {
+    const [x1, y1] = modelPosition(byId[r.source]), [x2, y2] = modelPosition(byId[r.target])
+    // Truck → crusher deliveries arc over the road node so the road (movement) stays visibly between them.
+    const bend = r.type === 'delivers_to' ? -46 : r.category === 'control' ? 0 : 0
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 + bend
+    return `M${x1},${y1} Q${mx},${my} ${x2},${y2}`
+  }
+  return <section className="ig-panel ig-inline ig-model" aria-label="Mine model">
+    <h2>Mine model <button className="ig-x" onClick={onClose} aria-label="Close mine model">×</button></h2>
+    <p>{contract.node_count} twins from the relationship contract, {live ? `${joined} joined to live state from ${source === 'eclipse-ditto' ? 'Eclipse Ditto' : 'the local demo simulator (not via OpenEgiz)'}` : `${joined} found in the recorded log`}. Click a twin to open it.</p>
+    <svg viewBox={`0 0 ${MODEL_W} ${MODEL_H}`} role="img" aria-label="Twins and their relationships">
+      <defs>{Object.entries(EDGE_STYLE).map(([k, v]) => <marker key={k} id={`ig-arrow-${k}`} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L8,4 L0,8 z" fill={v.color}/></marker>)}</defs>
+      {contract.relationships.filter(r => show[r.category]).map(r => {
+        const style = EDGE_STYLE[r.category]
+        return <path key={r.id} d={edgePath(r)} fill="none" stroke={style.color} strokeWidth={style.width} strokeDasharray={style.dash}
+          opacity={r.category === 'hierarchy' ? .55 : .85} markerEnd={`url(#ig-arrow-${r.category})`}><title>{`${byId[r.source].label} ${r.label} ${byId[r.target].label}`}</title></path>
+      })}
+      {contract.nodes.map(node => {
+        const [x, y] = modelPosition(node)
+        const state = stateOf(node)
+        const truck = node.kind === 'haul-truck'
+        const w = truck ? 100 : 112, h = truck ? 28 : 34
+        return <g key={node.id} className="ig-model-node" transform={`translate(${x - w / 2},${y - h / 2})`} role="button" tabIndex={0}
+          aria-label={`${node.label}: ${state ?? 'State unavailable'}`} onClick={() => onSelect(node.id)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onSelect(node.id) }}>
+          <rect width={w} height={h} rx={6} className={`ig-model-rect ig-kind-${node.kind}`}/>
+          <text x={w / 2} y={truck ? 11 : 13} textAnchor="middle" className="ig-model-label">{truck ? node.label.replace('Haul Truck ', '') : node.label}</text>
+          <text x={w / 2} y={truck ? 22 : 26} textAnchor="middle" className={state ? 'ig-model-state' : 'ig-model-state ig-model-missing'}>{state ?? 'State unavailable'}</text>
+        </g>
+      })}
+    </svg>
+    <div className="ig-model-legend">
+      {(Object.keys(EDGE_STYLE) as Relationship['category'][]).map(k => <label key={k}>
+        <input type="checkbox" checked={show[k]} onChange={() => setShow(v => ({ ...v, [k]: !v[k] }))}/>
+        <i style={{ borderTop: `2px ${EDGE_STYLE[k].dash ? 'dashed' : 'solid'} ${EDGE_STYLE[k].color}` }}/>{k} · {counts[k] ?? 0}</label>)}
+    </div>
+    <p className="ig-foot-note">Ore path: loading face (excavator) → haul truck → haul road → crusher. Control links (scenario controller) change
+      conditions and dispatch policy; they are not ore flow. Relationships are the team's conceptual topology; current state comes only from the twins.</p>
+  </section>
+}
+
+/** Card for a selected non-truck twin: its returned features, read live by id. */
+function TwinCard({ twin, label, frame, onClose }: { twin: string; label: string; frame: Frame; onClose: () => void }) {
+  const keys = frame.features(twin)
+  const show = (v: string | number | null) => typeof v === 'number' ? fmt(v, Number.isInteger(v) ? 0 : 2) : v === null ? '—' : String(v).replace(/_/g, ' ')
+  return <section className="ig-panel ig-inline ig-truck-card" aria-label={label}>
+    <h2>{label} <button className="ig-x" onClick={onClose} aria-label="Close">×</button></h2>
+    <p>Twin <code>org.openegiz.ademix:{twin}</code> · {keys.length} returned features</p>
+    {keys.length === 0 ? <p className="ig-unavailable">State unavailable: this twin is not in the current data.</p>
+      : <dl>{keys.slice(0, 14).map(k => <React.Fragment key={k}><dt>{k.replace(/_/g, ' ')}</dt><dd>{show(frame.at(`${twin}.${k}`))}</dd></React.Fragment>)}</dl>}
   </section>
 }
 
@@ -1816,6 +1918,8 @@ export function IngestionLayer() {
   const [evidenceOpen, setEvidenceOpen] = React.useState(false)
   const [timelineOpen, setTimelineOpen] = React.useState(false)
   const [guideOpen, setGuideOpen] = React.useState(false)
+  const [modelOpen, setModelOpen] = React.useState(false)
+  const [twinCard, setTwinCard] = React.useState<string | null>(null)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
   const head = React.useRef(46)
@@ -1916,6 +2020,7 @@ export function IngestionLayer() {
         return forwardBlend(circuitIn(k => prev[k] ?? curr[k], i, ranks.prevRanks[i] ?? 0), circuitIn(k => curr[k], i, ranks.currRanks[i] ?? 0), (performance.now() - at) / 2000)
       },
       target: i => circuitIn(k => liveState.current.curr[k], i, liveState.current.currRanks[i] ?? 0),
+      features: twin => Object.keys(liveState.current.curr).filter(k => k.startsWith(`${twin}.`)).map(k => k.slice(twin.length + 1)),
     }
     : {
       at: key => current[index(key)],
@@ -1932,6 +2037,7 @@ export function IngestionLayer() {
         const next = Math.min(Math.floor(head.current) + 1, log.rows.length - 1)
         return circuitIn(rowGetter(next), t, replayRanks[next]?.[t] ?? 0)
       },
+      features: twin => log.columns.filter(k => k.startsWith(`${twin}.`)).map(k => k.slice(twin.length + 1)),
     }
   const specsOf = (asset: string) => {
     const all = bundle.equipment.flatMap(e => e.specs)
@@ -1946,11 +2052,24 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  const rightOpen = selected !== null || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
+  const rightOpen = selected !== null || twinCard !== null || modelOpen || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
+  // Selecting a model node opens the same live twin: trucks are selected in 3D, other equipment gets a card and focus.
+  const selectTwin = (id: string) => {
+    if (id.startsWith('truck-')) {
+      const i = Number(id.slice(-2)) - 1
+      setTwinCard(null); setSelected(i)
+      goTo(trucks.current[i]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(14, 18, 16))
+      return
+    }
+    setSelected(null); setTwinCard(id)
+    if (id === 'excavator-01') goTo(VIEWS.face.target, VIEWS.face.offset)
+    else if (id === 'crusher-01') goTo(VIEWS.crusher.target, VIEWS.crusher.offset)
+    else goTo(VIEWS.overview.target, VIEWS.overview.offset)
+  }
   return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}${guideOpen ? ' ig-has-guide' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
-        onPointerMissed={() => setSelected(null)}>
+        onPointerMissed={() => { setSelected(null); setTwinCard(null) }}>
         <CameraRig view={view}/>
         <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} speed={speed} onRow={r => r !== row && setRow(r)}/>
@@ -1989,9 +2108,12 @@ export function IngestionLayer() {
       onView={v => v === 'truck'
         ? goTo(trucks.current[0]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(18, 26, 22))
         : goTo(VIEWS[v].target, VIEWS[v].offset)}/>}
-    {rightOpen && <div className="ig-rstack">
+    {rightOpen && <div className={`ig-rstack${modelOpen ? ' ig-rstack-wide' : ''}`}>
+      {twinCard && <TwinCard twin={twinCard} frame={frame} onClose={() => setTwinCard(null)}
+        label={bundle.twinRelationships?.nodes.find(n => n.id === twinCard)?.label ?? twinCard}/>}
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
       onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
+      {modelOpen && <MineModelPanel contract={bundle.twinRelationships} frame={frame} live={live} source={liveSource} onSelect={selectTwin} onClose={() => setModelOpen(false)}/>}
       {timelineOpen && <RecoveryTimelinePanel evidence={bundle.productionRecovery} onClose={() => setTimelineOpen(false)}/>}
       {evidenceOpen && <DispatchEvidencePanel evidence={bundle.dispatchComparison} reg={reg} onClose={() => setEvidenceOpen(false)}
         liveCondition={live ? String(frame.at('scenario-controller.active') ?? liveScenario) : null}/>}
@@ -2012,7 +2134,8 @@ export function IngestionLayer() {
 
     <nav className="ig-views" aria-label="Camera and layers">
       <button id="ig-guide-start" className="ig-guide-start" onClick={() => setGuideOpen(true)} disabled={guideOpen}>Guided demo ▶</button>
-      {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => goTo(v.target, v.offset)}>{v.label}</button>)}
+      <button id="ig-open-model" className={modelOpen ? 'on' : ''} aria-pressed={modelOpen} onClick={() => setModelOpen(o => !o)}>Mine model</button>
+      {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => { goTo(v.target, v.offset); if (id === 'overview') { setSelected(null); setTwinCard(null) } }}>{v.label}</button>)}
       <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"
         onClick={() => setLayersOpen(o => !o)}>Technical layers{layers.size ? ` · ${layers.size}` : ''} {layersOpen ? '▴' : '▾'}</button>
       {layersOpen && <div id="ig-layer-list" className="ig-layers" role="group" aria-label="Technical layers: data and asset ingestion">

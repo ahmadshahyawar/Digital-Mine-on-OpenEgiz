@@ -252,3 +252,22 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-guide-actions .ig-guide-next { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); font-weight: 600; }
 .ig-guide-actions button:disabled { opacity: .45; cursor: default; }
 @media (max-width: 760px) { .ig-guide { bottom: 96px; } .ig-has-guide .ig-stack { display: none; } }
+/* C1 mine model. */
+.ig-rstack.ig-rstack-wide { width: 500px; }
+.ig-model svg { width: 100%; height: auto; display: block; }
+.ig-model-node { cursor: pointer; }
+.ig-model-node:focus-visible { outline: none; }
+.ig-model-node:focus-visible .ig-model-rect, .ig-model-node:hover .ig-model-rect { stroke: #ffe36e; stroke-width: 2; }
+.ig-model-rect { fill: rgba(6, 30, 26, .95); stroke: #4fd1c5; stroke-width: 1; }
+.ig-kind-mine { stroke: #fff; }
+.ig-kind-haul-truck { stroke: #f0b85a; }
+.ig-kind-scenario { stroke: #c497f5; }
+.ig-model-label { font-size: 10px; font-weight: 600; fill: #e8f1ed; }
+.ig-model-state { font-size: 9px; fill: #8ff0bf; text-transform: capitalize; }
+.ig-model-missing { fill: #ffcf8a; }
+.ig-model-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10px; color: var(--ig-dim); text-transform: capitalize; }
+.ig-model-legend label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.ig-model-legend i { display: inline-block; width: 18px; height: 0; }
+.ig-truck-card code { font-size: 10px; color: var(--ig-accent); }
+@media (max-width: 1180px) { .ig-rstack.ig-rstack-wide { width: 420px; } }
+@media (max-width: 760px) { .ig-rstack.ig-rstack-wide { width: auto; } }
