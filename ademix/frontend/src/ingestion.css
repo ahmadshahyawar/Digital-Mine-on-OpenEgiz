@@ -149,7 +149,7 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-truck-card h2 span { margin-left: auto; font-size: 11px; letter-spacing: .04em; text-transform: capitalize; color: var(--ig-accent); }
 .ig-truck-card dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12px; }
 .ig-truck-card dt { color: var(--ig-dim); }
-.ig-truck-card dd { margin: 0; text-align: right; text-transform: capitalize; }
+.ig-truck-card dd { margin: 0; text-align: right; }
 .ig-truck-actions { display: flex; gap: 6px; }
 .ig-truck-actions button { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 11px; cursor: pointer; }
 @media (max-width: 1180px) { .ig-kpis { top: 92px; left: 22px; transform: none; width: auto; min-width: 0; right: 340px; } .ig-stack { top: 168px; } .ig-breakdown-alert { top: 160px; } }
@@ -232,7 +232,8 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-timeline-summary dd { font-size: 12px; }
 /* B5 two-way road: only the blocked lane is marked. */
 .ig-lane-tag { padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; pointer-events: none; }
-.ig-lane-blocked { color: #fff; background: rgba(176, 30, 30, .9); text-transform: capitalize; }
+.ig-lane-blocked { color: #fff; background: rgba(176, 30, 30, .9); }
+.ig-lane-blocked::first-letter { text-transform: uppercase; }
 .ig-lane-open { color: #062320; background: rgba(56, 239, 157, .85); }
 .ig-alert-detail { font-size: 11px; color: #ffb3ad !important; }
 /* B6 guided demonstration card. */
@@ -308,3 +309,25 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-trust code { font-size: 11px; color: #cfe; word-break: break-word; }
 .ig-trust h4 { margin: 4px 0 2px; font-size: 11px; color: #cfe; }
 .ig-trust-no li { color: #ffb3a6; }
+/* C5 judge journey: keep the breakdown alert between the left stack and an open right column; focusable panels. */
+@media (min-width: 1181px) {
+  .ig-has-right .ig-breakdown-alert { top: 112px; left: 340px; right: 394px; transform: none; max-width: none; }
+  .ig-has-wide .ig-breakdown-alert { right: 534px; }
+}
+/* Mid widths: KPIs below the source pill, alert above the status bar right of the Scenarios stack, panels end above the bar. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .ig-kpis { top: 116px; }
+  .ig-stack, .ig-rstack { top: 176px; }
+  .ig-rstack { max-height: calc(100vh - 176px - 70px); }
+  .ig-breakdown-alert { top: auto; bottom: 66px; left: 284px; right: 22px; transform: none; max-width: none; }
+  .ig-has-right .ig-breakdown-alert { right: 354px; }
+  .ig-has-wide .ig-breakdown-alert { right: 454px; }
+}
+/* Phones: panels clear the two rows of view buttons; with a panel open the alert keeps only its headline. */
+@media (max-width: 760px) {
+  .ig-stack, .ig-rstack { bottom: 140px; }
+  .ig-stack { max-height: 34vh; }
+  .ig-has-right .ig-breakdown-alert span { display: none; }
+}
+.ig-panel[tabindex="-1"]:focus { outline: none; }
+.ig-panel[tabindex="-1"]:focus-visible { outline: 2px solid #ffe36e; outline-offset: 2px; }

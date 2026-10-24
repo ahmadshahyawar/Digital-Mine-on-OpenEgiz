@@ -233,6 +233,53 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Branch: claude/c5-judge-journey (from origin/codex/ademix e34c546, C4 integrated)
+Task: C5. Make B1–B6 and C1–C4 one judge route: mine → affected assets (Show effect) → Decision evidence →
+  Why trust this? → Overview. Keep the simple default view; fix panel collisions, keyboard focus, contrast,
+  labels and narrow-view behaviour found by a full-route audit; re-check B1–B6/C1–C4 behaviour; final desktop and
+  narrow screenshots. No contract or backend change.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c5/*
+Expected handoff: commit SHA, build, route walk-through results, regression checks, screenshots, items left for
+  Ahmad's human acceptance.
+```
+
+Handoff — Professor + Claude — C5 integrate the complete judge journey — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Task: C5 — Integrate the complete high-score experience
+Branch: claude/c5-judge-journey (from origin/codex/ademix e34c546)
+Commit SHA: ea3282c (lock c742c61)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-c5/{c5-<desk|mid|narrow>-<1..6>.png, c5-audit-<desk|mid|narrow>.json, c5-regression.txt};
+  PROJECT_CONTEXT.md
+Contract consumed: no contract change (B1–C4 consumers unchanged).
+What changed (from a full-route audit at 1440×900, 1024×768 and 390×844):
+  - Overview and Escape return to the whole mine: optional panels and cards close (Effect, Decision, Mine model,
+    truck/twin cards, timeline, evidence, layer menu); chosen technical layers stay; focus returns to Overview.
+  - Opening Decision, Mine model or Show effect moves keyboard focus into that panel (it follows the canvas in the DOM).
+  - Breakdown alert: between the left stack and an open right column on desktop (it sat under the wide Decision
+    column); above the status bar at mid widths; headline only on phones while a panel is open.
+  - Mid widths: KPIs below the source pill, panels end above the status bar. Phones: panels clear the view buttons.
+  - Labels: truck-card values no longer title-cased ("Km/H", "0 T", "% From The Face"); blocked-lane tag in sentence case.
+Commands/checks actually run: tsc -b PASS; vite build PASS (existing chunk warning). Headless Chrome on the demo
+  simulator, route opening → HT-01 breakdown → Show effect → Decision → Why trust this? → Overview at three sizes:
+  0 overlapping overlay boxes, 0 off-screen, 0 text under 4.5:1 (automated estimate over the light ground);
+  Enter/Escape keyboard path as above at all sizes. Regressions: B3 128/128 cells, B4 137 points, C1 11 nodes/38 edges/
+  11 states, C2 48 cells + Apply, C3 road/crusher chains equal /api/state, C4 0 failures incl. missing/out-of-tolerance,
+  B6 6/6 steps confirmed and cancel. Details in evidence/claude-c5/c5-regression.txt.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; no real phone or screen reader; 3D labels inside the
+  scene (truck tags) can pass under an open right column (they are scene objects, the panel is on top); contrast check
+  is an automated estimate; canvas trucks still need the mouse (Mine model nodes give keyboard access to every twin).
+Request to Ahmad + Codex: integrate, run backend/data suites, live smoke and the full scenario matrix on the combined
+  commit. Ahmad: human acceptance of the opening view and the complete judge route (C5 test 5) before candidate freeze.
+Integration instruction: merge claude/c5-judge-journey into codex/ademix.
+```
+
 ### Lock — Claude — C4 visible model trust and limitations — 2026-10-25
 
 ```text
