@@ -233,6 +233,101 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Status summary — Professor + Claude B/C work — 2026-10-24 (written before context compaction)
+
+```text
+Purpose: one place for decisions, progress, open items and next steps of the Professor + Claude frontend stream.
+
+Process decisions in force (from START_HERE.md / COLLABORATION.md / TEAM_WORK_PLAN.md and the Team's instructions):
+- One task per claude/<task> branch, always created from the latest origin/codex/ademix; lock + handoff recorded in
+  this file; PR targets codex/ademix; Claude never merges and never pushes to main.
+- Ahmad + Codex integrate each PR (merge commit "Integrate …" then "Verify …" on codex/ademix) before the next
+  dependent task starts. Claude polls origin/codex/ademix and continues automatically after integration.
+- Claude edits only frontend/3D/visual files (IngestionLayer.tsx, ingestion.css, TerrainStage.tsx, evidence/claude-*),
+  consumes Codex contracts exactly, never invents values; missing data → "unavailable" + request to Codex.
+- Every visible number is tagged live (with source) or saved model evidence · synthetic · not measured.
+- Visual evidence is produced with headless Chrome over the DevTools protocol against the local demo simulator
+  (ADEMIX_DEMO_MODE=1 on 127.0.0.1:18088, Vite dev server on localhost:5173). Helper scripts live in Claude's
+  scratchpad, not in the repo. Docker/Eclipse Ditto runs are done by Codex at integration.
+- Codex's uncommitted presentation/build.mjs and presentation/render_pdf.py edits in this working tree belong to
+  Codex and are never staged or committed by Claude.
+
+Integrated in origin/codex/ademix (all by Ahmad + Codex, verified on live OpenEgiz):
+- B1 opening operator view (PR #4) · B2 fuel & CO₂ from A1 (PR #5) · B3 Fixed vs Smart from A2 (PR #6)
+- standby-bay entrance fix (PR #7) · B4 breakdown/recovery timeline from A3 (PR #8)
+- B5 two-way road (A4) presentation, display-lag fix for failed trucks, crusher-pad triangle fix (PR #9)
+- B6 guided three-minute demo on real controls (PR #10) · C1 11-twin mine model (PR #11)
+- C2 Decision workspace (PR #12); Codex then bundled decisionExplanation (A8/A9), now rendered live.
+
+Pushed, waiting for integration:
+- C3 Show effect: branch claude/c3-show-effect, commit def7381 (PR to be opened against codex/ademix).
+
+Not started (in order, each after the previous is integrated):
+- C4 "Why trust this?" inside the Decision workspace from the integrated modelTruth contract (C4 model-truth
+  handoff above): mass balance from the live twin (never a false success when missing), principal formula/constraint,
+  sourced parameters vs team assumptions, synthetic telemetry meaning, "verified, not validated", link to Specs.
+- C5 integrate the complete judge journey: mine → affected assets → Decision evidence → Why trust this → Overview;
+  fix panel collisions, keyboard focus, contrast, narrow view; final desktop/narrow screenshots; Ahmad's acceptance.
+
+Open questions / requests to Ahmad + Codex:
+- A3 recovery rule (B4 handoff): throughput_recovered coincides with road_cleared because the 1 h rolling value still
+  includes pre-breakdown output; the UI shows it as supplied with a note. Consider redefining and regenerating.
+- Optional: CO₂ fields in dispatchComparison so the UI need not derive CO₂ per 1,000 t (B2 handoff).
+
+Unverified by Claude (needs Codex integration runs or humans):
+- Docker/Eclipse Ditto rendering of B1–C3 (Codex verifies at integration); real phone; keyboard-only truck selection
+  (canvas); a first-time viewer completing the guided demo and stating the recommendation (Team acceptance).
+
+Next step after C3 integration: start C4 on claude/c4-why-trust from the newest origin/codex/ademix.
+```
+
+### Lock — Claude — C3 spatial scenario cause and effect — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/c3-show-effect (from origin/codex/ademix 39f3da6, C2 integrated)
+Task: C3. "Show effect" for an active disruption: focus the affected place (failed HT-01 and its held followers /
+  the restricted haul road / crusher, ROM bin and dump queue), mark it in the scene from returned state, and show a
+  short causal chain built from live twin fields that matches the model and road contracts (lane blockage only on
+  the failed truck's lane; road_closure is a both-lane speed restriction with no reroute). Camera control and
+  Overview recovery preserved.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c3/*
+Contracts consumed: ROAD_BREAKDOWN_CONTRACT.md, SCENARIOS.md semantics, existing twin fields (no change).
+Expected handoff: commit SHA, build, per-scenario focus/text checks against the API, screenshots, limitations.
+```
+
+Handoff — Professor + Claude — C3 spatial scenario cause and effect — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: C3 — Spatial scenario cause and effect
+Branch: claude/c3-show-effect (from origin/codex/ademix 39f3da6)
+Commit SHA: def7381
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-c3/{c3-breakdown-lane-blocked.png,c3-breakdown-after-tow.png,c3-road-restriction.png,
+  c3-crusher-congestion.png, c3-*-check.json}; PROJECT_CONTEXT.md
+Contracts consumed (unchanged): ROAD_BREAKDOWN_CONTRACT.md; SCENARIOS.md semantics; live fields scenario-controller
+  (active, breakdown_location, projected/baseline_throughput_tph), road-main (speed_limit_kmh, blockage_* counters),
+  excavator-01 (queue_length, utilization_pct), crusher-01 (capacity_tph, rom_inventory_t, rom_bin_capacity_t,
+  queue_length, average_wait_min), mine-01 (throughput_tph, average_cycle_min).
+What changed: "Show effect ▸" (Scenarios panel, only while a disruption is live) focuses the affected place and opens
+  an Effect card with a numbered causal chain from twin values. Breakdown: selects HT-01, camera on it, blocked lane
+  and held followers by direction, opposing traffic continues (or towed clear / off-road, no lane blocked).
+  Road restriction: whole road tinted, tag "10.72 km/h · both lanes · no reroute", cycle and excavator wait.
+  Crusher slowdown: crusher view, ROM bin ring + "ROM bin X/600 t · N waiting to dump", queue and wait. Lines that
+  depend on rolling windows say so; queue line says "bin still has room" until trucks actually wait.
+  Right-hand column starts at 132 px on desktop (below three rows of view buttons).
+Commands/checks actually run: tsc -b PASS; vite build PASS. Headless Chrome on the demo simulator, each condition set
+  through the real API, every value in the chain compared with the page's own /api/state response:
+  road restriction (speed 10.72, cycle 33.0 min, excavator 41 % / 0 queued, 634 vs 647 t/h); crusher slowdown after
+  ~2 simulated hours (495 t/h, ROM 549/600 t, 4 waiting, 4.9 min); breakdown on the road (crusher-bound lane, red
+  lane + "opposite lane open"), and after the tow ("both lanes are open again").
+Known limitations / unverified: not run on Docker/Eclipse Ditto; held-truck counts are the instant of capture (0 held
+  in one capture, 1 a few seconds later in the API); camera focus is a fixed offset from HT-01.
+Request to Ahmad + Codex: none.
+Integration instruction: merge claude/c3-show-effect into codex/ademix. C4 starts after integration.
+```
+
 ### Lock — Claude — C2 dispatcher Decision workspace — 2026-10-24
 
 ```text
