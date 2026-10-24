@@ -261,6 +261,8 @@ Limitations: not run on Docker/Ditto; independent of open B3 PR #6 (both touch I
 Integration: merge claude/standby-bay-access into codex/ademix.
 ```
 
+Integration result — 2026-10-24: merged after B3 into `codex/ademix`; the combined frontend production build passed. The already-completed 92 simulator/API/evidence and 47 data-contract suites remained applicable because this change is visual-only and changes no contract or backend path.
+
 Release rule: `05_FINAL_ACCEPTANCE.md` defines six mandatory gates for the exact final candidate: one real decision journey, cross-surface agreement, truthful failure handling, measured software-render usability, clean Ubuntu reproduction from official `main`, and evidence-backed rubric review. These gates are not optional and official `main` remains blocked until all pass.
 
 Owner: Ahmad + Codex
