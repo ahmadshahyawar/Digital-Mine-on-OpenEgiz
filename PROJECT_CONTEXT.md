@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B3 fixed-versus-smart comparison — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b3-fixed-vs-smart (from origin/codex/ademix 3bb976f)
+Task: B3. A Fixed vs Smart Dispatch evidence panel built only from dispatchComparison (A2 schema v1): output,
+  trucks cycling/parked, loading and crusher waits, cycle time, operating truck-hours per 1,000 t and the
+  estimated fuel per 1,000 t for each condition, steady 8 h window (first hour selectable), with the measurement
+  period stated, a plain explanation of why fewer trucks keep the loader-limited output, and no live values
+  mixed in. Opened from the Scenarios panel; follows the live condition and returns to Normal on reset.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b3/*
+Contract consumed: DISPATCH_COMPARISON_CONTRACT.md (no change).
+Expected handoff: commit SHA, build, fixture-vs-UI check for all four conditions, screenshots, limitations.
+```
+
 ### Lock — Claude — B2 fuel and ESG presentation — 2026-10-24
 
 ```text
