@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B6 guided three-minute demonstration — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b6-guided-demo (rebased onto origin/codex/ademix 0fc7cd2, which contains Codex's B5 merge de5429f)
+Task: B6. A cancelable "Guided demo" that walks a new viewer through baseline → HT-01 breakdown → consequence →
+  Smart Dispatch → recovery/reset using the real scenario and dispatch controls. Every step sends the real
+  request, then waits until the returned twin state shows it (scenario-controller.active / dispatch_policy /
+  breakdown / standby / reset fields) before narrating; nothing is animated or faked. Cancel leaves the app usable.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b6/*
+Contract consumed: existing twin fields and POST /api/scenario, /api/dispatch (no change).
+Expected handoff: commit SHA, build, recorded run of every step with the acknowledgement it waited for, cancel and
+  reset checks, screenshots, limitations.
+```
 ### Integration — Codex — B5 operational animation and road acceptance — 2026-10-24
 
 - Owner/branch: Ahmad + Codex, `codex/integrate-b5`, based on shared integration `7ddc060`.
