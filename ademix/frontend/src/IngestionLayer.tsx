@@ -25,7 +25,10 @@ type DispatchEvidence = {
   schema_version: string
   claim: string
   methodology: { steady_window_h: number; fuel_basis: string }
-  scenarios: Record<string, { label: string; periods: Record<'transient' | 'steady', { window_h: number; fixed: PolicyMetrics; smart: PolicyMetrics }> }>
+  scenarios: Record<string, {
+    label: string; trucks_required: number
+    periods: Record<'transient' | 'steady', { window_h: number; fixed: PolicyMetrics; smart: PolicyMetrics; smart_minus_fixed: Record<string, { absolute: number; percent: number | null }> }>
+  }>
 }
 type Weather = Record<string, number>
 type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'esg' | 'weather' | 'safety'
@@ -1003,13 +1006,93 @@ function TruckCard({ index, frame, onFocus, onClose }: { index: number; frame: F
   </section>
 }
 
+const CONDITIONS: [string, string][] = [['baseline', 'Normal'], ['truck_breakdown', 'HT-01 down'], ['road_closure', 'Road restricted'], ['crusher_slowdown', 'Crusher −45 %']]
+// Rows of the comparison, in the order an operator reads them. Units come from the evidence contract.
+const COMPARE_ROWS: { key: string; label: string; unit: string; digits: number; estimate?: boolean }[] = [
+  { key: 'throughput_tph', label: 'Output', unit: 't/h', digits: 0 },
+  { key: 'cycling_trucks_avg', label: 'Trucks cycling', unit: 'avg', digits: 1 },
+  { key: 'standby_trucks_avg', label: 'Trucks parked', unit: 'avg', digits: 1 },
+  { key: 'loading_wait_min', label: 'Wait at loading face', unit: 'min', digits: 1 },
+  { key: 'crusher_wait_min', label: 'Wait at crusher', unit: 'min', digits: 1 },
+  { key: 'cycle_time_min', label: 'Truck cycle', unit: 'min', digits: 1 },
+  { key: 'truck_operating_h_per_kt', label: 'Truck-hours per 1,000 t', unit: 'h', digits: 2 },
+  { key: 'estimated_fuel_l_per_kt', label: 'Fuel per 1,000 t', unit: 'L', digits: 0, estimate: true },
+]
+
+/**
+ * B3: Fixed versus Smart Dispatch, from the saved A2 evidence only (DISPATCH_COMPARISON_CONTRACT.md). Both
+ * policies start from the same hashed state and are measured over the same window; no live value is mixed in.
+ */
+function DispatchEvidencePanel({ evidence, reg, liveCondition, onClose }: {
+  evidence?: DispatchEvidence; reg: Reg; liveCondition: string | null; onClose: () => void
+}) {
+  const [condition, setCondition] = React.useState(liveCondition ?? 'baseline')
+  const [period, setPeriod] = React.useState<'steady' | 'transient'>('steady')
+  // Follow the live condition (including a reset back to normal); the operator can still pick another tab.
+  React.useEffect(() => { if (liveCondition) setCondition(liveCondition) }, [liveCondition])
+  if (evidence?.schema_version !== 'ademix.dispatch-comparison.v1') {
+    return <section className="ig-panel ig-inline ig-evidence" aria-label="Fixed versus Smart Dispatch evidence">
+      <h2>Fixed vs Smart Dispatch</h2>
+      <p className="ig-unavailable">Saved comparison evidence is missing or has an unknown version, so nothing is shown.</p>
+      <button className="ig-wi-more" onClick={onClose}>Close</button>
+    </section>
+  }
+  const entry = evidence.scenarios[condition] ?? evidence.scenarios.baseline
+  const window = entry.periods[period]
+  const fmtDelta = (key: string) => {
+    const delta = window.smart_minus_fixed[key]
+    if (!delta) return '—'
+    if (delta.percent === null) return delta.absolute === 0 ? '—' : 'new'
+    if (Math.abs(delta.percent) < .05) return 'same'
+    return `${delta.percent > 0 ? '+' : ''}${fmt(delta.percent, 1)} %`
+  }
+  // Why fewer trucks can keep the output: the slowest single machine sets it (register values, steady model).
+  const payload = reg('truck_payload_t')
+  const loaderTph = payload * 60 / reg('load_time_min')
+  const freeCycle = reg('load_time_min') + reg('dump_time_min') + 2 * reg('route_length_km') / reg('truck_speed_kmh') * 60
+  const available = condition === 'truck_breakdown' ? 5 : 6
+  const need = entry.trucks_required
+  const smart = window.smart
+  const why = need >= available
+    ? `The model needs ${need} trucks here but only ${available} exist, so Smart Dispatch keeps every truck working and the two columns match. There is nothing to park; more trucks, not dispatching, would change this case.`
+    : condition === 'crusher_slowdown'
+      ? `With the crusher slowed, it sets the pace. ${need} trucks keep it supplied; extra trucks only wait at the dump. Smart Dispatch parks ${fmt(smart.standby_trucks_avg, 0)} of them, so output is unchanged while truck-hours per 1,000 t fall.`
+      : `One excavator loads a ${fmt(payload, 0)} t truck every ${fmt(reg('load_time_min'), 0)} min, so it can load at most ${fmt(loaderTph, 0)} t/h. A truck needs about ${fmt(freeCycle, 1)} min for a round trip without waiting, so ${need} trucks already keep the excavator busy. ${available - need === 1 ? 'The other truck only queues at the face.' : available > need ? `The other ${available - need} only queue at the face.` : ''} Smart Dispatch parks them: the same output with fewer truck-hours.`
+  const periodText = period === 'steady'
+    ? `hours 2–${1 + window.window_h} after the switch (${window.window_h} h)`
+    : `the first ${window.window_h} h after the switch`
+  return <section className="ig-panel ig-inline ig-evidence" aria-label="Fixed versus Smart Dispatch evidence">
+    <h2>Fixed vs Smart Dispatch <button className="ig-x" onClick={onClose} aria-label="Close comparison">×</button></h2>
+    <p>Saved model evidence, not live: both policies start from one identical state and are measured over {periodText}.</p>
+    <div className="ig-tabs" role="tablist" aria-label="Operating condition">
+      {CONDITIONS.map(([id, label]) => <button key={id} role="tab" aria-selected={condition === id} className={condition === id ? 'on' : ''}
+        onClick={() => setCondition(id)}>{label}{liveCondition === id ? ' •' : ''}</button>)}
+    </div>
+    <div className="ig-tabs ig-tabs-small" role="tablist" aria-label="Measurement window">
+      <button role="tab" aria-selected={period === 'steady'} className={period === 'steady' ? 'on' : ''} onClick={() => setPeriod('steady')}>Steady {entry.periods.steady.window_h} h</button>
+      <button role="tab" aria-selected={period === 'transient'} className={period === 'transient' ? 'on' : ''} onClick={() => setPeriod('transient')}>First {entry.periods.transient.window_h} h</button>
+    </div>
+    <table className="ig-fuel-compare ig-evidence-table">
+      <thead><tr><th>{entry.label}</th><th>Fixed</th><th>Smart</th><th>Change</th></tr></thead>
+      <tbody>{COMPARE_ROWS.map(row => <tr key={row.key}>
+        <td>{row.label}{row.estimate && <KindTag kind="simulated"/>}</td>
+        <td>{fmt(window.fixed[row.key], row.digits)} <small>{row.unit}</small></td>
+        <td>{fmt(window.smart[row.key], row.digits)} <small>{row.unit}</small></td>
+        <td>{fmtDelta(row.key)}</td>
+      </tr>)}</tbody>
+    </table>
+    <p className="ig-advice">{why}</p>
+    <p className="ig-foot-note">{evidence.claim} Fuel is an estimate from comparable-equipment rates. {liveCondition ? '• marks the condition running now.' : 'Replay: no live condition.'}</p>
+  </section>
+}
+
 const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
 
 /**
  * What-If Scenario Engine: A normal operations, B fault injection, C smart dispatch, and the dynamic
  * bottleneck. Every figure is read from the simulator's twins; the buttons only send the request.
  */
-function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
+function WhatIfPanel({ frame, live, onEvidence }: { frame: Frame; live: boolean; onEvidence: () => void }) {
   const [details, setDetails] = React.useState(false)
   const [busy, setBusy] = React.useState('')
   const [failure, setFailure] = React.useState('')
@@ -1057,7 +1140,10 @@ function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
     </div>
     <p className="ig-wi-line">Expected output <b>{live ? `${projected.toFixed(0)} t/h` : '—'}</b>
       {live && <span className={impact < 0 ? 'ig-neg' : ''}>{impact > 0 ? '+' : ''}{impact.toFixed(0)} % vs normal {baseline.toFixed(0)} t/h</span>}</p>
-    <button className="ig-wi-more" aria-expanded={details} onClick={() => setDetails(d => !d)}>{details ? 'Hide details' : 'Details'} {details ? '▴' : '▾'}</button>
+    <div className="ig-wi-row">
+      <button className="ig-wi-more" aria-expanded={details} onClick={() => setDetails(d => !d)}>{details ? 'Hide details' : 'Details'} {details ? '▴' : '▾'}</button>
+      <button id="ig-open-evidence" className="ig-wi-more ig-wi-evidence" onClick={onEvidence}>Fixed vs Smart evidence ▸</button>
+    </div>
     {details && <>
     <div className="ig-gauges">
       <div><span>Projected output</span><Flash value={projected.toFixed(0)}>{projected.toFixed(0)} <small>t/h</small></Flash></div>
@@ -1417,6 +1503,7 @@ export function IngestionLayer() {
   const [layers, setLayers] = React.useState<Set<Layer>>(new Set())
   const [layersOpen, setLayersOpen] = React.useState(false)
   const [selected, setSelected] = React.useState<number | null>(null)
+  const [evidenceOpen, setEvidenceOpen] = React.useState(false)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
   const head = React.useRef(46)
@@ -1547,7 +1634,7 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  const rightOpen = selected !== null || layers.has('esg') || layers.has('sensors')
+  const rightOpen = selected !== null || evidenceOpen || layers.has('esg') || layers.has('sensors')
   return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}`}>
     <div className="ig-stage">
       <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
@@ -1574,7 +1661,7 @@ export function IngestionLayer() {
       </Canvas>
     </div>
     <div className="ig-stack">
-      <WhatIfPanel frame={frame} live={live}/>
+      <WhatIfPanel frame={frame} live={live} onEvidence={() => setEvidenceOpen(o => !o)}/>
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
@@ -1587,6 +1674,8 @@ export function IngestionLayer() {
     {rightOpen && <div className="ig-rstack">
       {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
       onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
+      {evidenceOpen && <DispatchEvidencePanel evidence={bundle.dispatchComparison} reg={reg} onClose={() => setEvidenceOpen(false)}
+        liveCondition={live ? String(frame.at('scenario-controller.active') ?? liveScenario) : null}/>}
       {layers.has('esg') && <FuelPanel frame={frame} reg={reg} evidence={bundle.dispatchComparison} live={live}
         condition={live ? liveScenario : scenario} policy={live ? String(frame.at('scenario-controller.dispatch_policy') ?? 'fixed') : 'fixed'}/>}
       {layers.has('sensors') && <SensorPanel frame={frame} live={live} source={liveSource}/>}

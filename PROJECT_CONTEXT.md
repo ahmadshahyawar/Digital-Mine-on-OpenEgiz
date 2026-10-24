@@ -241,6 +241,50 @@ Exact files: `ademix/data/build_decision_explanation.py`, `ademix/data/test_deci
 Purpose: freeze a frontend-ready A8/A9 explanation contract for the existing Decision workspace without editing Professor-owned frontend files.
 Expected handoff: Professor + Claude consume the generated JSON exactly, keep saved evidence separate from live state, and show unavailable instead of fabricating missing values.
 
+### Lock — Claude — B3 fixed-versus-smart comparison — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b3-fixed-vs-smart (from origin/codex/ademix 3bb976f)
+Task: B3. A Fixed vs Smart Dispatch evidence panel built only from dispatchComparison (A2 schema v1): output,
+  trucks cycling/parked, loading and crusher waits, cycle time, operating truck-hours per 1,000 t and the
+  estimated fuel per 1,000 t for each condition, steady 8 h window (first hour selectable), with the measurement
+  period stated, a plain explanation of why fewer trucks keep the loader-limited output, and no live values
+  mixed in. Opened from the Scenarios panel; follows the live condition and returns to Normal on reset.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b3/*
+Contract consumed: DISPATCH_COMPARISON_CONTRACT.md (no change).
+Expected handoff: commit SHA, build, fixture-vs-UI check for all four conditions, screenshots, limitations.
+```
+
+Handoff — Professor + Claude — B3 fixed-versus-smart comparison — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B3 — Fixed-versus-smart comparison
+Branch: claude/b3-fixed-vs-smart (from origin/codex/ademix 3bb976f)
+Commit SHA: 3ba437f (lock 04fb1bd)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b3/{b3-desktop-normal.png,b3-desktop-road-restriction-live.png,b3-phone-375.png,b3-checks.txt};
+  PROJECT_CONTEXT.md (this entry)
+Contract consumed (unchanged): DISPATCH_COMPARISON_CONTRACT.md — dispatchComparison schema v1: scenarios.<condition>
+  .label, .trucks_required, .periods.{steady,transient}.{window_h,fixed,smart,smart_minus_fixed}, claim. Register
+  values (payload 77 t, load 6 min, dump 1 min, route 3.2 km, 25 km/h) only for the explanation sentence.
+What changed: "Fixed vs Smart evidence" button in the Scenarios panel opens a right-column panel: condition tabs
+  (Normal / HT-01 down / Road restricted / Crusher −45 %), window tabs (Steady 8 h / First 1 h), 8 metric rows
+  Fixed | Smart | Change (smart_minus_fixed.percent; null → "new" or "—"; ±0.05 % → "same"), the stated window,
+  a plain-language reason per condition, and the evidence claim. No live value inside; • marks the live condition.
+Commands/checks actually run: tsc -b PASS; vite build PASS (existing chunk warning only). Headless Chrome on the
+  demo simulator: 128/128 cells equal the served fixture; baseline shows 6.0/0.0 fixed vs 4.0/2.0 smart; the real
+  road-restriction control moved the panel to Road restricted; A reset returned it to Normal. Details in
+  evidence/claude-b3/b3-checks.txt.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; the explanation's 770 t/h and 22.4 min are computed
+  here from register values (they agree with the evidence output); breakdown assumes 5 available trucks (one down).
+Request to Ahmad + Codex: none.
+Integration instruction: merge claude/b3-fixed-vs-smart into codex/ademix.
+```
+
+Integration result — 2026-10-24: B3 was merged into `codex/ademix` after preserving both sides of the shared-log conflict. The combined frontend production build passed, all 92 simulator/API/evidence tests passed, and all 47 data-contract tests passed. Professor + Claude may start B4 from the pushed combined commit.
+
 ### Lock — Claude — B2 fuel and ESG presentation — 2026-10-24
 
 ```text
