@@ -233,6 +233,19 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — Ubuntu 24.04 AMD64 release verification — 2026-10-24
+
+```text
+Owner: Ahmad + Codex (release integration lane)
+Branch: codex/ubuntu-2404-verification from origin/codex/ademix 49a1d7a
+Exact paths: .github/workflows/ubuntu-release-verification.yml; PROJECT_CONTEXT.md.
+Purpose: independently execute the documented full-stack Docker startup and live OpenEgiz acceptance checks on
+  a GitHub-hosted ubuntu-24.04 x86_64 runner, retain failure evidence, and always tear the deployment down.
+Frontend ownership: no Professor + Claude frontend, 3D, CSS, chart, animation or asset path will be edited.
+Success gate: do not claim Ubuntu verification until the actual GitHub Actions job completes successfully.
+Expected handoff: workflow/run URL, exact commit SHA, individual check results and remaining limitations.
+```
+
 ### Handoff — Codex — A6 authoritative simulation clock backend — 2026-10-24
 
 ```text
