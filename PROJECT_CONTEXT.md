@@ -261,6 +261,33 @@ Limitation recorded by the feature handoff: A6 was not complete at handoff time.
   truthful unavailable fallback must be added, combined visual behavior checked, then A6 can enter codex/ademix.
 ```
 
+### Handoff — Codex — Ditto 503 read/write-pressure reliability — 2026-10-24
+
+```text
+Owner/branch: Ahmad + Codex; codex/ditto-timeout-reliability from origin/codex/ademix 02bf007.
+Implementation commit: 87b3cf8 (Fix Ditto timeout under live polling).
+Root cause: two independent request multipliers saturated Ditto on this Docker host. The simulator persisted all
+  11 twins every wall second, while every frontend poll caused 11 sequential HTTP reads. During restart the latter
+  produced overlapping cold-cluster reads. Evidence: things reached 322% CPU; stopping simulator reduced it to
+  3.6% and direct reads returned in 0.23–0.24 s; Ditto bulk read returned all twins in one request.
+Fix: keep SIM_SPEEDUP=20 and model equations unchanged; publish complete snapshots every two wall seconds;
+  replace 11 sequential reads with one Ditto bulk `/api/2/things?ids=...` read; validate exactly 11 twins;
+  coalesce polls within the publish interval; and report API health only after a complete Ditto read warms cache.
+Changed implementation/data/docs: README.md; ademix/compose.yml; ademix/simulator/{app.py,test_reliability.py};
+  ademix/data/{test_data_layer.py,telemetry/sensor_catalogue.csv}; generated
+  ademix/frontend/public/data/ingestion.json. PROJECT_CONTEXT.md is the eighth path and only records coordination.
+Professor + Claude protection: no frontend source, 3D, CSS, chart or animation file changed. The generated JSON
+  contains only the documented 2 s wall / 40 s simulated interval update.
+Validation: 76 backend tests pass; 41 data tests pass; frontend production build passes (existing chunk warning);
+  judge smoke passes all 11 twins and 141 fields/units; full fixed/smart × baseline/breakdown/road/crusher matrix
+  and reset pass. In-app browser verified live Eclipse-Ditto status, advancing values, six truck states, HT-01
+  breakdown at 0 km/h, production/scenario changes and baseline recovery. A full rebuilt restart reached healthy;
+  20 immediate state reads all returned 200, eclipse-ditto and 11 twins (no 503).
+Remaining limitation: cold-start reads on this Windows/Docker host were successful but took roughly 2.9–6.1 s;
+  the clean Ubuntu amd64 judge-host rehearsal remains a release gate. Integrate completed A6 first because it
+  overlaps app.py, tests, sensor catalogue and generated ingestion data; resolve this commit on top and rerun gates.
+```
+
 ### Handoff — Team — Professor owns B1–B6 and visible C1–C5 — 2026-10-24
 
 ```text

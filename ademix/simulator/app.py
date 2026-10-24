@@ -7,7 +7,7 @@ import copy
 import json
 import logging
 import os
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 import time
 
 from fastapi import FastAPI, HTTPException
@@ -27,7 +27,7 @@ DITTO_URL = os.environ.get("DITTO_URL", "http://localhost:8080").rstrip("/")
 DITTO_USER = os.environ.get("DITTO_USER", "ditto")
 DITTO_PASSWORD = os.environ.get("DITTO_PASSWORD", "")
 SPEEDUP = float(os.environ.get("SIM_SPEEDUP", "20"))
-INTERVAL = float(os.environ.get("SIM_INTERVAL", "1"))
+INTERVAL = float(os.environ.get("SIM_INTERVAL", "2"))
 THING_NAMES = ["mine-01", "excavator-01", "crusher-01", "road-main", "scenario-controller"] + [f"truck-{i:02d}" for i in range(1, 7)]
 TWINS_PATH = os.path.join(os.path.dirname(__file__), "twins.json")
 
@@ -36,6 +36,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 SIMULATION_MODE = "local_demo" if DEMO_MODE else "openegiz_live"
 engine = MineEngine(simulation_speed_multiplier=SPEEDUP, simulation_mode=SIMULATION_MODE)
 stop_event = Event()
+ditto_read_lock = Lock()
+ditto_cache = None
+ditto_cache_time = 0.0
 mqtt_client = None if DEMO_MODE else mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ademix-simulator")
 app = FastAPI(title="Ademix Mine API", version="0.1.0")
 
@@ -113,6 +116,10 @@ def shutdown():
 
 @app.get("/api/health")
 def health():
+    if not DEMO_MODE:
+        # Do not report the API ready (and therefore start the polling UI) until
+        # one complete bulk read has warmed the Ditto cache.
+        state()
     return {
         "status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch,
         "sim_time_s": engine.sim_time_s,
@@ -123,20 +130,35 @@ def health():
 
 @app.get("/api/state")
 def state():
+    global ditto_cache, ditto_cache_time
     if DEMO_MODE:
         return {"source": "local-simulator-demo", "twins": demo_twins()}
     if not DITTO_PASSWORD:
         raise HTTPException(status_code=503, detail="Ditto credentials unavailable")
-    auth = (DITTO_USER, DITTO_PASSWORD)
-    twins = []
-    try:
-        with httpx.Client(timeout=5.0) as client:
-            for name in THING_NAMES:
-                response = client.get(f"{DITTO_URL}/api/2/things/{NAMESPACE}:{name}", auth=auth)
+    with ditto_read_lock:
+        now = time.monotonic()
+        if ditto_cache is not None and now - ditto_cache_time < INTERVAL:
+            return {"source": "eclipse-ditto", "twins": ditto_cache}
+        auth = (DITTO_USER, DITTO_PASSWORD)
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                thing_ids = ",".join(f"{NAMESPACE}:{name}" for name in THING_NAMES)
+                response = client.get(
+                    f"{DITTO_URL}/api/2/things",
+                    params={"ids": thing_ids},
+                    auth=auth,
+                )
                 response.raise_for_status()
-                twins.append(response.json())
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=503, detail=f"Ditto state unavailable: {exc}") from exc
+                twins = response.json()
+                if not isinstance(twins, list) or len(twins) != len(THING_NAMES):
+                    count = len(twins) if isinstance(twins, list) else "invalid response"
+                    raise ValueError(f"expected {len(THING_NAMES)} twins, got {count}")
+                ditto_cache = twins
+                ditto_cache_time = time.monotonic()
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=503, detail=f"Ditto state unavailable: {exc}") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=503, detail=f"Ditto state incomplete: {exc}") from exc
     return {"source": "eclipse-ditto", "twins": twins}
 
 

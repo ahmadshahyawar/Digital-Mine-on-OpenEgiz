@@ -58,6 +58,12 @@ waiting only—it does not change modeled travel, loading, dumping, production, 
 The visible A6 clock/interpolation UI is intentionally deferred until the Professor + Claude B6 handoff is
 integrated; until then inspect the three fields through `/api/state`.
 
+The simulator publishes one complete 11-twin snapshot every two wall-clock seconds by default, matching the
+frontend refresh interval. `SIM_SPEEDUP=20` is unchanged: each batch advances 40 simulated seconds, so the mine
+still runs at 20× while avoiding redundant one-second persistence bursts in Eclipse Ditto. `SIM_INTERVAL` can be
+overridden for diagnostics, but should not be reduced on the resource-limited judge stack without a sustained
+Ditto read/write test.
+
 ## Verify from the terminal
 
 Run the read-only judge smoke check. It waits for slow startup, requires the

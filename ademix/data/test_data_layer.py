@@ -396,9 +396,9 @@ class SensorTopologyBundleTests(unittest.TestCase):
     def test_sensor_publish_interval_matches_the_simulator_settings(self):
         app = (DATA.parent / "simulator" / "app.py").read_text(encoding="utf-8")
         self.assertIn('"SIM_SPEEDUP", "20"', app)
-        self.assertIn('"SIM_INTERVAL", "1"', app)
+        self.assertIn('"SIM_INTERVAL", "2"', app)
         for sensor in self.SENSORS:
-            self.assertEqual((sensor["publish_interval_s_wall"], sensor["publish_interval_s_simulated"]), ("1", "20"))
+            self.assertEqual((sensor["publish_interval_s_wall"], sensor["publish_interval_s_simulated"]), ("2", "40"))
 
     def test_topology_references_registered_parameters(self):
         for item in self.TOPOLOGY["nodes"] + self.TOPOLOGY["edges"]:
