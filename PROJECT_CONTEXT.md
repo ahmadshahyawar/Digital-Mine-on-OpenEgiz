@@ -233,6 +233,57 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B1 simplify the opening operator view — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b1-opening-view (from origin/codex/ademix 49a1d7a)
+Task: B1. Default view (IngestionLayer) opens on the mine with four operator KPIs (production now,
+  bottleneck now, trucks cycling/parked, the relevant queue wait), compact always-visible scenario controls,
+  and technical layers (specifications, sensors, topology, data flow, fleet/ESG, weather, safety) off until
+  chosen. Adds Overview / Loading face / Crusher camera presets and truck selection with its live twin state.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css
+Contract: consumes existing twin fields only; no simulator, data or API change.
+Expected handoff: commit SHA, build result, desktop + narrow screenshots, untested items.
+```
+
+Handoff — Professor + Claude — B1 simplify the opening operator view — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B1 — Simplify the opening operator view
+Branch: claude/b1-opening-view (from origin/codex/ademix 49a1d7a)
+Commit SHA: 955c080 (lock c1d3318)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b1/{b1-desktop-1440.png,b1-phone-375.png,b1-loading-face-view.jpg}; PROJECT_CONTEXT.md (this entry)
+Contract consumed: no contract change. Reads existing fields: mine-01.throughput_tph, mine-01.bottleneck_live,
+  scenario-controller.trucks_in_cycle / trucks_standby (replay log lacks them: counted from truck states),
+  excavator-01 / crusher-01 average_wait_min and queue_length, truck-0N state/speed/payload/progress/trips/
+  cycle_time_min/queue_wait_min/fuel_pct. The constraint value is shown with an operator name
+  (loading resource → Excavator, crusher processing capacity → Crusher, …); the value itself is unchanged.
+What changed: four key figures at the top; compact Scenarios panel (A / B / C always visible, gauges and
+  bottleneck reasons behind Details); all seven technical layers start closed under a Technical layers menu;
+  Overview / Loading face / Crusher camera views; truck selection (click → live twin card, Zoom to truck,
+  empty-ground click closes); standby-bay labels only with Topology or when trucks are parked; phone layout.
+Commands/checks actually run: tsc -b PASS; vite build PASS (existing >500 kB chunk warning only).
+  On the local demo simulator (ADEMIX_DEMO_MODE=1, integrated 49a1d7a engine), in-app browser:
+  all 7 layers toggled on and off (aria-pressed and panel presence checked); Loading face, Crusher and Overview
+  views captured; truck click opened HT-02's card with returned values, empty click closed it; Zoom to truck
+  then Overview returned to the opening view; at 375×812 every panel's bounds fit inside the viewport and the
+  camera buttons no longer overlap the status bar.
+Observed results: as above. Headless Chrome 1440×900 screenshot shows face and crusher uncovered by panels.
+Screenshot paths: evidence/claude-b1/b1-desktop-1440.png, evidence/claude-b1/b1-phone-375.png,
+  evidence/claude-b1/b1-loading-face-view.jpg
+Known limitations / unverified: not run against Docker/Eclipse Ditto; keyboard-only use of truck selection
+  not provided (trucks are canvas objects; the Sensors layer table still lists every truck); a headless
+  390 px capture cropped the right edge by ~10 px while the 375 px device emulation fitted — real-device check
+  pending. The legacy styles.css body min-width is overridden only while the dispatcher view is mounted.
+Request to Ahmad + Codex: none for B1. B2 can start once A1's frozen contract/fixture is confirmed (already
+  handed off 2026-10-23 per A1 entry).
+Integration instruction: merge claude/b1-opening-view into codex/ademix (frontend-only; no shared release file
+  except this PROJECT_CONTEXT entry).
+```
+
 ### Handoff — Codex — A6 authoritative simulation clock backend — 2026-10-24
 
 ```text

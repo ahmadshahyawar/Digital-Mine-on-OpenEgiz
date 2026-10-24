@@ -1,5 +1,5 @@
 import React from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { PIT_BENCHES, PIT_DESIGN, TerrainStage, haulRoadPoint, pitWallPoint } from './TerrainStage'
@@ -19,7 +19,7 @@ type Bundle = {
   weather: { note: string; columns: string[]; rows: number[][] }
 }
 type Weather = Record<string, number>
-type Layer = 'whatif' | 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
+type Layer = 'specs' | 'sensors' | 'topology' | 'flow' | 'fleet' | 'weather' | 'safety'
 type Frame = {
   at: (key: string) => string | number | null
   atMix: (key: string) => number
@@ -29,7 +29,7 @@ type Frame = {
 }
 type Getter = (key: string) => unknown
 
-const LAYERS: [Layer, string][] = [['whatif', 'What-if'], ['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
+const LAYERS: [Layer, string][] = [['specs', 'Specifications'], ['sensors', 'IoT sensors'], ['topology', 'Topology'], ['flow', 'Data flow'], ['fleet', 'Fleet & ESG'], ['weather', 'Weather'], ['safety', 'Safety']]
 const STATUS_COLOR: Record<string, string> = {
   sourced: '#5fd38d', derived: '#7fb4ff', assumption: '#f0b85a', scenario_input: '#f0b85a',
   synthetic: '#c497f5', model_setting: '#7fb4ff', required_input: '#ff7a6b', external_reference: '#5ec8f2',
@@ -214,9 +214,10 @@ function loadedShare(progress: number) {
   return (pass + THREE.MathUtils.smoothstep(phase, PASS.swing + .02, PASS.dump - .02)) / LOAD_PASSES
 }
 
-function LoggedTruck({ index, frame, layers, positions, activity, blockageActive, timeScale, roadKmh, loopKmh }: {
+function LoggedTruck({ index, frame, layers, positions, activity, blockageActive, timeScale, roadKmh, loopKmh, selected, onSelect }: {
   index: number; frame: Frame; layers: Set<Layer>; positions: React.MutableRefObject<THREE.Vector3[]>
   activity: React.MutableRefObject<Activity[]>; blockageActive: boolean; timeScale: number; roadKmh: number; loopKmh: number
+  selected: boolean; onSelect: () => void
 }) {
   const { scene } = useGLTF('/models/hauler.glb')
   const model = React.useMemo(() => scene.clone(), [scene])
@@ -331,7 +332,10 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     positions.current[index] = group.current.position.clone()
   })
   const color = TRUCK_COLOR[state] ?? '#38ef9d'
-  return <group ref={group}>
+  return <group ref={group} onClick={event => { event.stopPropagation(); onSelect() }}
+    onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
+    {selected && <mesh position={[0, .08, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[3.6, 4.2, 40]}/>
+      <meshBasicMaterial color="#ffe36e" transparent opacity={.9} side={THREE.DoubleSide}/></mesh>}
     <group scale={1.22}>
       <primitive object={model}/>
       <group ref={load} visible={false}>
@@ -341,7 +345,7 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     </group>
     <mesh position={[0, 4.4, 0]}><sphereGeometry args={[.32, 12, 10]}/><meshBasicMaterial color={color}/></mesh>
     {state === 'breakdown' && <BreakdownMarker name={`HT-${String(index + 1).padStart(2, '0')}`} speed={num(frame.at(`${id}.speed_kmh`))}/>}
-    {layers.has('sensors') && <Html center distanceFactor={80} position={[0, 6.4, 0]} zIndexRange={[20, 0]}>
+    {(layers.has('sensors') || selected) && <Html center distanceFactor={80} position={[0, 6.4, 0]} zIndexRange={[20, 0]}>
       <div className="ig-chip" style={{ borderColor: color, color }}>HT-{String(index + 1).padStart(2, '0')}</div>
     </Html>}
   </group>
@@ -618,7 +622,7 @@ const BELT_START = plantToWorld(1.1, 4.2, 0)
 const BELT_END = STOCKPILE.clone().add(new THREE.Vector3(0, 9.5, 0))
 
 /** The standby bay: gravel pad, bay markings, an access apron from the loop, a windrow and a sign. */
-function StandbyBay({ parked }: { parked: number }) {
+function StandbyBay({ parked, labels }: { parked: number; labels: boolean }) {
   const { middle, out, along, slots } = STANDBY_BAY
   const yaw = -Math.atan2(along.z, along.x) // local x runs along the bay row, local +z away from the loop
   return <group>
@@ -630,10 +634,10 @@ function StandbyBay({ parked }: { parked: number }) {
       <mesh position={[0, .45, 4.5]}><boxGeometry args={[17, .9, 1]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>
       {[-8.5, 8.5].map(x => <mesh key={x} position={[x, .45, .6]}><boxGeometry args={[1, .9, 8.8]}/><meshStandardMaterial color="#9e7954" roughness={1}/></mesh>)}
     </group>
-    {slots.map((slot, k) => <Html key={k} center distanceFactor={110} position={slot.clone().addScaledVector(out, 3.4).add(new THREE.Vector3(0, .4, 0))} zIndexRange={[15, 0]}>
+    {labels && slots.map((slot, k) => <Html key={k} center distanceFactor={110} position={slot.clone().addScaledVector(out, 3.4).add(new THREE.Vector3(0, .4, 0))} zIndexRange={[15, 0]}>
       <div className="ig-bay-no">{k + 1}</div></Html>)}
-    <Html center distanceFactor={90} position={middle.clone().addScaledVector(out, 5).add(new THREE.Vector3(0, 3.2, 0))} zIndexRange={[20, 0]}>
-      <div className="ig-sign-label">Standby bay · engines off · {parked} parked</div></Html>
+    {(labels || parked > 0) && <Html center distanceFactor={90} position={middle.clone().addScaledVector(out, 5).add(new THREE.Vector3(0, 3.2, 0))} zIndexRange={[20, 0]}>
+      <div className="ig-sign-label">Standby bay · engines off · {parked} parked</div></Html>}
   </group>
 }
 
@@ -900,6 +904,96 @@ function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
   </section>
 }
 
+/** Truck counts from the returned twin fields; the replay log lacks them, so count truck states there. */
+function fleetSplit(frame: Frame) {
+  const states = Array.from({ length: 6 }, (_, i) => String(frame.at(`truck-0${i + 1}.state`) ?? ''))
+  const down = states.filter(s => s === 'breakdown').length
+  const reported = frame.at('scenario-controller.trucks_in_cycle')
+  if (reported !== null && reported !== undefined) {
+    return { cycling: num(reported), parked: num(frame.at('scenario-controller.trucks_standby')), down }
+  }
+  const parked = states.filter(s => s === 'standby').length
+  return { cycling: 6 - parked - down, parked, down }
+}
+
+const CRUSHER_SIDE = new Set(['crusher processing capacity', 'dump point'])
+// Operator names for the simulator's constraint values (the values themselves are unchanged).
+const CONSTRAINT_NAME: Record<string, string> = {
+  'loading resource': 'Excavator', 'haul-road travel': 'Haul road', 'available truck fleet': 'Truck fleet',
+  'dump point': 'Dump bay', 'crusher processing capacity': 'Crusher',
+}
+
+/** The four numbers an operator needs first: output, what limits it, the fleet, and the queue that matters. */
+function KpiStrip({ frame }: { frame: Frame }) {
+  const tph = frame.at('mine-01.throughput_tph')
+  const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
+  const { cycling, parked, down } = fleetSplit(frame)
+  // The queue worth watching is the one in front of the constraint: the crusher when it limits output, else the face.
+  const atCrusher = CRUSHER_SIDE.has(bottleneck)
+  const wait = frame.at(atCrusher ? 'crusher-01.average_wait_min' : 'excavator-01.average_wait_min')
+  const queue = frame.at(atCrusher ? 'crusher-01.queue_length' : 'excavator-01.queue_length')
+  const missing = (v: unknown) => v === null || v === undefined || v === ''
+  return <section className="ig-kpis" aria-label="Key figures">
+    <div><span>Production now</span><Flash value={tph}>{missing(tph) ? '—' : num(tph).toFixed(0)} <small>t/h</small></Flash></div>
+    <div title={bottleneck}><span>What limits output</span><Flash value={bottleneck}>{CONSTRAINT_NAME[bottleneck] ?? bottleneck}</Flash></div>
+    <div><span>Trucks working · parked</span><Flash value={`${cycling}/${parked}/${down}`}>{cycling} <small>· {parked} parked{down ? ` · ${down} down` : ''}</small></Flash></div>
+    <div><span>Wait at {atCrusher ? 'crusher' : 'loading face'}</span><Flash value={wait}>{missing(wait) ? '—' : num(wait).toFixed(1)} <small>min · {missing(queue) ? '—' : num(queue)} queued</small></Flash></div>
+  </section>
+}
+
+type ViewRequest = { target: THREE.Vector3; offset: THREE.Vector3; n: number }
+const VIEWS: Record<string, { label: string; target: THREE.Vector3; offset: THREE.Vector3 }> = {
+  overview: { label: 'Overview', target: new THREE.Vector3(0, -6, 0), offset: new THREE.Vector3(84, 84, 96) },
+  // Looking steeply down into the pit so the walls do not block the view of the face.
+  face: { label: 'Loading face', target: haulRoadPoint(1), offset: new THREE.Vector3(6, 40, 20) },
+  crusher: { label: 'Crusher', target: haulRoadPoint(0), offset: new THREE.Vector3(-26, 30, 24) },
+}
+
+/** Moves the camera and its orbit target smoothly to a requested view; manual orbiting is unaffected. */
+function CameraRig({ view }: { view: ViewRequest | null }) {
+  const camera = useThree(state => state.camera)
+  const controls = useThree(state => state.controls) as unknown as { target: THREE.Vector3; update: () => void } | null
+  const flight = React.useRef<{ fromPos: THREE.Vector3; toPos: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; t: number } | null>(null)
+  React.useEffect(() => {
+    if (!view || !controls) return
+    flight.current = { fromPos: camera.position.clone(), toPos: view.target.clone().add(view.offset), fromTarget: controls.target.clone(), toTarget: view.target.clone(), t: 0 }
+  }, [view, camera, controls])
+  useFrame((_, delta) => {
+    const f = flight.current
+    if (!f || !controls) return
+    f.t = Math.min(1, f.t + delta / .9)
+    const k = THREE.MathUtils.smoothstep(f.t, 0, 1)
+    camera.position.lerpVectors(f.fromPos, f.toPos, k)
+    controls.target.lerpVectors(f.fromTarget, f.toTarget, k)
+    controls.update()
+    if (f.t >= 1) flight.current = null
+  })
+  return null
+}
+
+/** The selected truck's returned twin state. */
+function TruckCard({ index, frame, onFocus, onClose }: { index: number; frame: Frame; onFocus: () => void; onClose: () => void }) {
+  const id = `truck-0${index + 1}`
+  const read = (key: string, digits = 0) => {
+    const raw = frame.at(`${id}.${key}`)
+    return typeof raw === 'number' ? raw.toFixed(digits) : raw === null || raw === undefined ? '—' : String(raw).replace(/_/g, ' ')
+  }
+  const state = String(frame.at(`${id}.state`) ?? '')
+  return <section className="ig-panel ig-truck-card" aria-label={`Truck HT-0${index + 1}`}>
+    <h2><i style={{ background: TRUCK_COLOR[state] ?? '#38ef9d' }}/>HT-0{index + 1} <span>{read('state')}</span></h2>
+    <dl>
+      <dt>Speed</dt><dd>{read('speed_kmh')} km/h</dd>
+      <dt>Payload</dt><dd>{read('payload_t')} t</dd>
+      <dt>Route position</dt><dd>{read('route_progress_pct')} % from the face</dd>
+      <dt>Trips</dt><dd>{read('trips_total')}</dd>
+      <dt>Last cycle</dt><dd>{read('cycle_time_min', 1)} min</dd>
+      <dt>Last queue wait</dt><dd>{read('queue_wait_min', 1)} min</dd>
+      <dt>Tank (synthetic)</dt><dd>{read('fuel_pct')} %</dd>
+    </dl>
+    <div className="ig-truck-actions"><button onClick={onFocus}>Zoom to truck</button><button onClick={onClose}>Close</button></div>
+  </section>
+}
+
 const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
 
 /**
@@ -907,6 +1001,7 @@ const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown']
  * bottleneck. Every figure is read from the simulator's twins; the buttons only send the request.
  */
 function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
+  const [details, setDetails] = React.useState(false)
   const [busy, setBusy] = React.useState('')
   const [failure, setFailure] = React.useState('')
   const at = (key: string) => frame.at(key)
@@ -935,8 +1030,8 @@ function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
   const hoursPerKt = num(at('mine-01.truck_operating_h_per_kt'))
   const disabled = !live || busy !== ''
   const card = (id: string, on: boolean) => `ig-wi-card${on ? ' on' : ''}${id === busy ? ' busy' : ''}`
-  return <section className="ig-panel ig-inline ig-whatif" aria-label="What-if scenario engine">
-    <h2>What-if scenario engine</h2>
+  return <section className="ig-panel ig-inline ig-whatif" aria-label="Scenario controls">
+    <h2>Scenarios</h2>
     <div className="ig-wi-cards">
       <button id="ig-wi-a" className={card('A', scenario === 'baseline' && policy === 'fixed')} disabled={disabled} onClick={normal}>
         <b>A</b><span>Normal operations<small>baseline · fixed fleet</small></span></button>
@@ -951,6 +1046,10 @@ function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
         onClick={() => send('/api/dispatch', { policy: policy === 'smart' ? 'fixed' : 'smart' }, 'C')}>
         <b>C</b><span>Smart dispatch<small>{policy === 'smart' ? 'on · right-sized fleet' : 'off · tap to optimise'}</small></span></button>
     </div>
+    <p className="ig-wi-line">Expected output <b>{live ? `${projected.toFixed(0)} t/h` : '—'}</b>
+      {live && <span className={impact < 0 ? 'ig-neg' : ''}>{impact > 0 ? '+' : ''}{impact.toFixed(0)} % vs normal {baseline.toFixed(0)} t/h</span>}</p>
+    <button className="ig-wi-more" aria-expanded={details} onClick={() => setDetails(d => !d)}>{details ? 'Hide details' : 'Details'} {details ? '▴' : '▾'}</button>
+    {details && <>
     <div className="ig-gauges">
       <div><span>Projected output</span><Flash value={projected.toFixed(0)}>{projected.toFixed(0)} <small>t/h</small></Flash></div>
       <div className={impact < 0 ? 'ig-bad' : ''}><span>vs normal {baseline.toFixed(0)} t/h</span><Flash value={impact}>{impact > 0 ? '+' : ''}{impact.toFixed(0)} <small>%</small></Flash></div>
@@ -964,6 +1063,7 @@ function WhatIfPanel({ frame, live }: { frame: Frame; live: boolean }) {
       <p>{String(at('mine-01.bottleneck_live_reason') ?? at('scenario-controller.bottleneck_reason') ?? '')}</p>
     </div>
     {hasDispatch && <p className="ig-advice">{String(at('scenario-controller.dispatch_reason'))}</p>}
+    </>}
     <p className="ig-foot-note">{live
       ? failure || 'B and C combine: try a breakdown with smart dispatch on. Figures are simulator output, not site measurements.'
       : 'Controls need the running stand; the recorded replay has no dispatch data.'}</p>
@@ -1210,7 +1310,12 @@ export function IngestionLayer() {
   const [row, setRow] = React.useState(46)
   const [playing, setPlaying] = React.useState(true)
   const [speed, setSpeed] = React.useState(10)
-  const [layers, setLayers] = React.useState<Set<Layer>>(new Set(['whatif', 'sensors', 'topology', 'flow']))
+  // Opening view: the mine, four key figures and the scenario controls. Technical layers start closed.
+  const [layers, setLayers] = React.useState<Set<Layer>>(new Set())
+  const [layersOpen, setLayersOpen] = React.useState(false)
+  const [selected, setSelected] = React.useState<number | null>(null)
+  const [view, setView] = React.useState<ViewRequest | null>(null)
+  const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
   const head = React.useRef(46)
   const trucks = React.useRef<THREE.Vector3[]>([])
   const activity = React.useRef<Activity[]>([])
@@ -1341,7 +1446,9 @@ export function IngestionLayer() {
 
   return <main className="ig-shell">
     <div className="ig-stage">
-      <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}>
+      <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
+        onPointerMissed={() => setSelected(null)}>
+        <CameraRig view={view}/>
         <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
         <Playhead playing={playing && !live} rows={log.rows.length} head={head} speed={speed} onRow={r => r !== row && setRow(r)}/>
         <LoopRoads/>
@@ -1349,10 +1456,11 @@ export function IngestionLayer() {
         <LaneArrows/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks} activity={activity}
           blockageActive={frame.at('road-main.state') === 'restricted'}
-          timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}/>)}
+          timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}
+          selected={selected === i} onSelect={() => setSelected(i)}/>)}
         <Excavator activity={activity} trucks={trucks}/>
         <OreHandling frame={frame} activity={activity}/>
-        <StandbyBay parked={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(v => v === 'standby').length}/>
+        <StandbyBay labels={layers.has('topology')} parked={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(v => v === 'standby').length}/>
         <RoadLighting/>
         {layers.has('weather') && <WeatherScene weather={weather}/>}
         {layers.has('safety') && <SafetyScene loopSpeed={reg('loop_speed_kmh')}/>}
@@ -1361,20 +1469,23 @@ export function IngestionLayer() {
         {layers.has('flow') && <DataFlow trucks={trucks}/>}
       </Canvas>
     </div>
-    {['whatif', 'specs', 'fleet', 'weather', 'safety'].some(l => layers.has(l as Layer)) && <div className="ig-stack">
-      {layers.has('whatif') && <WhatIfPanel frame={frame} live={live}/>}
+    <div className="ig-stack">
+      <WhatIfPanel frame={frame} live={live}/>
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
       {layers.has('fleet') && <EsgPanel frame={frame} reg={reg} hours={hours}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
       {layers.has('specs') && <SpecsPanel specsOf={specsOf}/>}
-    </div>}
+    </div>
     {layers.has('sensors') && <SensorPanel frame={frame} live={live} source={liveSource}/>}
 
     <BreakdownAlert frame={frame} reg={reg}/>
+    <KpiStrip frame={frame}/>
+    {selected !== null && <TruckCard index={selected} frame={frame} onClose={() => setSelected(null)}
+      onFocus={() => goTo(trucks.current[selected]?.clone() ?? VIEWS.face.target, new THREE.Vector3(14, 18, 16))}/>}
 
     <header className="ig-title">
-      <span>LAYER 1 · DATA &amp; ASSET INGESTION</span>
+      <span>ADEMIX · DISPATCHER VIEW</span>
       <h1>North Pit</h1>
       <div id="ig-mode" className={`ig-mode ${live ? 'live' : 'replay'}`} role="status">
         <i/>{!live ? 'REPLAY · recorded synthetic log (stand offline)'
@@ -1382,16 +1493,22 @@ export function IngestionLayer() {
       </div>
     </header>
 
-    <nav className="ig-layers" aria-label="Scene layers">
-      {LAYERS.map(([id, label]) => <button key={id} id={`ig-layer-${id}`} aria-pressed={layers.has(id)} className={layers.has(id) ? 'on' : ''} onClick={() => toggle(id)}>{label}</button>)}
+    <nav className="ig-views" aria-label="Camera and layers">
+      {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => goTo(v.target, v.offset)}>{v.label}</button>)}
+      <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"
+        onClick={() => setLayersOpen(o => !o)}>Technical layers{layers.size ? ` · ${layers.size}` : ''} {layersOpen ? '▴' : '▾'}</button>
+      {layersOpen && <div id="ig-layer-list" className="ig-layers" role="group" aria-label="Technical layers: data and asset ingestion">
+        <p>Data &amp; asset ingestion views</p>
+        {LAYERS.map(([id, label]) => <button key={id} id={`ig-layer-${id}`} aria-pressed={layers.has(id)} className={layers.has(id) ? 'on' : ''} onClick={() => toggle(id)}>{label}</button>)}
+      </div>}
     </nav>
 
-    <div className="ig-key" aria-label="Value status">
+    {layers.size > 0 && <div className="ig-key" aria-label="Value status">
       {[['sourced', 'OpenMines'], ['external_reference', 'Cat handbook'], ['derived', 'derived'], ['assumption', 'team input'], ['synthetic', 'synthetic']].map(([s, l]) =>
         <span key={s}><i style={{ background: STATUS_COLOR[s] }}/>{l}</span>)}
       <span className="ig-lane"><b style={{ color: '#5ec8f2' }}>▲</b>empty in · inner lane</span>
       <span className="ig-lane"><b style={{ color: '#f0b85a' }}>▲</b>loaded out · outer lane</span>
-    </div>
+    </div>}
 
     <footer className="ig-bar">
       {live
