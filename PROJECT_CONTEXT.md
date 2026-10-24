@@ -233,6 +233,25 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C2 dispatcher Decision workspace — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/c2-decision-workspace (from origin/codex/ademix 18d6974, C1 integrated)
+Task: C2. One optional "Decision" workspace: live now (condition, policy, planned and measured constraint, trucks
+  cycling/parked/down, truck-hours per 1,000 t, waits) clearly separated from saved model evidence (A2 fixed vs smart
+  for the active condition; A3 breakdown timeline with observed vs projected); the recommended action read from the
+  evidence (decisionExplanation when present, else the A2 smart outcome for the active condition); a real "Apply"
+  control; direct return to the 3D mine.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c2/*
+Contracts consumed: DISPATCH_COMPARISON_CONTRACT.md, HISTORY_CONTRACT.md, DECISION_EXPLANATION_CONTRACT.md (rendered
+  only if decisionExplanation is in the bundle). No contract change.
+Request (blocking only the A8/A9 section): add ademix/data/evidence/decision_explanation.json to the generated
+  frontend bundle as `decisionExplanation` (the frontend image is built from ademix/frontend only).
+Expected handoff: commit SHA, build, saved-vs-fixture checks, live/saved separation, per-condition recommendation
+  check, screenshots, limitations.
+```
+
 ### Lock — Claude — C1 visible mine model and relationships — 2026-10-24
 
 ```text
