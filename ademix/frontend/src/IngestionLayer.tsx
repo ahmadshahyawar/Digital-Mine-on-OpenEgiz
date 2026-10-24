@@ -274,6 +274,8 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     if (pastTarget) gap = 0 // the data is slightly behind: wait where we are
     if (gap > .7) { shown.current = frame.circuit(index); velocity.current = 0; gap = 0; dwell.current = { kind: null, left: 0 } } // replay jumped
     const m = metresPerUnit(shown.current)
+    // A failure ends any loading or tipping still being shown: the twin already has the truck on the road.
+    if (dwell.current.kind && (state === 'breakdown' || state === 'blocked')) dwell.current = { kind: null, left: 0 }
     if (dwell.current.kind) {
       // Parked at the excavator or the tipping point until loading or dumping is finished.
       velocity.current = 0
@@ -282,7 +284,9 @@ function LoggedTruck({ index, frame, layers, positions, activity, blockageActive
     } else {
       const along = ((shown.current % 1) + 1) % 1
       const inLoop = along <= LOOP_PCT / 100 || along >= 1 - LOOP_PCT / 100
-      const catchUp = gap > .12 ? 1.6 : 1 // more than ~400 m behind the data: up to 40 km/h to make up time
+      // More than ~400 m behind the data: up to 40 km/h to make up time. A truck that has failed or is held behind
+      // a failure closes the gap quickly, so it is seen stopped where the twin reports it.
+      const catchUp = state === 'breakdown' || state === 'blocked' ? 3 : gap > .12 ? 1.6 : 1
       const limit = (inLoop ? Math.min(loopKmh, roadKmh) : roadKmh) * catchUp / 3.6 / m * timeScale
       const accel = ACCELERATION_MS2 / m * timeScale * timeScale
       const wanted = Math.min(limit, Math.sqrt(2 * accel * gap))
@@ -392,10 +396,18 @@ function LoopRoads() {
         }
         if (k < segments) indices.push(2 * k, 2 * k + 2, 2 * k + 1, 2 * k + 1, 2 * k + 2, 2 * k + 3)
       }
+      // A flat road surface faces straight up. Where the link bends sharply onto the ring the strip folds over
+      // itself; with computed normals (and double-sided flipping) the fold was shaded as dark triangles across the
+      // pad. Wind every triangle to face up and give every vertex an upward normal so the whole surface lights evenly.
+      for (let k = 0; k < indices.length; k += 3) {
+        const [a, b, c] = [indices[k], indices[k + 1], indices[k + 2]].map(i => i * 3)
+        const cross = (positions[b + 2] - positions[a + 2]) * (positions[c] - positions[a]) - (positions[b] - positions[a]) * (positions[c + 2] - positions[a + 2])
+        if (cross < 0) [indices[k + 1], indices[k + 2]] = [indices[k + 2], indices[k + 1]]
+      }
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
       geometry.setIndex(indices)
-      geometry.computeVertexNormals()
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(positions.map((_, k) => k % 3 === 1 ? 1 : 0), 3))
       return geometry
     }
     return { surface: build(LOOP_HALF_WIDTH, .26), edge: build(LOOP_HALF_WIDTH + .15, .24) }
@@ -1435,6 +1447,66 @@ function BreakdownMarker({ name, speed }: { name: string; speed: number }) {
 }
 
 /**
+ * A4 two-way road contract (ROAD_BREAKDOWN_CONTRACT.md): which lane a failed truck blocks and how many followers
+ * it holds, read from road-main. The lane is never inferred from screen position; the opposing lane stays open.
+ */
+type LaneBlockage = { lane: 'none' | 'crusher_bound' | 'face_bound'; heading: number; held: number; heldCrusherBound: number; heldFaceBound: number }
+function laneBlockage(frame: Frame): LaneBlockage {
+  const lane = String(frame.at('road-main.blockage_lane') ?? 'none')
+  return {
+    lane: lane === 'crusher_bound' || lane === 'face_bound' ? lane : 'none',
+    heading: num(frame.at('road-main.blockage_heading')),
+    held: num(frame.at('road-main.blocked_trucks')),
+    heldCrusherBound: num(frame.at('road-main.blocked_crusher_bound_trucks')),
+    heldFaceBound: num(frame.at('road-main.blocked_face_bound_trucks')),
+  }
+}
+const LANE_WORDS = {
+  crusher_bound: { lane: 'crusher-bound lane', traffic: 'loaded trucks to the crusher', opposing: 'empty traffic to the face' },
+  face_bound: { lane: 'face-bound lane', traffic: 'empty trucks to the face', opposing: 'loaded traffic to the crusher' },
+} as const
+
+/** In the scene: only the blocked lane is marked, from the failed truck back towards the trucks it holds. */
+function BlockedLane({ frame }: { frame: Frame }) {
+  const block = laneBlockage(frame)
+  const failed = Array.from({ length: 6 }, (_, i) => i).find(i => frame.at(`truck-0${i + 1}.state`) === 'breakdown')
+  const pct = failed === undefined ? 0 : num(frame.at(`truck-0${failed + 1}.route_progress_pct`))
+  const heading: 1 | -1 = block.heading < 0 ? -1 : 1
+  const geometry = React.useMemo(() => {
+    if (block.lane === 'none') return null
+    // Followers approach from behind the failed truck: lower route % in the crusher-bound lane, higher in the face-bound.
+    const from = heading > 0 ? Math.max(LOOP_PCT, pct - 14) : pct
+    const to = heading > 0 ? pct : Math.min(100 - LOOP_PCT, pct + 14)
+    const positions: number[] = []
+    const indices: number[] = []
+    const steps = 28
+    for (let k = 0; k <= steps; k++) {
+      const p = from + (to - from) * k / steps
+      for (const side of [-1, 1]) {
+        const v = lanePose(p, heading, LANE_OFFSET + side * 1.9).position
+        positions.push(v.x, v.y + .3, v.z)
+      }
+      if (k < steps) indices.push(2 * k, 2 * k + 2, 2 * k + 1, 2 * k + 1, 2 * k + 2, 2 * k + 3)
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    g.setIndex(indices)
+    return g
+  }, [block.lane, heading, Math.round(pct)])
+  if (!geometry || failed === undefined) return null
+  const words = LANE_WORDS[block.lane as 'crusher_bound' | 'face_bound']
+  const labelAt = lanePose(pct + (heading > 0 ? -6 : 6), heading, LANE_OFFSET).position.add(new THREE.Vector3(0, 4, 0))
+  const openAt = lanePose(pct, -heading as 1 | -1, LANE_OFFSET).position.add(new THREE.Vector3(0, 3, 0))
+  return <group>
+    <mesh geometry={geometry}><meshBasicMaterial color="#ff3b30" transparent opacity={.38} side={THREE.DoubleSide} depthWrite={false}/></mesh>
+    <Html center distanceFactor={70} position={labelAt} zIndexRange={[24, 0]}>
+      <div className="ig-lane-tag ig-lane-blocked">{words.lane} blocked · {block.held} held</div></Html>
+    <Html center distanceFactor={70} position={openAt} zIndexRange={[24, 0]}>
+      <div className="ig-lane-tag ig-lane-open">opposite lane open</div></Html>
+  </group>
+}
+
+/**
  * Alert banner naming the broken-down truck and its operational consequence. It only reads the twin
  * fields the simulator publishes; it does not decide anything itself and disappears on recovery.
  */
@@ -1448,21 +1520,24 @@ function BreakdownAlert({ frame, reg }: { frame: Frame; reg: Reg }) {
   const where = typeof reported === 'string' && reported !== 'none'
     ? reported
     : `${(pct / 100 * reg('route_length_km')).toFixed(2)} km from the loading face`
-  const blocked = num(frame.at('road-main.blocked_trucks'))
-  const roadRestricted = frame.at('road-main.state') === 'restricted'
+  const block = laneBlockage(frame)
   const blockage = frame.at('road-main.blockage')
-  // On the haul road the simulator blocks the single lane until the truck is towed; elsewhere it does not.
+  // A4: a failure on the haul road blocks only its own lane until it is towed clear after 1,200 simulated s;
+  // a failure in a queue, bay or the standby line blocks nothing. HT-01 stays out of service until reset.
   const onRoad = typeof reported === 'string' && reported !== 'none' ? reported.startsWith('haul road') : pct > LOOP_PCT && pct < 100 - LOOP_PCT
-  const roadText = roadRestricted
-    ? blocked > 0 ? `Lane blocked: ${blocked} truck${blocked === 1 ? '' : 's'} held behind ${name}` : `Lane blocked by ${name}`
-    : onRoad ? `${name} towed onto the shoulder; the road is open again` : `${name} is parked off the haul road; traffic is not blocked`
+  const words = block.lane === 'none' ? null : LANE_WORDS[block.lane]
+  const roadText = words
+    ? `${name} blocks the ${words.lane} (${words.traffic}): ${block.held} truck${block.held === 1 ? '' : 's'} held behind it. Opposing ${words.opposing} continues.`
+    : onRoad ? `${name} has been towed clear; both lanes are open. It stays out of service until Normal operations.`
+      : `${name} stopped off the haul road; no lane is blocked.`
   const throughput = num(frame.at('mine-01.throughput_tph'))
   const projected = num(frame.at('scenario-controller.projected_throughput_tph'))
   const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
   return <section id="ig-breakdown-alert" className="ig-breakdown-alert" role="alert" aria-live="polite">
     <b>Breakdown · {broken.map(i => `HT-0${i + 1}`).join(', ')}</b>
     <span>Stopped at {where} · {num(frame.at(`truck-0${first + 1}.speed_kmh`)).toFixed(0)} km/h</span>
-    <span>{typeof blockage === 'string' && blockage !== 'none' ? blockage : roadText}</span>
+    <span>{roadText}</span>
+    {typeof blockage === 'string' && blockage !== 'none' && <span className="ig-alert-detail">{blockage}</span>}
     <span>Crusher {throughput.toFixed(0)} t/h now · {projected.toFixed(0)} t/h expected with {6 - broken.length} trucks · constraint: {bottleneck}</span>
   </section>
 }
@@ -1757,11 +1832,12 @@ export function IngestionLayer() {
         <SafetyBerms/>
         <LaneArrows/>
         {Array.from({ length: 6 }, (_, i) => <LoggedTruck key={i} index={i} frame={frame} layers={layers} positions={trucks} activity={activity}
-          blockageActive={frame.at('road-main.state') === 'restricted'}
+          blockageActive={laneBlockage(frame).lane !== 'none'}
           timeScale={live ? STAND_SPEEDUP : playing ? speed : 0} roadKmh={num(frame.at('road-main.speed_limit_kmh')) || reg('truck_speed_kmh')} loopKmh={reg('loop_speed_kmh')}
           selected={selected === i} onSelect={() => setSelected(i)}/>)}
         <Excavator activity={activity} trucks={trucks}/>
         <OreHandling frame={frame} activity={activity}/>
+        <BlockedLane frame={frame}/>
         <StandbyBay labels={layers.has('topology')} parked={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(v => v === 'standby').length}/>
         <RoadLighting/>
         {layers.has('weather') && <WeatherScene weather={weather}/>}

@@ -230,3 +230,8 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-events b { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; color: #10201b; }
 .ig-events span { color: var(--ig-dim); }
 .ig-timeline-summary dd { font-size: 12px; }
+/* B5 two-way road: only the blocked lane is marked. */
+.ig-lane-tag { padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.ig-lane-blocked { color: #fff; background: rgba(176, 30, 30, .9); text-transform: capitalize; }
+.ig-lane-open { color: #062320; background: rgba(56, 239, 157, .85); }
+.ig-alert-detail { font-size: 11px; color: #ffb3ad !important; }
