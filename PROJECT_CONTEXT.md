@@ -233,6 +233,8 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+Release rule: `05_FINAL_ACCEPTANCE.md` defines six mandatory gates for the exact final candidate: one real decision journey, cross-surface agreement, truthful failure handling, measured software-render usability, clean Ubuntu reproduction from official `main`, and evidence-backed rubric review. These gates are not optional and official `main` remains blocked until all pass.
+
 Owner: Ahmad + Codex
 Branch: `codex/a8-a9-decision-contract`
 Exact files: `ademix/data/build_decision_explanation.py`, `ademix/data/test_decision_explanation.py`, `ademix/data/evidence/decision_explanation.json`, `ademix/data/DECISION_EXPLANATION_CONTRACT.md`, `ademix/data/DATA_CARD.md`, `PROJECT_CONTEXT.md`
