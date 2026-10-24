@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B2 fuel and ESG presentation — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b2-fuel-esg (from origin/codex/ademix 5f2db02)
+Task: B2. Replace the Fleet & ESG panel's frontend-recomputed fuel/CO2 with the A1 contract: estimated shift
+  fuel, estimated tank-to-wheel CO2, current fuel rate and operating-truck count from mine-01; baseline versus
+  active condition/policy from the A2 matched 8 h evidence (estimated_fuel_l, estimated_fuel_l_per_kt);
+  a plain explanation of why values change; explicit simulated / derived / assumed labels (nothing measured);
+  safe unavailable states; optional new-shift button using POST /api/shift/reset.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b2/*
+Contracts consumed: FUEL_CO2_CONTRACT.md (A1), DISPATCH_COMPARISON_CONTRACT.md (A2). No field renamed or added.
+Expected handoff: commit SHA, build, live API-vs-UI check, screenshots, limitations.
+```
+
 ### Lock — Claude — B1 simplify the opening operator view — 2026-10-24
 
 ```text
