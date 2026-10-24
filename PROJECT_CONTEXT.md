@@ -247,6 +247,36 @@ Contract consumed: HISTORY_CONTRACT.md (no change).
 Expected handoff: commit SHA, build, fixture-vs-chart check, screenshots, limitations, recovery-marker note.
 ```
 
+Handoff — Professor + Claude — B4 production and recovery timeline — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B4 — Production and recovery timeline
+Branch: claude/b4-recovery-timeline (rebased onto origin/codex/ademix cf58d18, after B3 and standby-bay access)
+Commit SHA: 7826833 (lock e477b7c)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b4/{b4-desktop-timeline.png,b4-phone-375-timeline.png,b4-checks.txt}; PROJECT_CONTEXT.md
+Contract consumed (unchanged): HISTORY_CONTRACT.md — productionRecovery schema v1: methodology.sample_s /
+  recovery_rule, baseline.samples, breakdown_recovery.events (kind, label, sim_time_s, period_id) and .periods
+  (samples: sim_time_s, observed_rolling_throughput_tph, projected_steady_capacity_tph, production_t).
+What changed: "Breakdown timeline" button in the Scenarios panel; SVG chart on simulated time (hours since the
+  breakdown): observed rolling 1 h solid, projected steady capacity dashed, same-start baseline thin; numbered
+  supplied event markers only (period_started is not drawn) with their supplied labels; period 2 shaded and drawn
+  as its own segment; derived summary (lowest observed 687.6 t/h at 0:40; 2,231 vs 2,310 t over 3 h, −79 t);
+  unknown schema shows nothing.
+Commands/checks actually run: tsc -b PASS; vite build PASS. Headless Chrome: SVG read back into data equals the
+  fixture for all 137 points (≤2.42 s, ≤0.049 t/h from 0.1 px rounding), labels equal; identical at two different
+  live stand times. Desktop and 375 px screenshots.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; the chart is the saved fixture only (no live
+  trend), as the contract allows.
+Request to Ahmad + Codex (contract question, not blocking): with the current fixture the throughput_recovered event
+  coincides with road_cleared (15600 s) because the 1 h rolling average still contains pre-breakdown output; the
+  observed series then dips to 687.6 t/h (< 95 % of 770) between 0:40 and 1:30. The UI shows the event as supplied
+  with an explanatory note. Consider defining recovery on a non-lagging measure or requiring the 95 % condition to
+  hold after the rolling window has passed the stoppage, then regenerate the fixture.
+Integration instruction: merge claude/b4-recovery-timeline into codex/ademix.
+```
+
 ### Lock — Claude — standby bay access (human visual review) — 2026-10-24
 
 ```text
