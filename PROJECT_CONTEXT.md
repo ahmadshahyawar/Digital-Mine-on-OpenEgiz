@@ -233,6 +233,18 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — standby bay access (human visual review) — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/standby-bay-access (from origin/codex/ademix 3bb976f; independent of open B3 PR #6)
+Task: Professor's review found the smart-dispatch standby bay has no entrance: the face loop's outer windrow runs
+  between the loop and the bay. Open the windrow in front of the bay and pave a wide access apron so parked
+  trucks visibly drive in and out. Visual only (part of B5 scope); no twin, simulator or data change.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, evidence/claude-bay-access/*
+Expected handoff: commit SHA, build, before/after screenshots.
+```
+
 Release rule: `05_FINAL_ACCEPTANCE.md` defines six mandatory gates for the exact final candidate: one real decision journey, cross-surface agreement, truthful failure handling, measured software-render usability, clean Ubuntu reproduction from official `main`, and evidence-backed rubric review. These gates are not optional and official `main` remains blocked until all pass.
 
 Owner: Ahmad + Codex
