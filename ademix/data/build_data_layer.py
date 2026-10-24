@@ -27,6 +27,7 @@ SOURCE = DATA / "openmines" / "north_pit_mine.json"
 REGISTER = DATA / "registry" / "parameters.csv"
 RELATIONSHIPS = DATA / "topology" / "twin_relationships.json"
 MODEL_TRUTH = DATA / "evidence" / "model_truth.json"
+DECISION_EXPLANATION = DATA / "evidence" / "decision_explanation.json"
 sys.path.insert(0, str(SIMULATOR))
 
 from compare_scenarios import comparison_json  # noqa: E402
@@ -173,6 +174,7 @@ def build(write: bool = True) -> dict:
             "ademix/data/registry/parameters.csv": sha256(REGISTER.read_bytes()),
             "ademix/data/topology/twin_relationships.json": sha256(RELATIONSHIPS.read_bytes()),
             "ademix/data/evidence/model_truth.json": sha256(MODEL_TRUTH.read_bytes()),
+            "ademix/data/evidence/decision_explanation.json": sha256(DECISION_EXPLANATION.read_bytes()),
             "ademix/simulator/engine.py": sha256((SIMULATOR / "engine.py").read_bytes()),
             "ademix/simulator/compare_scenarios.py": sha256((SIMULATOR / "compare_scenarios.py").read_bytes()),
             "ademix/simulator/history_evidence.py": sha256((SIMULATOR / "history_evidence.py").read_bytes()),
@@ -300,6 +302,7 @@ def ingestion_bundle(outputs: dict, manifest: dict) -> str:
         },
         "dispatchComparison": json.loads(outputs["evidence/fixed_vs_smart.json"]),
         "productionRecovery": json.loads(outputs["evidence/production_recovery.json"]),
+        "decisionExplanation": json.loads(DECISION_EXPLANATION.read_text(encoding="utf-8")),
         "emission_references": read_rows((DATA / "registry" / "emission_references.csv").read_text(encoding="utf-8")),
         "provenance": manifest,
     }

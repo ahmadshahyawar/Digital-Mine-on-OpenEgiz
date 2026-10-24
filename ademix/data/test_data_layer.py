@@ -532,6 +532,19 @@ class SensorTopologyBundleTests(unittest.TestCase):
         bundle = json.loads(outputs[build.BUNDLE_PATH])
         self.assertEqual(bundle["productionRecovery"], history)
 
+    def test_decision_explanation_is_bundled_with_provenance(self):
+        outputs = build.build(write=False)
+        evidence = json.loads(build.DECISION_EXPLANATION.read_text(encoding="utf-8"))
+        self.assertEqual(evidence["schema_version"], "ademix.decision-explanation.v1")
+        self.assertTrue(evidence["synthetic"])
+        bundle = json.loads(outputs[build.BUNDLE_PATH])
+        self.assertEqual(bundle["decisionExplanation"], evidence)
+        expected_hash = build.sha256(build.DECISION_EXPLANATION.read_bytes())
+        self.assertEqual(
+            bundle["provenance"]["inputs_sha256"]["ademix/data/evidence/decision_explanation.json"],
+            expected_hash,
+        )
+
     def test_breakdown_log_uses_directional_two_way_road_contract(self):
         outputs = build.build(write=False)
         rows = list(csv.DictReader(io.StringIO(outputs["telemetry/logs/truck_breakdown.csv"])))

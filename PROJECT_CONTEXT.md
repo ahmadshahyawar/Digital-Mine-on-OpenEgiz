@@ -1444,6 +1444,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ## Handoff Template
 
+### Verified C2 Decision workspace integration — 2026-10-24
+
+- Integrated completed Professor + Claude branch `origin/claude/c2-decision-workspace` into `codex/ademix`. The branch was based on the latest verified shared state `18d6974` and its implementation changes are limited to Professor-owned frontend files, C2 evidence, and its shared handoff.
+- Completed the requested Codex contract wiring without changing Professor-owned source: `ademix/data/evidence/decision_explanation.json` is now included as `decisionExplanation` in the generated frontend bundle, and its SHA-256 is recorded in bundle provenance. This exposes the existing A8/A9 baseline, road-restriction, crusher-slowdown, and one-at-a-time sensitivity explanations instead of C2's truthful unavailable state.
+- Verification passed: frontend TypeScript/Vite production build; 92 simulator/API tests; 48 data-layer tests; Docker UI image rebuild; judge smoke against the live stack with `source=eclipse-ditto`, all 11 required twins, and all 143 required fields/units. The served bundle reports schema `ademix.decision-explanation.v1` and all four expected question groups.
+- Windows browser accessibility confirmed the live OpenEgiz source and advancing simulated time before the final page reload. Automated screenshot capture/reload then stopped because Computer Use could not determine Chrome's URL with enough confidence; no visual state was guessed. Professor's saved C2 evidence remains in `evidence/claude-c2/`, and final human visual acceptance remains required.
+- Integration sequence: merge commit `6a1c012`; the following verification commit contains the bundle/provenance test and this handoff. Official `main` remains unchanged. C3 may branch only after this verified combined state is pushed to `origin/codex/ademix`.
+
 ### OpenMines source and unit verification handoff — 2026-10-24
 
 - Owner/branch: Ahmad + Codex on `codex/source-unit-verification`; scope is source provenance and unit evidence only. No Professor + Claude frontend source, simulator behavior or Team Concept wording was changed.
