@@ -26,6 +26,9 @@ if not MAIN_SOURCE.exists():
 
 
 class SlowDependencyTests(unittest.TestCase):
+    def test_deployment_publish_interval_matches_frontend_refresh(self):
+        self.assertEqual(simulator_app.INTERVAL, 2)
+
     def test_mqtt_connect_retries_then_recovers(self):
         client = mock.Mock()
         client.connect.side_effect = [OSError("starting"), OSError("starting"), None]
@@ -56,6 +59,8 @@ class SlowDependencyTests(unittest.TestCase):
 class ApiReliabilityTests(unittest.TestCase):
     def setUp(self):
         simulator_app.engine = MineEngine()
+        simulator_app.ditto_cache = None
+        simulator_app.ditto_cache_time = 0.0
 
     def test_ditto_failure_returns_503_instead_of_crashing(self):
         with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
@@ -67,6 +72,70 @@ class ApiReliabilityTests(unittest.TestCase):
                 simulator_app.state()
         self.assertEqual(raised.exception.status_code, 503)
         self.assertIn("Ditto state unavailable", raised.exception.detail)
+
+    def test_state_uses_one_bulk_ditto_read_for_all_twins(self):
+        response = mock.Mock()
+        response.json.return_value = [
+            {"thingId": f"{simulator_app.NAMESPACE}:{name}"}
+            for name in simulator_app.THING_NAMES
+        ]
+        client = mock.MagicMock()
+        client.__enter__.return_value.get.return_value = response
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "DITTO_PASSWORD", "present"
+        ), mock.patch.object(simulator_app.httpx, "Client", return_value=client):
+            result = simulator_app.state()
+        self.assertEqual(result["source"], "eclipse-ditto")
+        self.assertEqual(len(result["twins"]), len(simulator_app.THING_NAMES))
+        client.__enter__.return_value.get.assert_called_once_with(
+            f"{simulator_app.DITTO_URL}/api/2/things",
+            params={
+                "ids": ",".join(
+                    f"{simulator_app.NAMESPACE}:{name}"
+                    for name in simulator_app.THING_NAMES
+                )
+            },
+            auth=(simulator_app.DITTO_USER, "present"),
+        )
+        response.raise_for_status.assert_called_once()
+
+    def test_incomplete_bulk_ditto_read_returns_503(self):
+        response = mock.Mock()
+        response.json.return_value = []
+        client = mock.MagicMock()
+        client.__enter__.return_value.get.return_value = response
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "DITTO_PASSWORD", "present"
+        ), mock.patch.object(simulator_app.httpx, "Client", return_value=client):
+            with self.assertRaises(simulator_app.HTTPException) as raised:
+                simulator_app.state()
+        self.assertEqual(raised.exception.status_code, 503)
+        self.assertIn("Ditto state incomplete", raised.exception.detail)
+
+    def test_state_coalesces_frontend_polls_within_publish_interval(self):
+        response = mock.Mock()
+        response.json.return_value = [
+            {"thingId": f"{simulator_app.NAMESPACE}:{name}"}
+            for name in simulator_app.THING_NAMES
+        ]
+        client = mock.MagicMock()
+        client.__enter__.return_value.get.return_value = response
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "DITTO_PASSWORD", "present"
+        ), mock.patch.object(simulator_app.httpx, "Client", return_value=client):
+            first = simulator_app.state()
+            second = simulator_app.state()
+        self.assertEqual(first, second)
+        client.__enter__.return_value.get.assert_called_once()
+
+    def test_live_health_waits_for_a_complete_ditto_read(self):
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "state", side_effect=simulator_app.HTTPException(status_code=503)
+        ) as read_state:
+            with self.assertRaises(simulator_app.HTTPException) as raised:
+                simulator_app.health()
+        self.assertEqual(raised.exception.status_code, 503)
+        read_state.assert_called_once()
 
     def test_invalid_scenario_is_rejected_without_state_change(self):
         before = simulator_app.engine.snapshot()

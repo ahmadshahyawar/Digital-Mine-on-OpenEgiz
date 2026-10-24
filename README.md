@@ -51,6 +51,12 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 
 Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
 
+The simulator publishes one complete 11-twin snapshot every two wall-clock seconds by default, matching the
+frontend refresh interval. `SIM_SPEEDUP=20` is unchanged: each batch advances 40 simulated seconds, so the mine
+still runs at 20× while avoiding redundant one-second persistence bursts in Eclipse Ditto. `SIM_INTERVAL` can be
+overridden for diagnostics, but should not be reduced on the resource-limited judge stack without a sustained
+Ditto read/write test.
+
 ## Verify from the terminal
 
 Run the read-only judge smoke check. It waits for slow startup, requires the
