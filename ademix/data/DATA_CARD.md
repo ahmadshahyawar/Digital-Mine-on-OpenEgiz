@@ -23,6 +23,7 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 36 parameters |
 | `registry/openmines_unit_evidence.csv` | Upstream code evidence for each OpenMines unit used by the model | Curated audit | 8 unit findings |
 | `evidence/fleet_sizing.json` | Reproducible A8 study of 2–6 trucks under the four existing conditions | Synthetic model evidence | 20 fresh-engine cases |
+| `evidence/fleet_sensitivity.json` | A9 one-at-a-time route, loading and crusher sensitivity using A8 | Synthetic model evidence | 9 planning cases / 45 fresh-engine runs |
 | `registry/emission_references.csv` | IPCC 2006 default net calorific value (43.0 TJ/Gg) and CO2 emission factor (74,100 kg/TJ) for gas/diesel oil, with source | External reference | 2 factors |
 | `telemetry/logs/weather_station.csv` | Synthetic weather-station signal on the same 5-minute grid: temperature, wind speed and direction, rain, humidity, PM10 dust | **Synthetic** | 157 rows |
 | `registry/fuel_references.csv` | Caterpillar Performance Handbook fuel rates (low/medium/high) and payloads of the comparable Cat 775G, 777G and 6020B, each with its source URL and page | External reference | 3 models |
