@@ -233,6 +233,58 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — C2 dispatcher Decision workspace — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/c2-decision-workspace (from origin/codex/ademix 18d6974, C1 integrated)
+Task: C2. One optional "Decision" workspace: live now (condition, policy, planned and measured constraint, trucks
+  cycling/parked/down, truck-hours per 1,000 t, waits) clearly separated from saved model evidence (A2 fixed vs smart
+  for the active condition; A3 breakdown timeline with observed vs projected); the recommended action read from the
+  evidence (decisionExplanation when present, else the A2 smart outcome for the active condition); a real "Apply"
+  control; direct return to the 3D mine.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-c2/*
+Contracts consumed: DISPATCH_COMPARISON_CONTRACT.md, HISTORY_CONTRACT.md, DECISION_EXPLANATION_CONTRACT.md (rendered
+  only if decisionExplanation is in the bundle). No contract change.
+Request (blocking only the A8/A9 section): add ademix/data/evidence/decision_explanation.json to the generated
+  frontend bundle as `decisionExplanation` (the frontend image is built from ademix/frontend only).
+Expected handoff: commit SHA, build, saved-vs-fixture checks, live/saved separation, per-condition recommendation
+  check, screenshots, limitations.
+```
+
+Handoff — Professor + Claude — C2 dispatcher Decision workspace — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: C2 — One dispatcher Decision workspace
+Branch: claude/c2-decision-workspace (from origin/codex/ademix 18d6974)
+Commit SHA: b57eaba (lock 787929d)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-c2/{c2-baseline.png,c2-crusher_slowdown.png,c2-baseline-with-a8.png,c2-crusher_slowdown-with-a8.png,
+  c2-check.json,c2-check-with-a8.json}; PROJECT_CONTEXT.md
+Contracts consumed (unchanged): DISPATCH_COMPARISON_CONTRACT.md (steady window per condition), HISTORY_CONTRACT.md
+  (embedded B4 timeline), DECISION_EXPLANATION_CONTRACT.md (rendered when bundle.decisionExplanation exists; rounding
+  from presentation_contract.rounding); live scenario-controller / mine-01 / excavator-01 / crusher-01 fields.
+What changed: "Decision" button → workspace: Now (live, source-tagged) | Recommended action (saved evidence) with Apply
+  on the real dispatch control | Fixed vs Smart for the active condition | Fleet size and assumptions (A8/A9) |
+  Breakdown and recovery (embedded B4). Saved sections tagged "saved model evidence · synthetic · not measured".
+  Recommendation = A8/A9 recommended_action when bundled, else read from the A2 Smart outcome; Apply target comes
+  from the evidence (Smart parks a truck or not). Missing evidence → unavailable, no recommendation.
+Commands/checks actually run: tsc -b PASS; vite build PASS. Headless Chrome on the demo simulator, conditions set
+  through the real API: 4/4 conditions, 48/48 saved cells equal A2; recommendations normal 4+2 / road all 6 / crusher
+  3+3 / breakdown 4+1; live vs saved tags distinct; Apply at normal set dispatch_policy smart and the panel then read
+  "In force now (confirmed by the twins)". Second pass serving the bundle with Codex's decision_explanation.json added
+  (test harness only): the A8/A9 wording replaced the A2 wording for normal/road/crusher, baseline fleet table equals
+  the JSON at contract rounding, Apply still correct.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; the shipped bundle has no decisionExplanation, so
+  the A8/A9 section reads "unavailable" until Codex bundles it; the breakdown condition uses the A2 recommendation
+  (the A8/A9 contract has no breakdown question); a one-minute new-viewer test needs a human.
+Request to Ahmad + Codex: add ademix/data/evidence/decision_explanation.json to the generated frontend bundle as
+  `decisionExplanation` (build_data_layer.py → public/data/ingestion.json). The frontend Docker image is built from
+  ademix/frontend only, so it cannot import ademix/data directly. No frontend change is needed after that.
+Integration instruction: merge claude/c2-decision-workspace into codex/ademix.
+```
+
 ### Lock — Claude — C1 visible mine model and relationships — 2026-10-24
 
 ```text
