@@ -1,0 +1,9 @@
+item,model_unit,status,upstream_evidence,reason
+truck_capacity,t,confirmed_explicit,openmines/src/truck.py:50-53,"Truck.truck_capacity is explicitly documented as tons."
+truck_speed,km/h,confirmed_explicit,openmines/src/truck.py:13;50-53,"The default and instance speed are explicitly documented as km/h."
+road_distance,km,confirmed_executable_semantics,openmines/src/truck.py:101-120,"Travel duration is (distance / truck_speed_kmh) * 60 minutes, so distance is kilometres. The JSON itself does not label the matrix unit."
+shovel_tons,t,confirmed_executable_semantics,openmines/src/load_site.py:97-107;openmines/src/truck.py:209-220,"The shovel value is accumulated into produced_tons and divides truck capacity in tons to calculate passes."
+shovel_cycle_time,min,confirmed_executable_semantics,openmines/src/truck.py:209-217,"The calculated load_time is passed directly to the minute-based SimPy clock."
+dumper_cycle_time,min,confirmed_executable_semantics,openmines/src/truck.py:225-230,"dump_time is passed directly to the same minute-based SimPy clock."
+road_repair_lambda,1/min,confirmed_executable_semantics,openmines/src/road.py:215-237,"random.expovariate(lambda_repair) produces the next event interval on the minute-based simulation clock."
+road_repair_duration,min,confirmed_explicit,openmines/src/road.py:235-253,"The upstream event and log text explicitly call repair_duration minutes."

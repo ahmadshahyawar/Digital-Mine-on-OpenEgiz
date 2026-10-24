@@ -1028,6 +1028,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ## Handoff Template
 
+### OpenMines source and unit verification handoff — 2026-10-24
+
+- Owner/branch: Ahmad + Codex on `codex/source-unit-verification`; scope is source provenance and unit evidence only. No Professor + Claude frontend source, simulator behavior or Team Concept wording was changed.
+- Audited the bundled `north_pit_mine.json` against upstream OpenMines commit `acd77e23de2c3b743485ec87cabdbbf7779ceb3e`. Its normalized-LF SHA-256 exactly matches the upstream file: `a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c`.
+- Added a machine-readable eight-item unit evidence register and a human audit. Capacity and speed are explicit upstream units; distance, shovel/dumper time and road-event rate are confirmed from executable equations and the minute simulation clock. The audit keeps the 3.2 km Ademix route, six-truck fleet, crusher capacity and scenario magnitudes classified as assumptions rather than measurements.
+- Verification: all 42 data-layer tests pass, including exact audit-item, unit, confidence and evidence-path checks. The existing 80 simulator/API tests also pass. No generated frontend data artifact was changed while B2 frontend work was active.
+- Integration note: a completed `origin/claude/b2-fuel-esg` handoff appeared after this audit began. Integrate and test B2 after this independent audit is committed, before starting A8 fleet-sizing work.
+
 Copy and complete this block after each work session:
 
 ```text

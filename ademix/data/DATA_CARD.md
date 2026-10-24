@@ -20,7 +20,8 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 |---|---|---|---|
 | `openmines/north_pit_mine.json` | OpenMines "North Pit Mine" configuration, unchanged | Third-party source (MIT) | 1 file |
 | `openmines/LICENSE` | Upstream MIT licence | Licence | 1 file |
-| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 27 parameters |
+| `registry/parameters.csv` | Every model parameter with value, unit, status, source field or formula, engine constant and sanity range | Curated register | 36 parameters |
+| `registry/openmines_unit_evidence.csv` | Upstream code evidence for each OpenMines unit used by the model | Curated audit | 8 unit findings |
 | `registry/emission_references.csv` | IPCC 2006 default net calorific value (43.0 TJ/Gg) and CO2 emission factor (74,100 kg/TJ) for gas/diesel oil, with source | External reference | 2 factors |
 | `telemetry/logs/weather_station.csv` | Synthetic weather-station signal on the same 5-minute grid: temperature, wind speed and direction, rain, humidity, PM10 dust | **Synthetic** | 157 rows |
 | `registry/fuel_references.csv` | Caterpillar Performance Handbook fuel rates (low/medium/high) and payloads of the comparable Cat 775G, 777G and 6020B, each with its source URL and page | External reference | 3 models |
@@ -35,7 +36,7 @@ The layer gives the Core Simulation Engine, the What-If Scenario Engine and the 
 | `telemetry/logs/<scenario>.csv` | Twin state every 5 simulated minutes: 4 h of normal operation, then 9 h of the scenario | **Synthetic** | 4 × 157 rows × 130 columns |
 | `telemetry/manifest.json` | SHA-256 of every input and output, plus generation settings | Provenance record | 1 file |
 | `build_data_layer.py` | Regenerates every derived and synthetic file | Code | — |
-| `test_data_layer.py` | 32 validation tests | Code | — |
+| `test_data_layer.py` | 42 validation tests | Code | — |
 
 The twin instances themselves remain in `ademix/simulator/twins.json`, because the setup container reads them from there.
 
@@ -51,7 +52,13 @@ The twin instances themselves remain in `ademix/simulator/twins.json`, because t
 | model_setting | 4 | Numerical or analysis setting | KPI window, bottleneck window, 95 % saturation, random seed |
 | external_reference | 2 | Taken from a published manufacturer reference for a comparable machine, not from the modelled machine itself | Truck fuel 49.6 L/h (Cat 775G–777G interpolated to 77 t), excavator fuel 83.5 L/h (Cat 6020B) |
 
-The source file states **no units**. Reading them as tonnes, km/h, minutes and km is an interpretation consistent across the file (77 t trucks at 25 km/h), but it has not been confirmed against the OpenMines code or documentation. The register says this for each affected value. The source's road-repair parameters (`lambda_repair` 0.00833, `mu_repair_duration` 50) are recorded for completeness but are not used, because the Ademix model has no random road events.
+The JSON itself has no embedded unit schema. An audit against the exact upstream
+code at commit `acd77e23de2c3b743485ec87cabdbbf7779ceb3e` now confirms tonnes and km/h
+explicitly and confirms minutes, kilometres and inverse minutes through the
+simulator equations and minute time base. The precise evidence and confidence
+category are in `OPENMINES_UNIT_AUDIT.md` and
+`registry/openmines_unit_evidence.csv`. The source's road-repair parameters are
+recorded for completeness but are not used by Ademix.
 
 ## 4. Findings from building the layer
 
@@ -102,7 +109,7 @@ If the engine or the register changes, a test fails until the generator is rerun
 
 ## 6. Validation
 
-All 32 tests pass. They check the following:
+All 42 tests pass. They check the following:
 
 - **Source integrity:** the stored source file matches its recorded checksum, and its MIT licence is present.
 - **Register:**
@@ -156,7 +163,7 @@ These tests verify internal consistency and traceability. They do not validate t
 ## 9. Limitations and maintenance
 
 - **No measured data:** the layer contains no operational measurements. The synthetic logs are not a substitute for telemetry from a real fleet.
-- **Units are interpreted:** the source states none, so the units are inferred (see §3).
+- **The JSON is unlabeled:** units are confirmed against upstream executable semantics, but the configuration file itself still carries no unit schema (see §3 and `OPENMINES_UNIT_AUDIT.md`).
 - **Sanity ranges are team-chosen:** the `check_min` and `check_max` columns are ranges for automated checks only, not sourced tolerances.
 - **Maintenance:**
   - when a model constant changes, update the register, rerun `build_data_layer.py` and the tests;
