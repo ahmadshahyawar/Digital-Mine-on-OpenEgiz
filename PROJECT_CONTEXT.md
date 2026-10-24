@@ -1539,6 +1539,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ## Handoff Template
 
+### Verified C3 spatial cause/effect integration — 2026-10-25
+
+- Integrated completed Professor + Claude branch `origin/claude/c3-show-effect` (implementation `def7381`, handoff `648301f`) into `codex/ademix`. Its merge base is the verified C2 commit `39f3da6`; changes are limited to Professor-owned frontend files, C3 evidence, and this shared context. No simulator, API, twin, or data contract was changed.
+- Combined checks passed: frontend TypeScript/Vite production build; 92 simulator/API tests; 48 data-layer tests; Docker UI rebuild; judge smoke against `source=eclipse-ditto`, all 11 twins, and all 143 required fields/units.
+- The complete live scenario verifier passed baseline, truck breakdown, road restriction at 10.72 km/h, crusher slowdown at 495 t/h, all four Smart Dispatch allocations, and final fixed/baseline reset with no stale breakdown, blocked, or standby state. This validates the returned fields that drive C3's `Show effect` causal chains.
+- Professor + Claude's saved rendered evidence covers breakdown before/after tow, road restriction, and crusher congestion. Final Team human visual acceptance and the later combined C5 journey remain required; the existing non-fatal Vite large-chunk warning also remains.
+- Official `main` is unchanged. After this integration record is pushed, C4 may start only from the new `origin/codex/ademix` head.
+
 ### Verified C2 Decision workspace integration — 2026-10-24
 
 - Integrated completed Professor + Claude branch `origin/claude/c2-decision-workspace` into `codex/ademix`. The branch was based on the latest verified shared state `18d6974` and its implementation changes are limited to Professor-owned frontend files, C2 evidence, and its shared handoff.
