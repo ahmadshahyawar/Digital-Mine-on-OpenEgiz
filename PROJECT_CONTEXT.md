@@ -284,6 +284,22 @@ Integration instruction: merge claude/b1-opening-view into codex/ademix (fronten
   except this PROJECT_CONTEXT entry).
 ```
 
+### Integration — Ahmad + Codex — B1 opening operator view — 2026-10-24
+
+```text
+Status: accepted, integrated and verified on codex/ademix.
+Source: origin/claude/b1-opening-view; implementation 955c080; handoff 9d683eb.
+Integration commit: 8e12af8.
+Ownership review: only Professor + Claude frontend paths, B1 evidence images and this shared context changed.
+Combined verification: 80 simulator/API tests pass; 41 data/schema tests pass; TypeScript/Vite production build
+passes (existing >500 kB chunk warning only); complete Docker Compose rebuild reaches healthy state; judge smoke
+passes source=eclipse-ditto, all 11 twins and all 143 required fields/units; live baseline, Smart Dispatch,
+breakdown, road restriction, crusher slowdown, every Smart+scenario combination and reset pass.
+Known visual limits remain those in the B1 handoff: real-device narrow-width inspection and keyboard-only canvas
+truck selection were not added or claimed by integration.
+Next Professor + Claude task: B2 may begin from the updated origin/codex/ademix using the frozen A1 contract.
+```
+
 ### Handoff — Codex — A6 authoritative simulation clock backend — 2026-10-24
 
 ```text
