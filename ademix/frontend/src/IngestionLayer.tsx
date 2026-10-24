@@ -1557,13 +1557,121 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose }: {
   </section>
 }
 
+/**
+ * C3: where a disruption acts in the mine and the chain of consequences, built only from returned twin state and
+ * the documented model/road contracts. Breakdown: only the failed truck's lane is blocked; road_closure: a speed
+ * restriction on both lanes with no reroute; crusher slowdown: the bin fills and trucks queue to dump.
+ */
+function effectChain(frame: Frame, condition: string): { title: string; where: string; steps: string[]; note: string } | null {
+  const n = (key: string, d = 0) => fmt(num(frame.at(key)), d)
+  // Output is a rolling one-hour measure, so just after a switch it still reflects the time before it.
+  const now = num(frame.at('mine-01.throughput_tph')), expected = num(frame.at('scenario-controller.projected_throughput_tph'))
+  const out = `Output now ${n('mine-01.throughput_tph')} t/h (rolling hour); the model expects ${n('scenario-controller.projected_throughput_tph')} t/h in this condition (${n('scenario-controller.baseline_throughput_tph')} t/h normally)${Math.abs(now - expected) > 15 ? ', and the rolling value moves towards it as the hour passes' : ''}.`
+  if (condition === 'truck_breakdown') {
+    const block = laneBlockage(frame)
+    const where = String(frame.at('scenario-controller.breakdown_location') ?? 'unknown position')
+    const lane = block.lane === 'none' ? null : LANE_WORDS[block.lane]
+    return {
+      title: 'Truck HT-01 breakdown', where,
+      steps: [
+        `HT-01 stops: ${where}, 0 km/h.`,
+        lane
+          ? `It blocks the ${lane.lane}: ${block.held} truck${block.held === 1 ? '' : 's'} held behind it (crusher-bound ${block.heldCrusherBound}, face-bound ${block.heldFaceBound}). Opposing ${lane.opposing} continues.`
+          : String(where).startsWith('haul road') ? 'HT-01 has been towed clear: both lanes are open again; it stays out of service until reset.'
+            : 'It failed off the haul road (queue, bay or standby line), so no lane is blocked.',
+        `Five trucks remain; ${n('excavator-01.queue_length')} queue at the excavator, which has been busy ${n('excavator-01.utilization_pct')} % since the switch.`,
+        out,
+      ],
+      note: 'A failure on the road is towed clear after 1,200 simulated seconds; HT-01 stays in breakdown until Normal operations.',
+    }
+  }
+  if (condition === 'road_closure') {
+    return {
+      title: 'Main road restriction', where: 'the whole haul road, both lanes',
+      steps: [
+        `Speed limit ${n('road-main.speed_limit_kmh', 2)} km/h on both lanes (25 km/h normally).`,
+        `Each round trip takes longer: average truck cycle ${n('mine-01.average_cycle_min', 1)} min.`,
+        num(frame.at('excavator-01.utilization_pct')) < 95
+          ? `Trucks now spend more of each cycle travelling, so the excavator waits for them: busy ${n('excavator-01.utilization_pct')} % since the switch, ${n('excavator-01.queue_length')} queued.`
+          : `The excavator is still busy ${n('excavator-01.utilization_pct')} % since the switch (${n('excavator-01.queue_length')} queued); as slower trips arrive it starts waiting for trucks and haul-road travel becomes the limit.`,
+        out,
+      ],
+      note: 'This is a speed restriction, not a closure: no alternate route is modelled, and every truck still uses the same road.',
+    }
+  }
+  if (condition === 'crusher_slowdown') {
+    return {
+      title: 'Crusher capacity −45 %', where: 'crusher, ROM bin and dump bay',
+      steps: [
+        `The crusher processes ${n('crusher-01.capacity_tph')} t/h (900 t/h normally).`,
+        `The ROM bin fills: ${n('crusher-01.rom_inventory_t')} of ${n('crusher-01.rom_bin_capacity_t')} t; a truck may tip only when a full load fits.`,
+        num(frame.at('crusher-01.queue_length')) > 0 || num(frame.at('crusher-01.average_wait_min')) > 0
+          ? `Trucks queue to dump: ${n('crusher-01.queue_length')} waiting now, ${n('crusher-01.average_wait_min', 1)} min average wait.`
+          : 'The bin still has room, so no truck waits yet; once it is full, trucks queue at the dump bay.',
+        out,
+      ],
+      note: 'Upstream equipment cannot raise output while the crusher limits it; extra trucks only lengthen the dump queue.',
+    }
+  }
+  return null
+}
+
+function EffectPanel({ frame, condition, onClose }: { frame: Frame; condition: string; onClose: () => void }) {
+  const chain = effectChain(frame, condition)
+  return <section className="ig-panel ig-inline ig-effect" aria-label="Scenario effect">
+    <h2>Effect · {chain?.title ?? 'Normal operations'} <button className="ig-x" onClick={onClose} aria-label="Close effect">×</button></h2>
+    {!chain ? <p>No disruption is active, so there is no effect to show. Start one in the Scenarios panel.</p> : <>
+      <p>Where: {chain.where}. Values are the returned twin state, updated every 2 s.</p>
+      <ol className="ig-chain">{chain.steps.map((step, i) => <li key={i}>{step}</li>)}</ol>
+      <p className="ig-foot-note">{chain.note}</p></>}
+  </section>
+}
+
+/** In the scene: the restricted road (both lanes) or the crusher congestion; the breakdown lane is BlockedLane (B5). */
+function EffectScene({ frame, condition }: { frame: Frame; condition: string }) {
+  const road = React.useMemo(() => {
+    const positions: number[] = []
+    const indices: number[] = []
+    const steps = 120
+    for (let k = 0; k <= steps; k++) {
+      const pct = LOOP_PCT + (100 - 2 * LOOP_PCT) * k / steps
+      for (const side of [-1, 1]) {
+        const v = lanePose(pct, 1, side * (ROAD_HALF_WIDTH - .4)).position
+        positions.push(v.x, v.y + .32, v.z)
+      }
+      if (k < steps) indices.push(2 * k, 2 * k + 2, 2 * k + 1, 2 * k + 1, 2 * k + 2, 2 * k + 3)
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    g.setIndex(indices)
+    return g
+  }, [])
+  if (condition === 'road_closure') {
+    return <group>
+      <mesh geometry={road}><meshBasicMaterial color="#ffb02e" transparent opacity={.5} side={THREE.DoubleSide} depthWrite={false}/></mesh>
+      <Html center distanceFactor={80} position={lanePose(50, 1, 0).position.add(new THREE.Vector3(0, 5, 0))} zIndexRange={[24, 0]}>
+        <div className="ig-lane-tag ig-effect-tag">{fmt(num(frame.at('road-main.speed_limit_kmh')), 2)} km/h · both lanes · no reroute</div></Html>
+    </group>
+  }
+  if (condition === 'crusher_slowdown') {
+    const rom = num(frame.at('crusher-01.rom_inventory_t')), cap = num(frame.at('crusher-01.rom_bin_capacity_t')) || 600
+    return <group>
+      <mesh position={ROM_BIN.clone().add(new THREE.Vector3(0, .1, 0))} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3.4, 4.1, 40]}/><meshBasicMaterial color="#ff9f2e" transparent opacity={.85} side={THREE.DoubleSide}/></mesh>
+      <Html center distanceFactor={70} position={ROM_BIN.clone().add(new THREE.Vector3(0, 6, 0))} zIndexRange={[24, 0]}>
+        <div className="ig-lane-tag ig-effect-tag">ROM bin {fmt(rom, 0)}/{fmt(cap, 0)} t · {fmt(num(frame.at('crusher-01.queue_length')), 0)} waiting to dump</div></Html>
+    </group>
+  }
+  return null
+}
+
 const FAULTS: [string, string][] = [['truck_breakdown', 'Truck HT-01 breakdown'], ['road_closure', 'Main road restriction'], ['crusher_slowdown', 'Crusher −45 %']]
 
 /**
  * What-If Scenario Engine: A normal operations, B fault injection, C smart dispatch, and the dynamic
  * bottleneck. Every figure is read from the simulator's twins; the buttons only send the request.
  */
-function WhatIfPanel({ frame, live, onEvidence, onTimeline }: { frame: Frame; live: boolean; onEvidence: () => void; onTimeline: () => void }) {
+function WhatIfPanel({ frame, live, onEvidence, onTimeline, onEffect }: { frame: Frame; live: boolean; onEvidence: () => void; onTimeline: () => void; onEffect: () => void }) {
   const [details, setDetails] = React.useState(false)
   const [busy, setBusy] = React.useState('')
   const [failure, setFailure] = React.useState('')
@@ -1615,6 +1723,7 @@ function WhatIfPanel({ frame, live, onEvidence, onTimeline }: { frame: Frame; li
       <button className="ig-wi-more" aria-expanded={details} onClick={() => setDetails(d => !d)}>{details ? 'Hide details' : 'Details'} {details ? '▴' : '▾'}</button>
       <button id="ig-open-evidence" className="ig-wi-more ig-wi-evidence" onClick={onEvidence}>Fixed vs Smart evidence ▸</button>
       <button id="ig-open-timeline" className="ig-wi-more ig-wi-evidence" onClick={onTimeline}>Breakdown timeline ▸</button>
+      {live && scenario !== 'baseline' && <button id="ig-show-effect" className="ig-wi-more ig-wi-effect" onClick={onEffect}>Show effect ▸</button>}
     </div>
     {details && <>
     <div className="ig-gauges">
@@ -2043,6 +2152,7 @@ export function IngestionLayer() {
   const [guideOpen, setGuideOpen] = React.useState(false)
   const [modelOpen, setModelOpen] = React.useState(false)
   const [decisionOpen, setDecisionOpen] = React.useState(false)
+  const [effectOpen, setEffectOpen] = React.useState(false)
   const [twinCard, setTwinCard] = React.useState<string | null>(null)
   const [view, setView] = React.useState<ViewRequest | null>(null)
   const goTo = (target: THREE.Vector3, offset: THREE.Vector3) => setView(v => ({ target, offset, n: (v?.n ?? 0) + 1 }))
@@ -2176,7 +2286,13 @@ export function IngestionLayer() {
   const clock = `${Math.floor(hours)} h ${String(Math.floor(hours * 60) % 60).padStart(2, '0')} min ${String(Math.floor(hours * 3600) % 60).padStart(2, '0')} s`
   const liveScenario = String(frame.at('mine-01.active_scenario') ?? 'baseline')
 
-  const rightOpen = selected !== null || twinCard !== null || modelOpen || decisionOpen || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
+  const rightOpen = selected !== null || twinCard !== null || modelOpen || decisionOpen || effectOpen || evidenceOpen || timelineOpen || layers.has('esg') || layers.has('sensors')
+  const showEffect = () => {
+    setEffectOpen(true)
+    if (liveScenario === 'truck_breakdown') { setSelected(0); goTo(trucks.current[0]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(34, 52, 44)) }
+    else if (liveScenario === 'crusher_slowdown') goTo(VIEWS.crusher.target, VIEWS.crusher.offset)
+    else goTo(VIEWS.overview.target, VIEWS.overview.offset)
+  }
   // Selecting a model node opens the same live twin: trucks are selected in 3D, other equipment gets a card and focus.
   const selectTwin = (id: string) => {
     if (id.startsWith('truck-')) {
@@ -2207,6 +2323,7 @@ export function IngestionLayer() {
         <Excavator activity={activity} trucks={trucks}/>
         <OreHandling frame={frame} activity={activity}/>
         <BlockedLane frame={frame}/>
+        {live && liveScenario !== 'baseline' && effectOpen && <EffectScene frame={frame} condition={liveScenario}/>}
         <StandbyBay labels={layers.has('topology')} parked={Array.from({ length: 6 }, (_, i) => frame.at(`truck-0${i + 1}.state`)).filter(v => v === 'standby').length}/>
         <RoadLighting/>
         {layers.has('weather') && <WeatherScene weather={weather}/>}
@@ -2217,7 +2334,7 @@ export function IngestionLayer() {
       </Canvas>
     </div>
     <div className="ig-stack">
-      <WhatIfPanel frame={frame} live={live} onEvidence={() => setEvidenceOpen(o => !o)} onTimeline={() => setTimelineOpen(o => !o)}/>
+      <WhatIfPanel frame={frame} live={live} onEvidence={() => setEvidenceOpen(o => !o)} onTimeline={() => setTimelineOpen(o => !o)} onEffect={showEffect}/>
       {layers.has('fleet') && <FleetPanel frame={frame} reg={reg}/>}
       {layers.has('safety') && <SafetyPanel frame={frame} reg={reg}/>}
       {layers.has('weather') && <WeatherPanel weather={weather} reg={reg}/>}
@@ -2233,6 +2350,7 @@ export function IngestionLayer() {
         ? goTo(trucks.current[0]?.clone() ?? VIEWS.overview.target, new THREE.Vector3(18, 26, 22))
         : goTo(VIEWS[v].target, VIEWS[v].offset)}/>}
     {rightOpen && <div className={`ig-rstack${modelOpen || decisionOpen ? ' ig-rstack-wide' : ''}`}>
+      {effectOpen && <EffectPanel frame={frame} condition={liveScenario} onClose={() => setEffectOpen(false)}/>}
       {decisionOpen && <DecisionWorkspace frame={frame} live={live} source={liveSource} bundle={bundle} onClose={() => setDecisionOpen(false)}/>}
       {twinCard && <TwinCard twin={twinCard} frame={frame} onClose={() => setTwinCard(null)}
         label={bundle.twinRelationships?.nodes.find(n => n.id === twinCard)?.label ?? twinCard}/>}

@@ -290,3 +290,9 @@ body:has(.ig-shell) { min-width: 0; }
 .ig-decision .ig-timeline { padding: 0; border: 0; background: none; }
 .ig-views > button.ig-decision-btn { border-color: #f0b85a; }
 .ig-views > button.ig-decision-btn.on { color: #f0b85a; }
+/* C3 show effect. */
+.ig-wi-effect { color: #ff9f8f; border-color: #ff5149; }
+.ig-chain { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 12px; line-height: 1.45; color: var(--ig-ink); }
+.ig-effect-tag { color: #10201b; background: rgba(240, 184, 90, .92); }
+/* The view buttons wrap to three rows on desktop; the right-hand column starts below them. */
+@media (min-width: 1181px) { .ig-rstack { top: 132px; max-height: calc(100vh - 212px); } }
