@@ -1096,6 +1096,14 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 - Combined verification passed: 80 simulator/API tests, 42 data-layer tests and the frontend TypeScript/Vite production build. The rebuilt Docker stack reached healthy state; the judge smoke check passed real `eclipse-ditto` state, all 11 twins and all 143 required fields/units.
 - The full live fixed/smart scenario matrix passed baseline, breakdown, road restriction and crusher slowdown plus clean reset. B2 is therefore integrated before A8 fleet-sizing work begins.
 
+### A8 fleet-sizing evidence handoff — 2026-10-24
+
+- Owner/branch: Ahmad + Codex on `codex/a8-fleet-sizing`; backend-generated evidence only. No Professor + Claude frontend file, runtime engine behavior, live twin topology or Team Concept wording changed.
+- Added one deterministic generator and a versioned JSON fixture for 2–6 fixed-dispatch trucks under baseline, breakdown, road restriction and crusher slowdown. Every one of the 20 cases uses a fresh seed-42 engine, the same four-hour warm-up, one excluded transition hour and eight-hour measurement window.
+- The result discovers rather than assumes the first <=1% throughput plateau: four active trucks in baseline, five total during the one-truck breakdown, three under crusher slowdown, and no plateau through six trucks under the road restriction. Baseline throughput stays 770 t/h from four trucks onward while operating truck-hours rise from 5.19 to 6.49 and 7.79 h/1,000 t for four, five and six trucks.
+- Reproduce with `python ademix/simulator/fleet_sizing.py --write`. The fixture records production, throughput, bottleneck, cycle time, both queues and waits, fleet/excavator/crusher utilization, operating truck-hours, trips and mass-balance error with explicit units and a synthetic/not-measured warning.
+- Verification: all 86 simulator/API/evidence tests and all 42 data-layer tests pass; fixture regeneration is byte-for-byte, production reconciles to the common window, truck-hours reconcile per 1,000 t, every mass-balance error is zero, and the default live engine still exposes six truck twins.
+
 Copy and complete this block after each work session:
 
 ```text
