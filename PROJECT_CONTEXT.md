@@ -233,6 +233,21 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — B5 operational animation and road acceptance — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Branch: claude/b5-operations-road (from origin/codex/ademix 7ddc060)
+Task: B5. Present the A4 two-way road contract: affected lane from road-main.blockage_lane / blockage_heading and
+  the two directional blocked counters (never inferred from screen position, opposing lane never shown closed,
+  road_closure always a speed restriction); in-scene marking of only the blocked lane; breakdown banner wording
+  per contract; reset clears every warning. Then accept the operational story: loading passes and payload,
+  dumping into the ROM bin, queue spacing, standby parking and both breakdown directions, with captured evidence.
+Exact files: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css, evidence/claude-b5/*
+Contract consumed: ROAD_BREAKDOWN_CONTRACT.md (ademix.road-breakdown.v1), no change.
+Expected handoff: commit SHA, build, live checks for both lanes and reset, cycle evidence, limitations.
+```
+
 ### Integration result — Codex — B4 recovery timeline — 2026-10-24
 
 - Integrated `origin/claude/b4-recovery-timeline` (`732d66c`, implementation `7826833`) into
