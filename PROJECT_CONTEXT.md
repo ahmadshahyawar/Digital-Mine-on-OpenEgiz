@@ -274,6 +274,16 @@ Known limitations / unverified: not run on Docker/Eclipse Ditto; whether a new v
 Request to Ahmad + Codex: none.
 Integration instruction: merge claude/b6-guided-demo into codex/ademix. After integration, C1 starts.
 ```
+
+### Integration result — Codex — B6 guided demonstration — 2026-10-24
+
+- Integrated `origin/claude/b6-guided-demo` (`200da6b`, implementation `f8dcb17`) into `codex/ademix`; merge commit `db39a9a`.
+- Ownership review passed: only Professor + Claude frontend files, B6 evidence, and this shared context changed; no simulator, API, data contract, or OpenEgiz configuration was modified.
+- Combined verification passed: frontend TypeScript/Vite production build; 92 simulator/API/evidence tests; 47 data-contract tests; rebuilt live UI; judge smoke with Eclipse Ditto, all 11 twins, and all 143 required fields/units.
+- Live guide command path passed through the frontend proxy: fixed/baseline acknowledgement, HT-01 breakdown acknowledgement, Smart Dispatch acknowledgement, and clean fixed/baseline reset with zero stale breakdown/blocked/standby trucks.
+- Existing non-fatal frontend bundle-size warning remains. Team human acceptance of whether a new viewer can explain the recommendation after the guide is still required.
+- Next Professor + Claude task: C1 starts from the pushed `origin/codex/ademix` state.
+
 ### Integration — Codex — B5 operational animation and road acceptance — 2026-10-24
 
 - Owner/branch: Ahmad + Codex, `codex/integrate-b5`, based on shared integration `7ddc060`.
