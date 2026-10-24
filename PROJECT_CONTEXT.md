@@ -1588,6 +1588,15 @@ Obtain the Team's final visual approval of the combined pit and breakdown interf
 
 ## Handoff Template
 
+### Verified C4 model-trust view integration — 2026-10-25
+
+- Integrated completed Professor + Claude branch `origin/claude/c4-why-trust` (implementation `cb92be9`, handoff `112e06d`) into `codex/ademix`. Its merge base is verified C3 commit `3eee7e5`; changes are limited to Professor-owned frontend files, C4 evidence, and this shared context. The authoritative model-truth schema and simulator/API behavior were not changed.
+- Combined checks passed: frontend TypeScript/Vite production build; 92 simulator/API tests; 48 data-layer tests; Docker UI rebuild; judge smoke against `source=eclipse-ditto`, all 11 twins, and all 143 required fields/units.
+- The served `ademix.model-truth.v1` bundle joined all five live indicators from the same returned Ditto state: numeric mass balance (`-0 t`, therefore within the explicit tolerance), observed throughput, projected capacity, projected bottleneck, and live operational constraint. Observed and projected values remained separate.
+- The complete live scenario verifier also passed baseline, all three disruptions, all four Smart Dispatch combinations, and final fixed/baseline reset with no stale disruption state. Professor + Claude's forced missing/0.5 t browser fixtures verify that mass balance cannot falsely pass when unavailable or outside tolerance.
+- The required headline is preserved verbatim from `MODEL_TRUTH_CONTRACT.md`; adding a duplicate JSON field was optional and unnecessary for this tested integration. Replay intentionally displays live checks as unavailable. The existing non-fatal Vite large-chunk warning and final Team human C5 acceptance remain open.
+- Official `main` is unchanged. C5 may start only after this integration record is pushed to the new `origin/codex/ademix` head.
+
 ### Verified C3 spatial cause/effect integration — 2026-10-25
 
 - Integrated completed Professor + Claude branch `origin/claude/c3-show-effect` (implementation `def7381`, handoff `648301f`) into `codex/ademix`. Its merge base is the verified C2 commit `39f3da6`; changes are limited to Professor-owned frontend files, C3 evidence, and this shared context. No simulator, API, twin, or data contract was changed.
