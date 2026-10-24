@@ -247,6 +247,33 @@ Contract consumed: existing twin fields and POST /api/scenario, /api/dispatch (n
 Expected handoff: commit SHA, build, recorded run of every step with the acknowledgement it waited for, cancel and
   reset checks, screenshots, limitations.
 ```
+
+Handoff — Professor + Claude — B6 guided three-minute demonstration — 2026-10-24
+
+```text
+Owner: Professor + Claude
+Task: B6 — Guided three-minute demonstration
+Branch: claude/b6-guided-demo (rebased onto origin/codex/ademix 0fc7cd2)
+Commit SHA: f8dcb17 (lock 754c004)
+Exact changed paths: ademix/frontend/src/IngestionLayer.tsx, ademix/frontend/src/ingestion.css,
+  evidence/claude-b6/{b6-step1..6.png,b6-after-cancel-and-reset.png,b6-guide-run.json}; PROJECT_CONTEXT.md
+Contract consumed (unchanged): POST /api/scenario, POST /api/dispatch; scenario-controller.active, dispatch_policy,
+  trucks_required, trucks_in_cycle, trucks_standby, projected_throughput_tph, breakdown_location; truck-0N.state;
+  road-main blockage fields (A4); mine-01.throughput_tph, bottleneck_live, sim_time_s; excavator-01.queue_length.
+What changed: "Guided demo ▶" button; six-step card (normal → breakdown → cost → Smart Dispatch → evidence → reset).
+  Command steps send the real request and enable Next only when the returned twin state confirms the step; the card
+  shows "Confirmed by the returned twin state at simulated N h". Evidence steps open the existing B3/B4 panels.
+  60 s timeout → Retry. Cancel closes immediately and leaves state and controls untouched. No scripted animation.
+Commands/checks actually run: tsc -b PASS; vite build PASS. Headless Chrome drove the real guide on the demo simulator
+  (integrated engine) twice; final run (b6-guide-run.json): steps confirmed at simulated 17.12–17.28 h, Next disabled
+  before confirmation on every command step (2, 4, 6; step 1 was already normal), timeline and evidence panels opened
+  on steps 3 and 5, Finish closed the guide; Cancel after the breakdown left the guide closed, start and scenario
+  buttons enabled and the breakdown banner (state untouched); manual A then reset the stand.
+Known limitations / unverified: not run on Docker/Eclipse Ditto; whether a new viewer can explain the recommendation
+  after the guide needs a human run (Team acceptance); the guide is ~30 s of clicks, about three minutes with reading.
+Request to Ahmad + Codex: none.
+Integration instruction: merge claude/b6-guided-demo into codex/ademix. After integration, C1 starts.
+```
 ### Integration — Codex — B5 operational animation and road acceptance — 2026-10-24
 
 - Owner/branch: Ahmad + Codex, `codex/integrate-b5`, based on shared integration `7ddc060`.
