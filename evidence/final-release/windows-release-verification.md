@@ -34,6 +34,10 @@ canonicalize tracked text to LF. Metric display values first stabilize to six de
 decimal half-up quantization. Python 3.11 and bundled Python 3.12 generated identical SHA-256 values for every
 data-layer output; both test suites passed, including byte-for-byte regeneration.
 
+The complete Docker stack was then rebuilt from commit `6b8582b`. All services reached the health gate; three
+live smoke runs passed 11 twins and 143 required fields/units; the full baseline, Smart Dispatch, breakdown, road
+restriction, crusher slowdown, combined-policy matrix and final reset passed through Eclipse Ditto.
+
 ## Restart finding and safe operation
 
 `docker compose restart` is not a valid whole-stack recovery test for this topology. It restarts the one-shot `init` and `ademix-setup` jobs alongside the long-running services, and the restarted Akka cluster initially retained remote stream references to the previous Things actor incarnation. Gateway reads and setup writes then timed out with HTTP 502/503 even though shallow container health checks were green.
