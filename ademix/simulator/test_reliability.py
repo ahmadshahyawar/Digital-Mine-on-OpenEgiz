@@ -176,11 +176,14 @@ class FrontendReliabilityTests(unittest.TestCase):
     def test_ui_distinguishes_live_demo_and_replay_and_handles_poll_errors(self):
         source = FRONTEND_SOURCE.read_text(encoding="utf-8")
         for label in (
-            "LIVE · Eclipse Ditto twins · every 2 s",
-            "DEMO · local simulator (not via OpenEgiz) · every 2 s",
+            "LIVE · Eclipse Ditto twins · checked every 2 s",
+            "DEMO · local simulator (not via OpenEgiz) · checked every 2 s",
             "REPLAY · recorded synthetic log (stand offline)",
+            "STALE ·",
         ):
             self.assertIn(label, source)
+        self.assertIn("const STALE_MS = 7000", source)
+        self.assertIn("const FAILS_TO_REPLAY = 3", source)
         self.assertIn("catch {", source)
         self.assertIn("setLive(false)", source)
         main = MAIN_SOURCE.read_text(encoding="utf-8")

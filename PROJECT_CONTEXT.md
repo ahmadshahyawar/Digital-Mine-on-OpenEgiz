@@ -345,6 +345,21 @@ Proposed Claude follow-up (frontend only, needs a go-ahead and its own branch): 
 Integration instruction: merge for the record (evidence + this entry only) or leave unmerged; no product change.
 ```
 
+### Handoff — Professor + Claude — audit fixes F1–F5, F8 — 2026-10-25
+
+```text
+Branch: claude/audit-fixes (from origin/codex/ademix caf6ee0). Pushed, not merged; Codex reviews and integrates.
+Files: ademix/frontend/src/IngestionLayer.tsx (FLAG: Codex is finishing release verification around this file),
+  ademix/frontend/src/ingestion.css, ademix/frontend/public/models/Textures/colormap.png (new, CC0 Kenney, approved
+  download), evidence/claude-audit-fixes/* (FIXES.md has every test, number and screenshot).
+F1 stale badge when sim time stops advancing; F2 missing plant texture added; F3 Light quality auto-selected on
+  software WebGL (5.4 → 13.5 fps at 1440×900, 5.1 → 22.1 fps at 390×844) with a Graphics button; F4 held trucks in the
+  KPI/gauge (sums to 6); F5 phone alert collapses to its headline; F8 three failed polls before replay, stale meanwhile.
+Tests: build PASS; simulator 92 OK (label test kept); data 48 with the same 3 pre-existing F6 failures; route at
+  1440 and 390 px clean; each finding tested with the harness described in FIXES.md. Not run: Docker/Eclipse Ditto.
+Requests: add the texture line to DATA_LICENSES.md; re-run build, live smoke and the route on Ditto after merging.
+```
+
 ### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
 
 ```text

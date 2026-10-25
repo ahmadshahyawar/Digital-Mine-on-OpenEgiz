@@ -62,7 +62,7 @@ The competition organizer explicitly lists this dataset as a recommended MIT-lic
   - `plant-conveyor.glb` — `727A56DFAE9A04D12437123B7B051EF76327887F02C837090178B9781FA56534` (26,632 bytes)
   - `plant-conveyor-slope.glb` — `EF043AC520572CEA0AB570873EF891D9BD8F0C748A1CAA4FEEA82F560CDC8C6F` (36,556 bytes)
   - `plant-stairs.glb` — `0356A040EBBF632CD20DFE384A13108270DF26426AD1DD51A2C767C8F6A6960C` (66,256 bytes)
-  - `models/Textures/colormap.png` — `35D7BD6900DDE0208429EEAEC87FA17FBF024ED59F3F4EAB54BC92802EBA9DD7` (11,813 bytes), the shared Factory Kit 3.0 GLB texture from the official Kenney archive
+  - `models/Textures/colormap.png` — <https://raw.githubusercontent.com/shorepine/kenney/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/factory/Textures/colormap.png>; `35D7BD6900DDE0208429EEAEC87FA17FBF024ED59F3F4EAB54BC92802EBA9DD7` (11,813 bytes), the shared Factory Kit 3.0 GLB texture from the official Kenney archive
 - Use: assembled into the truck dump pocket, guarded primary-crusher module, inclined/transfer conveyors, and access stairs. A lightweight locally generated cone represents the coarse-ore stockpile.
 - Modifications: only scene placement, scaling, and repetition; source GLBs and their referenced shared color map are preserved unchanged and bundled locally.
 

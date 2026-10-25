@@ -151,7 +151,7 @@ The judge environment supports WebGL but renders **without GPU acceleration**.
 - [x] Texture resolution and total download size are controlled.
 - [ ] Repeated trucks and props use instancing where supported.
 - [x] Expensive shadows, reflections, post-processing, particles, and physics are limited or optional.
-- [ ] A quality setting or automatic low-quality mode is available.
+- [x] A quality setting and automatic software-renderer Light mode are available.
 - [x] Essential state remains understandable even if decorative effects are disabled.
 - [x] The scene loads without relying on fragile external CDNs.
 

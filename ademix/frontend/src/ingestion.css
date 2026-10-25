@@ -331,3 +331,10 @@ body:has(.ig-shell) { min-width: 0; }
 }
 .ig-panel[tabindex="-1"]:focus { outline: none; }
 .ig-panel[tabindex="-1"]:focus-visible { outline: 2px solid #ffe36e; outline-offset: 2px; }
+/* Audit fixes: stale live state (F1/F8), breakdown alert details on phones (F5). */
+.ig-mode.stale { color: #ffd9a8; border: 1px solid #ff9f2e; } .ig-mode.stale i { background: #ff9f2e; }
+.ig-alert-more { display: none; margin-left: 8px; padding: 1px 8px; border-radius: 999px; border: 1px solid #ffc9c4; background: transparent; color: #fff; font: inherit; font-size: 10px; letter-spacing: .04em; text-transform: none; cursor: pointer; }
+@media (max-width: 760px) {
+  .ig-alert-more { display: inline-block; }
+  .ig-breakdown-alert:not(.open) span { display: none; }
+}
