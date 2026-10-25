@@ -307,6 +307,44 @@ Integration warning: Professor's F1-F5/F8 frontend branch must be reviewed again
   accepting any visual changes.
 ```
 
+### Lock — Claude — independent final audit — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Branch: claude/final-independent-audit (from origin/codex/ademix caf6ee0, C5 integrated)
+Task: independent test of the combined candidate against 05_FINAL_ACCEPTANCE.md gates 1–4 and 6 on the live
+  Eclipse Ditto stack: three-minute route (baseline → breakdown → Show effect → Decision → Smart Dispatch →
+  Why trust this? → reset), LIVE desktop/narrow screenshots, overlap/collision/readability/number/stale-state/
+  false-LIVE checks, Balanced software-rendering measurements, frontend build, repeated smoke, full scenario
+  matrix, Docker restart, ruthless rubric review. Repeat against the exact release-candidate SHA when published.
+Exact files: evidence/claude-final-audit/* and this file only. No frontend, backend, contract, README,
+  SUBMISSION, presentation or main change; findings and fixes are recommendations in the handoff.
+```
+
+Handoff — Professor + Claude — independent final audit of caf6ee0 — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Candidate: origin/codex/ademix caf6ee0. Branch claude/final-independent-audit. Full report:
+  evidence/claude-final-audit/AUDIT.md (commands, screenshots, raw JSON, the audit script cdp_final.mjs).
+Blocked here: Professor's computer has no Docker/WSL, so LIVE Eclipse Ditto screenshots, repeated smoke, the full
+  scenario matrix and the Docker restart test were NOT run. Route and visuals were tested on the exact candidate's
+  production build against the simulator's local demo mode (badge reads DEMO, never LIVE).
+Ran: vite build PASS; simulator 92 tests OK; data 48 tests with 3 failures (F6); route baseline → breakdown → Show
+  effect → Decision → Smart Dispatch Apply → Why trust this? → reset at 1440, 1024 and 390 px, every command
+  acknowledged by returned state, reset clean, KPI production/down counts equal to the API at every step.
+Findings: F1 frozen /api/state keeps the fresh LIVE/DEMO badge (gate 3); F2 missing Textures/colormap.png on five
+  plant GLBs (gate 4); F3 ~5 fps under SwiftShader, no Balanced/low mode wired (gate 4, weakest rubric area);
+  F4 KPI truck count omits trucks held behind a blockage; F5 phone breakdown alert overlaps Scenarios; F6 data
+  manifest stores the CRLF hash of north_pit_mine.json and regeneration differs 35.65/35.66 across Python versions;
+  F7 fresh stand shows 900 t/h beside the 770 t/h headline during ROM draw-down; F8 one failed poll switches to replay.
+Request to Ahmad + Codex: run LIVE Ditto smoke ×3, verify_scenarios.py, Docker restart and the route on your host or
+  clean Ubuntu; fix F6 (LF hash, deterministic rounding) and decide F7. Tell Professor + Claude when the release
+  candidate SHA is frozen so this audit is repeated against it.
+Proposed Claude follow-up (frontend only, needs a go-ahead and its own branch): F1–F5 and F8.
+Integration instruction: merge for the record (evidence + this entry only) or leave unmerged; no product change.
+```
+
 ### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
 
 ```text
