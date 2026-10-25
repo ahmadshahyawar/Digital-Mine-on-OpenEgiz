@@ -59,3 +59,29 @@ The candidate was pushed as commit `d290063` on `codex/final-release-audit`. A r
 check immediately afterward reported `total_count: 0` for repository workflow runs, so no Ubuntu run was created.
 The workflow may require repository Actions to be enabled or the workflow to be accepted on the default branch.
 No native Ubuntu success is claimed.
+
+## Final-day Windows acceptance spot-check — 2026-10-25
+
+Candidate worktree: `codex/integrate-audit-fixes`, based on `origin/codex/ademix` plus the two Professor audit
+integration commits and current release fixes. The working tree was not yet committed when these checks ran.
+
+- Simulator/API/evidence suite: 97 passed.
+- Data-layer suite: 48 passed.
+- Frontend production build: passed (619 modules; existing large-chunk warning, 1.249 MB uncompressed).
+- Three sequential live smoke checks: all returned Eclipse Ditto, 11 twins and 143 required fields/units.
+- Full live fixed/Smart scenario matrix: baseline, breakdown, road restriction, crusher slowdown, all Smart
+  combinations and final clean reset passed.
+- Final headless browser route: all control acknowledgements succeeded; all observed state requests returned
+  HTTP 200; final state was Eclipse Ditto baseline/fixed/no blockage; no browser console errors. The live route
+  briefly entered STALE because simulated time stopped advancing, then recovered to LIVE. Raw record:
+  `live-route-final.json`.
+- Final SwiftShader spot check: automatic Light mode, 5.9 average / 5.5 low-5% fps at 896 × 503; zero console
+  errors and failed HTTP responses, but screenshot captured STALE at 8 s. This is not a passing smooth-render or
+  uninterrupted-live acceptance result: `software-rendering.json` and `software-rendering.png`.
+- A candidate lower-write-rate experiment still showed STALE and was reverted. It is not part of the release
+  source. Its browser record and step screenshots remain under `live-route.json` and `live-route/` for diagnosis.
+- The unrelated native Ubuntu 24.04 AMD64 gate remains unverified. The earlier coordinated Docker recreate
+  preserved named volumes and passed; no volumes were removed in this final-day work.
+
+The remaining intermittent stale clock and low measured SwiftShader cadence are reported as limitations rather
+than represented as release passes. The current scripts do not hide these states.

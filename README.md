@@ -75,11 +75,13 @@ waiting only—it does not change modeled travel, loading, dumping, production, 
 The header displays the authoritative simulation time, 20x multiplier and OpenEgiz mode returned by the
 `mine-01` twin. Visual interpolation consumes that clock; it does not maintain an independent simulation time.
 
-The simulator publishes one complete 11-twin snapshot every four wall-clock seconds by default. The frontend
-still refreshes every two seconds and reuses the last complete bulk-read snapshot between publications.
-`SIM_SPEEDUP=20` is unchanged: each batch advances 80 simulated seconds, so the mine still runs at exactly 20×
-while halving Eclipse Ditto persistence pressure. `SIM_INTERVAL` can be overridden for diagnostics, but should not
-be reduced on the resource-limited judge stack without a sustained Ditto read/write test.
+The simulator publishes one complete 11-twin snapshot every five wall-clock seconds by default, spreading the
+individual twin updates across that interval instead of sending them as one burst. The frontend checks every two
+seconds; the API reuses its last bulk read for up to three seconds, independently of the publish interval.
+`SIM_SPEEDUP=20` is unchanged: each batch advances 100 simulated seconds, so the mine still runs at exactly 20×
+while reducing Eclipse Ditto persistence pressure compared with the former four-second cadence.
+`SIM_INTERVAL` can be overridden for diagnostics, but should not be reduced on the resource-limited judge stack
+without a sustained Ditto read/write test.
 
 ## Verify from the terminal
 

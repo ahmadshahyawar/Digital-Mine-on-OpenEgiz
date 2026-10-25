@@ -146,7 +146,7 @@ Release checks:
 
 The judge environment supports WebGL but renders **without GPU acceleration**.
 
-- [x] The scene remains usable under software rendering at the documented acceptance threshold.
+- [ ] The scene remains usable under software rendering at the documented acceptance threshold. The current SwiftShader spot check rendered at 5.9 average fps and showed STALE at 8 s; see `evidence/final-release/software-rendering.md`.
 - [x] Low-poly or optimized GLB models are used.
 - [x] Texture resolution and total download size are controlled.
 - [ ] Repeated trucks and props use instancing where supported.

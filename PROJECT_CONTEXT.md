@@ -110,14 +110,22 @@ A strong submission should ideally provide:
 
 **Last updated:** 2026-10-25
 
-- The frozen C5 candidate is in final release audit. Windows verification passes 93 simulator/API/evidence tests,
-  48 data tests, the production frontend build, the complete live scenario matrix, clean baseline reset, and
-  repeated 11-twin/143-field smoke checks.
-- Sustained mixed browser and renderer load reproduced Ditto HTTP 503s at the former two-second 11-twin publish
-  interval. The minimum verified correction is a four-second publication interval with unchanged `20x` simulation
-  speed; eight wall seconds advanced the authoritative clock by 160 simulated seconds.
-- The current nine-slide presentation and PDF, three-minute judge route, evidence index, truth/security audit,
-  software-rendering capture and Ubuntu 24.04 AMD64 workflow are prepared on `codex/final-release-audit`.
+- The release candidate is being prepared on `codex/integrate-audit-fixes` for the official `main` push. The
+  tested publisher keeps `SIM_SPEEDUP=20`, advances the mine clock by 100 simulated seconds every five wall
+  seconds, and spreads all 11 twin writes across that interval.
+- Final Windows acceptance on the current source passed 97 simulator/API/evidence tests, 48 data tests, the
+  frontend production build, three Eclipse Ditto smoke checks (11 twins/143 fields) and the full fixed/Smart
+  scenario matrix with reset. The latest instrumented browser route acknowledged breakdown, Smart Dispatch and
+  reset; all browser API responses were HTTP 200 and the final Ditto state reset cleanly.
+- The live route intermittently showed the truthful STALE badge when simulated time stopped advancing for about
+  14 seconds, then returned to LIVE. Ditto logs contain a 5-second actor `RetrieveThing` timeout; MongoDB reached
+  about 127% CPU during the observed route. A lower-write experiment did not remove the intermittent stall and
+  was reverted. Preserve this limitation; do not claim that normal-route STALE was eliminated.
+- The exact-candidate SwiftShader spot check selected Light mode, rendered at 5.9 average fps, and captured the
+  same temporary STALE state at 8 seconds. It had no console or HTTP errors, but smooth uninterrupted CPU-only
+  performance is not proven. See `evidence/final-release/software-rendering.md` and its screenshot.
+- Native Ubuntu 24.04 AMD64 verification has not passed on this exact candidate. The existing nine-slide deck/PDF
+  also needs Professor's requested presentation-only visual polish before the final freeze.
 
 - Team decision: `claude/data-asset-layer` is the authoritative visual implementation. Its terrain scale, roads, turning loops, vehicles, buildings, FIFO queues, loading/dumping animations, camera, sensor/topology/data-flow overlays, fleet/ESG, weather, and safety presentation are preserved as designed. Codex contributions are limited to compatible nonvisual improvements such as platform integration, Docker/build reliability, tests, evidence, and documentation unless the Team explicitly requests a visual change.
 
@@ -242,6 +250,31 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — final-day release candidate — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/integrate-audit-fixes (based on origin/codex/ademix)
+Task: Complete final Windows smoke/scenario/build/browser checks, preserve the intermittent STALE result as
+  evidence, update release notes, commit, fast-forward the shared integration branch and push the accepted
+  candidate to official main as requested by the Team.
+Paths: simulator/backend reliability, README.md, SUBMISSION.md, JUDGE_EVIDENCE.md, PROJECT_CONTEXT.md,
+  evidence/final-release/** and generated telemetry evidence. No new visual or simulation feature.
+Status: tests, three live smoke runs and full scenario matrix pass. The route passes all controls/reset but has
+  one intermittent simulated-clock stall; it is documented. Native Ubuntu remains unverified.
+```
+
+### Handoff — Professor + Claude — presentation-only polish — requested 2026-10-25
+
+```text
+One task only: improve presentation.pptx and regenerate presentation.pdf from the final integrated application.
+Use the saved live route screenshots, only verified values and the existing team concept. Make the story readable:
+  operational problem, live twin/model, scenario consequence, dispatcher decision, evidence/limitations, and demo
+  route. Render every page and check legibility, clipping, consistency and image quality. Do not change frontend,
+  simulator, data, Compose, or product behavior. Work on a separate Claude branch and hand off the exact SHA,
+  files, rendered-page evidence and verification; Codex will integrate and rerun release checks.
+```
+
 ### Lock — Codex — reconcile final rules checklist — 2026-10-25
 
 ```text
@@ -281,7 +314,9 @@ Task: Execute J1-J8 across the frozen C5 candidate: release reproduction, eviden
 Exact files: JUDGE_EVIDENCE.md; README.md; SUBMISSION.md; presentation/**; presentation.pptx;
   presentation.pdf; evidence/final-release/**; .github/workflows/ubuntu-release-verification.yml;
   DATA_LICENSES.md; ademix/data/model_manifest.csv; ademix/frontend/public/models/Textures/colormap.png;
-  PROJECT_CONTEXT.md; release documentation as required. Professor must flag any overlap with the frontend
+  ademix/simulator/app.py; ademix/compose.yml; ademix/simulator/test_reliability.py;
+  ademix/data/test_data_layer.py; ademix/data/telemetry/sensor_catalogue.csv; PROJECT_CONTEXT.md;
+  release documentation as required. Professor must flag any overlap with the frontend
   release candidate before Codex integrates it.
 Expected handoff: exact candidate SHA, commands/results, current deck and rendered-page checks, known limitations,
   independent-audit reconciliation requests and explicit main-release status. No unsupported success claims.
@@ -293,18 +328,19 @@ Expected handoff: exact candidate SHA, commands/results, current deck and render
 Owner: Ahmad + Codex
 Branch: codex/final-release-audit
 Base: caf6ee0 (verified C5 integration)
-Status: Windows release candidate verified. Commit d290063 was pushed, but GitHub reported zero workflow runs;
+Status: Windows release candidate passed its earlier gates, but the final browser-route audit found a reproducible
+  live-read failure. Commit d290063 was pushed, but GitHub reported zero workflow runs;
   native Ubuntu remains an explicit external gate rather than a claimed pass.
-Key correction: SIM_INTERVAL 2 → 4 seconds, SIM_SPEEDUP unchanged at 20; this halves Ditto persistence pressure
+Key correction at that checkpoint: SIM_INTERVAL 2 → 4 seconds, SIM_SPEEDUP unchanged at 20; this halves Ditto persistence pressure
   without changing physical equations or simulated-time rate.
 Verification: 93 simulator/API/evidence tests; 48 data tests; frontend production build; full live fixed/Smart
   scenario matrix and reset; three immediate plus three sustained smoke runs; clean Compose recreate; SwiftShader
   live render with zero final console/network errors; authoritative clock observed at exactly 20x.
 Artifacts: JUDGE_EVIDENCE.md; evidence/final-release/*; presentation.pdf; presentation.pptx;
   .github/workflows/ubuntu-release-verification.yml.
-Integration warning: Professor's F1-F5/F8 frontend branch must be reviewed against this exact release candidate.
-  Do not overwrite the four-second simulator/data contract or release evidence. Rebuild and rerun all gates after
-  accepting any visual changes.
+Integration warning: Professor's F1-F5/F8 frontend branch must be reviewed against this release candidate.
+  The four-second simulator/data setting recorded at this checkpoint is historical and is superseded by the
+  current five-second paced-write trial. Rebuild and rerun all gates after accepting visual changes.
 ```
 
 ### Lock — Claude — independent final audit — 2026-10-25
@@ -1560,6 +1596,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 | Date | Contributor | Work completed | Verification |
 | --- | --- | --- | --- |
 | 2026-10-25 | Codex | Prepared the final release candidate, evidence index, current nine-slide deck/PDF, software-render proof and Ubuntu workflow; fixed sustained Ditto overload by publishing complete snapshots every four seconds while preserving the authoritative 20x clock | 93 simulator/API/evidence tests, 48 data tests, production build, live scenario matrix/reset, six sustained smoke checks, clean recreate, exact 20x clock observation and SwiftShader live render pass |
+| 2026-10-25 | Codex | Final-day release gate on the integrated audit candidate; reverted an unhelpful lower-write trial and preserved the intermittent stale-time evidence | Current source: 97 simulator tests, 48 data tests, production build, three live smokes, fixed/Smart full matrix/reset pass; browser route controls/reset pass but one ~14 s stale-clock interval occurred; native Ubuntu remains unverified |
 | 2026-10-25 | Codex | Resolved independent-audit F6 cross-platform evidence drift | Every generated output has identical SHA-256 under Python 3.11 and 3.12; LF-canonical input hashes and explicit decimal rounding are tested; 93 + 48 suites pass |
 | 2026-10-25 | Codex | Rebuilt the exact post-F6 Docker candidate and repeated the live release route | All services healthy; smoke passed three times with 11 twins/143 fields; fixed/Smart full scenario matrix and clean reset passed through Eclipse Ditto |
 | 2026-10-21 | Codex | Created the shared project context and assistant guidance files | Files reviewed locally |
@@ -1642,6 +1679,15 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 
 ## Known Issues and Risks
 
+- The latest Windows browser route had one intermittent simulated-clock freeze (~14 seconds). The UI correctly
+  showed STALE, then returned to LIVE; route controls still acknowledged and reset. This is an unresolved
+  reliability limitation, not a passing “no STALE” result. See `evidence/final-release/live-route-final.json` and
+  `evidence/final-release/windows-release-verification.md`.
+- The current browser route used Balanced graphics on Intel UHD 620 with D3D11. This is not a no-GPU measurement;
+  the separate SwiftShader report is from an earlier candidate. Do not present it as exact-final-candidate proof.
+- The editable presentation and PDF need the presentation-only polish assigned to Professor + Claude above.
+- Native Ubuntu 24.04 AMD64 clean-start results remain unavailable for the exact candidate.
+
 - The remaining competition schedule is short; scope must be chosen quickly.
 - A visually impressive scene that does not receive its operational state through OpenEgiz would fail the core platform requirement.
 - Third-party repositories and 3D assets create licensing, attribution, compatibility, and performance risks that must be checked before use.
@@ -1653,18 +1699,19 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 - The expanded world facilities are currently visual context rather than independent simulated twins; do not claim them as operational modules until their states are modeled.
-- Headless SwiftShader rendered the exact live route with no final console/network errors, but its measured cadence
-  was only 2.1 average frames/s on this Windows host; do not claim universally smooth CPU-only rendering.
+- The final SwiftShader run selected Light mode and measured 5.9 average frames/s at 896 × 503, but showed STALE
+  at 8 seconds. Do not claim smooth, uninterrupted software-rendered operation based on this run.
 - Native Ubuntu 24.04 AMD64 verification is automated but remains unclaimed. After pushing `d290063`, the
   authenticated GitHub API reported zero workflow runs; repository Actions may need organizer/default-branch enablement.
-- Professor's F1-F5/F8 frontend work is not yet integrated; any accepted overlap requires the full release matrix,
-  screenshots and presentation to be checked again.
+- Professor's F1–F5/F8 frontend fixes are integrated. The presentation/PDF is the only delegated Professor task;
+  rebuild and inspect every page before it is accepted.
 
 ## Next Recommended Action
 
-Push `codex/final-release-audit`, wait for the Ubuntu 24.04 AMD64 workflow, then review Professor's F1-F5/F8
-frontend branch against this candidate. Integrate only accepted changes, rerun all release gates, obtain the Team's
-final visual approval, and merge the accepted release to `main` before the deadline.
+Commit and push the tested candidate to `origin/codex/ademix`, then fast-forward official `origin/main` as
+requested. Record the remote SHA and the unresolved Windows STALE/SwiftShader limitations. If Professor returns
+the presentation-only branch before the freeze, review its page renders and factual consistency, integrate it and
+repeat the production build; otherwise keep the currently committed presentation and state its limitation.
 
 ### Breakdown verification handoff — 2026-10-23
 

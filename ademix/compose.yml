@@ -26,7 +26,7 @@ services:
       DITTO_URL: http://ditto-nginx:80
       DITTO_PASSWORD: ${DITTO_PASSWORD}
       SIM_SPEEDUP: ${SIM_SPEEDUP:-20}
-      SIM_INTERVAL: ${SIM_INTERVAL:-4}
+      SIM_INTERVAL: ${SIM_INTERVAL:-5}
     ports:
       - "${OPENEGIZ_BIND:-127.0.0.1}:${ADEMIX_API_PORT:-8088}:8000"
     healthcheck:

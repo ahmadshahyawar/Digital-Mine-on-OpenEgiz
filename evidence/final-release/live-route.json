@@ -1,0 +1,429 @@
+{
+  "url": "http://127.0.0.1:4173/",
+  "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "quality": "Graphics: Balanced",
+  "acknowledgements": {
+    "initialLive": true,
+    "breakdown": true,
+    "smart": true,
+    "reset": true
+  },
+  "modes": [
+    {
+      "at": 915,
+      "className": "ig-mode live",
+      "text": "LIVE · Eclipse Ditto twins · checked every 2 s"
+    },
+    {
+      "at": 34977,
+      "className": "ig-mode stale",
+      "text": "Eclipse Ditto · STALE · simulated time not advancing · 8 s"
+    },
+    {
+      "at": 37109,
+      "className": "ig-mode live",
+      "text": "LIVE · Eclipse Ditto twins · checked every 2 s"
+    }
+  ],
+  "stateResponses": [
+    {
+      "at": 750,
+      "duration": 135,
+      "status": 200,
+      "simTime": 4300
+    },
+    {
+      "at": 4063,
+      "duration": 517,
+      "status": 200,
+      "simTime": 4400
+    },
+    {
+      "at": 4753,
+      "duration": 80,
+      "status": 200,
+      "simTime": 4400
+    },
+    {
+      "at": 6759,
+      "duration": 75,
+      "status": 200,
+      "simTime": 4400
+    },
+    {
+      "at": 8765,
+      "duration": 463,
+      "status": 200,
+      "simTime": 4500
+    },
+    {
+      "at": 10786,
+      "duration": 1903,
+      "status": 200,
+      "simTime": 4500
+    },
+    {
+      "at": 14766,
+      "duration": 126,
+      "status": 200,
+      "simTime": 4500
+    },
+    {
+      "at": 12771,
+      "duration": 2279,
+      "status": 200,
+      "simTime": 4600
+    },
+    {
+      "at": 16770,
+      "duration": 267,
+      "status": 200,
+      "simTime": 4600
+    },
+    {
+      "at": 18771,
+      "duration": 1594,
+      "status": 200,
+      "simTime": 4700
+    },
+    {
+      "at": 20771,
+      "duration": 318,
+      "status": 200,
+      "simTime": 4700
+    },
+    {
+      "at": 22761,
+      "duration": 519,
+      "status": 200,
+      "simTime": 4800
+    },
+    {
+      "at": 24758,
+      "duration": 50,
+      "status": 200,
+      "simTime": 4800
+    },
+    {
+      "at": 26800,
+      "duration": 489,
+      "status": 200,
+      "simTime": 4900
+    },
+    {
+      "at": 28787,
+      "duration": 472,
+      "status": 200,
+      "simTime": 4900
+    },
+    {
+      "at": 30787,
+      "duration": 1690,
+      "status": 200,
+      "simTime": 4900
+    },
+    {
+      "at": 32755,
+      "duration": 172,
+      "status": 200,
+      "simTime": 4900
+    },
+    {
+      "at": 34767,
+      "duration": 160,
+      "status": 200,
+      "simTime": 4900
+    },
+    {
+      "at": 36788,
+      "duration": 233,
+      "status": 200,
+      "simTime": 5000
+    },
+    {
+      "at": 38770,
+      "duration": 311,
+      "status": 200,
+      "simTime": 5000
+    },
+    {
+      "at": 40764,
+      "duration": 550,
+      "status": 200,
+      "simTime": 5100
+    },
+    {
+      "at": 42782,
+      "duration": 226,
+      "status": 200,
+      "simTime": 5100
+    },
+    {
+      "at": 44764,
+      "duration": 561,
+      "status": 200,
+      "simTime": 5200
+    },
+    {
+      "at": 46790,
+      "duration": 231,
+      "status": 200,
+      "simTime": 5200
+    },
+    {
+      "at": 50783,
+      "duration": 511,
+      "status": 200,
+      "simTime": 5200
+    },
+    {
+      "at": 48772,
+      "duration": 2994,
+      "status": 200,
+      "simTime": 5300
+    },
+    {
+      "at": 52777,
+      "duration": 255,
+      "status": 200,
+      "simTime": 5300
+    },
+    {
+      "at": 54824,
+      "duration": 1240,
+      "status": 200,
+      "simTime": 5400
+    },
+    {
+      "at": 56753,
+      "duration": 157,
+      "status": 200,
+      "simTime": 5400
+    },
+    {
+      "at": 58755,
+      "duration": 89,
+      "status": 200,
+      "simTime": 5400
+    },
+    {
+      "at": 60769,
+      "duration": 560,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 62760,
+      "duration": 83,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 64776,
+      "duration": 343,
+      "status": 200,
+      "simTime": 5600
+    },
+    {
+      "at": 66766,
+      "duration": 33,
+      "status": 200,
+      "simTime": 5600
+    },
+    {
+      "at": 68758,
+      "duration": 33,
+      "status": 200,
+      "simTime": 5700
+    },
+    {
+      "at": 70759,
+      "duration": 112,
+      "status": 200,
+      "simTime": 5700
+    }
+  ],
+  "longTasks": [
+    {
+      "at": 188,
+      "duration": 202
+    },
+    {
+      "at": 399,
+      "duration": 282
+    },
+    {
+      "at": 889,
+      "duration": 283
+    },
+    {
+      "at": 1237,
+      "duration": 159
+    },
+    {
+      "at": 1400,
+      "duration": 1344
+    },
+    {
+      "at": 2744,
+      "duration": 1279
+    },
+    {
+      "at": 11251,
+      "duration": 73
+    },
+    {
+      "at": 14191,
+      "duration": 56
+    },
+    {
+      "at": 18550,
+      "duration": 54
+    },
+    {
+      "at": 19673,
+      "duration": 65
+    },
+    {
+      "at": 20148,
+      "duration": 51
+    },
+    {
+      "at": 20630,
+      "duration": 50
+    },
+    {
+      "at": 27366,
+      "duration": 180
+    },
+    {
+      "at": 28066,
+      "duration": 87
+    },
+    {
+      "at": 28173,
+      "duration": 126
+    },
+    {
+      "at": 28703,
+      "duration": 83
+    },
+    {
+      "at": 29137,
+      "duration": 57
+    },
+    {
+      "at": 29199,
+      "duration": 58
+    },
+    {
+      "at": 32265,
+      "duration": 144
+    },
+    {
+      "at": 34287,
+      "duration": 52
+    },
+    {
+      "at": 36854,
+      "duration": 86
+    },
+    {
+      "at": 41244,
+      "duration": 68
+    },
+    {
+      "at": 43283,
+      "duration": 72
+    },
+    {
+      "at": 45081,
+      "duration": 67
+    },
+    {
+      "at": 45149,
+      "duration": 60
+    },
+    {
+      "at": 45209,
+      "duration": 50
+    },
+    {
+      "at": 47266,
+      "duration": 57
+    },
+    {
+      "at": 48272,
+      "duration": 55
+    },
+    {
+      "at": 49052,
+      "duration": 100
+    },
+    {
+      "at": 50293,
+      "duration": 58
+    },
+    {
+      "at": 50388,
+      "duration": 90
+    },
+    {
+      "at": 51131,
+      "duration": 64
+    },
+    {
+      "at": 51504,
+      "duration": 82
+    },
+    {
+      "at": 51633,
+      "duration": 70
+    },
+    {
+      "at": 51909,
+      "duration": 50
+    },
+    {
+      "at": 53389,
+      "duration": 51
+    },
+    {
+      "at": 54702,
+      "duration": 78
+    },
+    {
+      "at": 54879,
+      "duration": 62
+    },
+    {
+      "at": 55672,
+      "duration": 51
+    },
+    {
+      "at": 56356,
+      "duration": 62
+    }
+  ],
+  "screenshots": [
+    "evidence\\final-release\\live-route\\01-baseline.png",
+    "evidence\\final-release\\live-route\\02-breakdown-effect.png",
+    "evidence\\final-release\\live-route\\03-smart-response.png",
+    "evidence\\final-release\\live-route\\04-model-trust.png",
+    "evidence\\final-release\\live-route\\05-reset-overview.png"
+  ],
+  "consoleErrors": [],
+  "reset": {
+    "source": "eclipse-ditto",
+    "scenario": "baseline",
+    "policy": "fixed",
+    "blockage": "none",
+    "staleBadgeSeen": true
+  },
+  "runError": null,
+  "badgeCheck": {
+    "firstLiveIndex": 0,
+    "checkedTransitionsAfterFirstLive": 3,
+    "passed": false
+  }
+}

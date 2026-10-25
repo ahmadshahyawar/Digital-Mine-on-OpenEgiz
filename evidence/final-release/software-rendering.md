@@ -1,19 +1,22 @@
-# Software-rendering verification
+# Software-rendering spot check
 
-Date: 2026-10-25  
-Candidate base: `caf6ee0` plus the final-release branch changes  
-Viewport and canvas: 1280 × 720
+Date: 2026-10-25
+Candidate: Windows release worktree before commit
+Browser viewport: 1280 × 720; rendered canvas: 896 × 503
 
-The exact Docker-served frontend was opened in installed Google Chrome with ANGLE forced to SwiftShader. The browser reported:
+The Docker-served frontend was opened in installed Google Chrome with ANGLE forced to SwiftShader. This run is a
+spot check, not a passing software-rendering acceptance gate. The browser reported:
 
 - renderer: `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`;
 - vendor: `Google Inc. (Google)`;
-- live source label present: `LIVE · Eclipse Ditto twins · every 2 s`;
-- console errors: 0;
-- failed HTTP responses after the stack stabilized: 0;
-- headless requestAnimationFrame cadence: 2.1 average frames/s, 1.9 low-5%, 11 measured intervals over five seconds.
+- the interface selected **Graphics: Light** automatically;
+- frame cadence: 5.9 average frames/s, 5.5 low-5%, 30 measured intervals over five seconds;
+- console errors: 0; failed HTTP responses: 0;
+- the captured badge was `Eclipse Ditto · STALE · simulated time not advancing · 8 s`, so an uninterrupted LIVE route was not demonstrated.
 
-The low headless cadence is recorded as a limitation, not presented as interactive performance. It proves that the judge route renders and remains connected without GPU acceleration; it does not prove that every CPU-only examination host will feel smooth. Normal interactive rendering on the local in-app Chromium session remained responsive.
+The scene rendered without GPU acceleration, but this measured cadence and temporary STALE state do not meet a
+claim of smooth uninterrupted judge-host performance. Compare this with the separately recorded interactive
+Intel UHD 620 D3D11 route, which is not software-render evidence.
 
 Reproduce with:
 
@@ -26,4 +29,5 @@ Artifacts:
 
 - `evidence/final-release/measure-software-rendering.mjs`
 - `evidence/final-release/software-rendering.png`
+- `evidence/final-release/software-rendering.json`
 

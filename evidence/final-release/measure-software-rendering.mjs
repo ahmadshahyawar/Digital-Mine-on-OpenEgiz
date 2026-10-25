@@ -40,7 +40,7 @@ try {
     if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() });
   });
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120_000 });
-  await page.waitForFunction(() => document.body.innerText.includes('LIVE · Eclipse Ditto twins · every 2 s'), null, { timeout: 120_000 });
+  await page.waitForFunction(() => document.querySelector('#ig-mode')?.classList.contains('live'), null, { timeout: 120_000 });
   await page.waitForTimeout(12_000);
   const timing = await page.evaluate(() => new Promise(resolve => {
     const samples = [];
@@ -67,7 +67,7 @@ try {
       renderer: gl && extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null,
       vendor: gl && extension ? gl.getParameter(extension.UNMASKED_VENDOR_WEBGL) : null,
       canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
-      liveLabel: document.body.innerText.includes('LIVE · Eclipse Ditto twins · every 2 s'),
+      liveLabel: document.querySelector('#ig-mode')?.classList.contains('live') ?? false,
     };
   });
   await page.screenshot({ path: output, fullPage: false });

@@ -88,12 +88,12 @@ for (const el of document.querySelectorAll(SEL.join(',') + ' *')) {
 const t = Object.fromEntries((window.__last?.twins ?? []).map(x => [x.thingId.split(':')[1], Object.fromEntries(Object.entries(x.features).map(([k, v]) => [k, v.properties.value]))]))
 const states = [1, 2, 3, 4, 5, 6].map(i => t['truck-0' + i]?.state)
 const kpis = [...document.querySelectorAll('.ig-kpis > div')].map(d => d.innerText.replace(/\\s+/g, ' '))
-const api = { tph: t['mine-01']?.throughput_tph, bottleneck: t['mine-01']?.bottleneck_live, parked: states.filter(s => s === 'standby').length, down: states.filter(s => s === 'breakdown').length,
+const api = { tph: t['mine-01']?.throughput_tph, bottleneck: t['mine-01']?.bottleneck_live, parked: states.filter(s => s === 'standby').length, held: states.filter(s => s === 'blocked').length, down: states.filter(s => s === 'breakdown').length,
   scenario: t['scenario-controller']?.active, policy: t['scenario-controller']?.dispatch_policy, simH: +(t['mine-01']?.sim_time_s / 3600).toFixed(3),
   faceWait: t['excavator-01']?.average_wait_min, crusherWait: t['crusher-01']?.average_wait_min, blockage: t['road-main']?.blockage_lane, blocked: t['road-main']?.blocked_trucks }
-const cyc = 6 - api.parked - api.down
+const cyc = 6 - api.parked - api.held - api.down
 const numberChecks = { production: kpis[0]?.includes(String(Math.round(api.tph))), trucks: kpis[2]?.startsWith('Trucks working · parked ' + cyc + ' · ' + api.parked + ' parked'),
-  down: api.down ? kpis[2]?.includes(api.down + ' down') : !kpis[2]?.includes('down') }
+  held: api.held ? kpis[2]?.includes(api.held + ' held') : !kpis[2]?.includes('held'), down: api.down ? kpis[2]?.includes(api.down + ' down') : !kpis[2]?.includes('down') }
 return { overlaps, offscreen, lowContrast: low.slice(0, 12), lowCount: low.length, kpis, api, numberChecks,
   mode: document.querySelector('#ig-mode')?.innerText, alert: document.querySelector('.ig-breakdown-alert')?.innerText.replace(/\\s+/g, ' ').slice(0, 220) ?? null,
   laneTags: [...document.querySelectorAll('.ig-lane-tag')].map(e => e.innerText),

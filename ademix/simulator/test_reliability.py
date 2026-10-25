@@ -27,7 +27,33 @@ if not MAIN_SOURCE.exists():
 
 class SlowDependencyTests(unittest.TestCase):
     def test_deployment_publish_interval_limits_ditto_pressure(self):
-        self.assertEqual(simulator_app.INTERVAL, 4)
+        self.assertEqual(simulator_app.INTERVAL, 5)
+
+    def test_ditto_read_cache_expires_before_the_next_publish(self):
+        self.assertEqual(simulator_app.CACHE_TTL, 3)
+        self.assertLess(simulator_app.CACHE_TTL, simulator_app.INTERVAL)
+
+    def test_snapshot_publications_are_spread_across_the_tick(self):
+        snapshot = {name: {"sim_time_s": index} for index, name in enumerate(("mine-01", "truck-01", "truck-02"))}
+        client = mock.Mock()
+        waits = []
+
+        def wait(delay):
+            waits.append(delay)
+            return False
+
+        with mock.patch.object(simulator_app, "mqtt_client", client), mock.patch.object(
+            simulator_app.time, "monotonic", side_effect=(10.5, 12.0, 15.1)
+        ), mock.patch.object(simulator_app.stop_event, "wait", side_effect=wait):
+            simulator_app.publish_snapshot(snapshot, cycle_started=10.0)
+
+        self.assertEqual(client.publish.call_count, 3)
+        self.assertEqual([call.args[0] for call in client.publish.call_args_list], [
+            "telemetry/mine-01", "telemetry/truck-01", "telemetry/truck-02",
+        ])
+        self.assertEqual(len(waits), 2)
+        self.assertAlmostEqual(waits[0], 5 / 3 - 0.5)
+        self.assertAlmostEqual(waits[1], 10 / 3 - 2.0)
 
     def test_mqtt_connect_retries_then_recovers(self):
         client = mock.Mock()
@@ -61,6 +87,7 @@ class ApiReliabilityTests(unittest.TestCase):
         simulator_app.engine = MineEngine()
         simulator_app.ditto_cache = None
         simulator_app.ditto_cache_time = 0.0
+        simulator_app.ditto_retry_after = 0.0
 
     def test_ditto_failure_returns_503_instead_of_crashing(self):
         with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
@@ -127,6 +154,38 @@ class ApiReliabilityTests(unittest.TestCase):
             second = simulator_app.state()
         self.assertEqual(first, second)
         client.__enter__.return_value.get.assert_called_once()
+
+    def test_overlapping_poll_returns_last_snapshot_without_waiting_for_ditto(self):
+        snapshot = [{"thingId": f"{simulator_app.NAMESPACE}:mine-01"}]
+        simulator_app.ditto_cache = snapshot
+        simulator_app.ditto_cache_time = 0.0
+        simulator_app.ditto_read_lock.acquire()
+        try:
+            with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+                simulator_app, "DITTO_PASSWORD", "present"
+            ), mock.patch.object(simulator_app.httpx, "Client") as client:
+                result = simulator_app.state()
+        finally:
+            simulator_app.ditto_read_lock.release()
+        self.assertEqual(result, {"source": "eclipse-ditto", "twins": snapshot})
+        client.assert_not_called()
+
+    def test_temporary_read_failure_uses_cache_and_limits_retry_storm(self):
+        snapshot = [{"thingId": f"{simulator_app.NAMESPACE}:mine-01"}]
+        simulator_app.ditto_cache = snapshot
+        simulator_app.ditto_cache_time = 0.0
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "DITTO_PASSWORD", "present"
+        ), mock.patch.object(
+            simulator_app.httpx, "Client", side_effect=simulator_app.httpx.ConnectError("offline")
+        ) as client, mock.patch.object(simulator_app.time, "monotonic", return_value=100.0):
+            first = simulator_app.state()
+            second = simulator_app.state()
+        expected = {"source": "eclipse-ditto", "twins": snapshot}
+        self.assertEqual(first, expected)
+        self.assertEqual(second, expected)
+        self.assertEqual(client.call_count, 1)
+        self.assertEqual(simulator_app.ditto_retry_after, 102.0)
 
     def test_live_health_waits_for_a_complete_ditto_read(self):
         with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
