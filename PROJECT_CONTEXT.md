@@ -1,6 +1,15 @@
 # Digital Mine on OpenEgiz — Shared Project Context
 
-> This file is the shared source of truth for the two-person team and all AI assistants working on the repository. Read it before making changes and update it after completing meaningful work.
+> Development history and contributor handoffs. The current release note below takes precedence over dated planning entries. Historical references to retired planning documents are preserved as provenance; their original contents remain in Git at `221ae3e:<path>`. Runtime instructions are in `README.md` and technical contracts remain under `ademix/`.
+
+## Current release note — final acceptance audit, 2026-10-25
+
+- Official submitted source audited: `221ae3ec69b1d21b4d5130273c5c9c31b6b1bfb6`; the Team approved and merged the health-read reliability fix into official `main`.
+- Audit/cleanup branch: `codex/final-acceptance-cleanup`, based on that exact official commit. Ahmad + Codex own this documentation-only cleanup and audit record. Application, deployment, tests, licenses, evidence and presentation assets are protected.
+- The final acceptance report is `evidence/final-acceptance-2026-10-25.md`. It distinguishes local Docker/Windows checks from the separate Ubuntu workflow. No clean Ubuntu pass is claimed without completed runner evidence.
+- Local acceptance passed: 98 simulator/API/evidence tests, 48 data tests, production build, two smoke checks, two full scenario matrices/reset checks, and a 28-read browser route with no STALE after first LIVE. Ubuntu run `40197101825` remained queued at 18:37 Astana; clean Ubuntu is NOT TESTED and the startup-cap risk is MEDIUM. Presentation assets were retained with the report's clipping/older-screenshot caveats.
+- Thirteen obsolete root task/prompt/checklist documents were retired after reference and dependency checks. Contributor ownership remains in `COLLABORATION.md`; `AGENTS.md` and `CLAUDE.md` remain for maintenance-tool compatibility. All historical contributor evidence and AI assistance provenance are retained.
+- Official `main` is the release baseline. The old task sequence and `codex/ademix` integration instructions below are historical. The cleanup branch must not be merged into official `main` without the Team's explicit approval.
 
 ## Project Goal
 

@@ -1,15 +1,15 @@
 # Ademix claim-to-evidence index
 
-Candidate basis: the completed B1-B6 and C1-C5 experience integrated at `caf6ee0`, plus release-only documentation and presentation updates on `codex/final-release-audit`.
+Audited official application: `221ae3ec69b1d21b4d5130273c5c9c31b6b1bfb6`. Historical evidence below identifies earlier checkpoints where applicable. Current acceptance results and remaining environment limitations are in [the final audit](evidence/final-acceptance-2026-10-25.md).
 
 This index provides factual navigation. Live values come from Eclipse Ditto. Saved comparison and sensitivity files contain synthetic deterministic model evidence, not measured mine performance.
 
 | Rubric criterion or claim | Runtime action and expected observation | Source and automated evidence | Limitation |
 |---|---|---|---|
 | Mine model: 11 connected twins | Open **Mine model**. It lists the mine, six trucks, excavator, road, crusher and scenario controller. Selecting a node opens that twin. | `ademix/simulator/twins.json`; `ademix/data/topology/twin_relationships.json`; data relationship tests; `evidence/claude-c1/` | The boundary is the load-haul-crush circuit, not the entire mining enterprise. |
-| OpenEgiz path | Wait for **LIVE VIA ECLIPSE-DITTO**. Twin state and timestamps continue advancing. | `ademix/simulator/app.py`; `ademix/simulator/smoke_check.py`; final smoke log | Local demo and replay are labelled separately and are not end-to-end OpenEgiz evidence. |
+| OpenEgiz path | Wait for **LIVE · Eclipse Ditto twins · checked every 2 s**. Twin state and timestamps continue advancing. | `ademix/simulator/app.py`; `ademix/simulator/smoke_check.py`; final audit | Local demo and replay are labelled separately and are not end-to-end OpenEgiz evidence. |
 | 3D operational visualization | Use **Overview**, select a truck and inspect the loading face, two-way road, dump bay and crusher flow. | `ademix/frontend/src/IngestionLayer.tsx`; `ademix/frontend/src/TerrainStage.tsx`; `evidence/claude-c5/` | Geometry is fictional and simplified. Support buildings and two waste trucks are context, not operational twins. |
-| Behavioral credibility | Observe FIFO loading/dumping, payload growth, queues, movement, crusher processing and mass balance. | `ademix/simulator/engine.py`; 97 simulator/API/evidence tests; `ademix/simulator/SCENARIOS.md` | No passing, intersections, grade-dependent rimpull or multi-face dispatch. |
+| Behavioral credibility | Observe FIFO loading/dumping, payload growth, queues, movement, crusher processing and mass balance. | `ademix/simulator/engine.py`; 98 simulator/API/evidence tests; `ademix/simulator/SCENARIOS.md` | No passing, intersections, grade-dependent rimpull or multi-face dispatch. |
 | Truck breakdown | Activate **HT-01 breakdown**, open **Show effect**, then tow/reset. The affected lane blocks until tow while the opposing lane remains open. | `verify_scenarios.py`; directional breakdown tests; `ademix/data/evidence/production_recovery.json`; `evidence/claude-c3/` | The steady five-truck fleet can recover to the loader limit. The matched returning-lane first hour is 691 t/h. |
 | Road restriction | Activate **Main road restriction**. Both directions fall from 25 to 10.72 km/h and haulage becomes the constraint. | Scenario tests; `ademix/data/evidence/fleet_sizing.json`; `evidence/claude-c3/c3-road-restriction.png` | This is a speed restriction, not a road closure or alternate-route model. |
 | Crusher slowdown | Activate **Crusher capacity -45%**. Capacity becomes 495 t/h, crusher utilization reaches its limit and ROM inventory grows. | Scenario tests; `ademix/data/evidence/fixed_vs_smart.json`; `evidence/claude-c3/c3-crusher-congestion.png` | Capacity is a team planning assumption, not a manufacturer rating. |
@@ -35,7 +35,13 @@ The repository records exact observed results only after these commands finish o
 
 ## Current release spot-check
 
-`evidence/final-release/live-route-final.json` is the latest browser route on the Windows candidate. It records all
+`evidence/final-release/live-route-final.json` is an earlier browser route on the Windows candidate. It records all
 scenario acknowledgements, HTTP 200 state reads, and a clean final Eclipse Ditto reset, alongside the intermittent
 STALE clock interval. The interval is a known limitation; the route must not be cited as a pass for “STALE never
 appears.”
+
+The later `221ae3e` reliability candidate passed three browser routes with 84 HTTP 200 state reads and no STALE
+transition during those captures; records remain in `evidence/final-release/stale-diagnosis/`. Its SwiftShader
+spot check measured 7.2 average / 6.0 low-5% FPS with LIVE data. These bounded observations do not establish
+permanent absence of intermittent delay. The final audit reports fresh checks separately and does not infer
+Ubuntu compatibility from Windows results.

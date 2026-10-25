@@ -1,71 +1,39 @@
-# Team collaboration protocol
+# Contributor maintenance workflow
 
-This file prevents Ahmad/Codex and Professor/Claude from implementing or merging the same work twice. `TEAM_WORK_PLAN.md` is the authoritative assignment of the remaining improvements. Both agents still read the complete `PROJECT_CONTEXT.md` and `RULES_CHECKLIST.md`; file ownership does not mean either agent works without knowledge of the other stream.
+Ademix was developed by Ahmad Shah Yawar and Professor with assistance from Codex and Claude.
+The contribution history and dated handoffs are retained in `PROJECT_CONTEXT.md` and Git.
 
-`START_HERE.md` is the short repeating workflow. After each completed integration, the tested combination is pushed to `origin/codex/ademix`. Every new feature begins from that integrated state. Feature branches are pushed for handoff; `main` remains reserved for the final accepted submission.
+## Ownership
 
-## Current ownership
+| Area | Owner |
+| --- | --- |
+| Simulator, dispatch, MQTT/Ditto API, data contracts and backend tests | Ahmad + Codex |
+| Frontend, 3D scene, interface, visual assets and visual acceptance | Professor + Claude |
+| Release integration, shared documentation, deployment and presentation integration | Ahmad + Codex, coordinating with the relevant owner |
 
-| Area | Owner | Paths |
-| --- | --- | --- |
-| 3D presentation and frontend UX | Professor + Claude | `ademix/frontend/src/TerrainStage.tsx`, `IngestionLayer.tsx`, `ingestion.css`, visual models and visual assets |
-| Simulation, what-if behavior, OpenEgiz/API and automated tests | Ahmad + Codex | `ademix/simulator/`, scenario state transitions, MQTT/Ditto integration, Python tests |
-| Data evidence and generated replay bundle | Codex generates; Claude consumes | `ademix/data/`, `ademix/frontend/public/data/ingestion.json` |
-| Release integration | One designated integrator at a time | `main.tsx`, `README.md`, `SUBMISSION.md`, `PROJECT_CONTEXT.md`, `presentation/`, Compose files |
+Preserve existing contributor work. Review the latest changes and agree on a handoff before editing another
+owner's paths. Field names, units, scenario semantics and reset behavior are defined by the technical contracts
+under `ademix/simulator/` and `ademix/data/`.
 
-The current release integrator is **Ahmad + Codex** until a later `PROJECT_CONTEXT.md` entry transfers that role. The integrator role permits combining accepted handoffs; it does not permit redesigning Professor + Claude's scene or silently changing Ahmad + Codex's model behavior.
+## Change procedure
 
-Ownership is temporary and may be changed in `PROJECT_CONTEXT.md` before work begins. An agent must not edit another owner's paths without recording a handoff first. Claude owns the accepted visual scene; Codex must not restyle or replace it unless the Team explicitly transfers that task. Claude must not change simulator behavior to make a visual effect work; it consumes the documented twin fields instead.
+1. Fetch `origin`, inspect the working tree and current contributor handoffs.
+2. Start a focused `codex/<task>` or `claude/<task>` branch from the latest official `origin/main`.
+3. Record the owner, paths and purpose in the current section of `PROJECT_CONTEXT.md` before shared-file edits.
+4. Make only the requested changes. Preserve the Team's Concept, source attribution, licenses and limitations.
+5. Run appropriate checks. Application changes require the unit/data suites, production build, live Ditto smoke,
+   scenario matrix/reset and affected browser route. Documentation-only changes require reference/dependency
+   checks and verification that protected code and assets are unchanged.
+6. Push a coherent feature branch and record its commit, changed paths, actual test results and limitations.
+7. The integrator combines approved work and verifies the remote commit. Official `main` changes require explicit
+   Team approval.
 
-### C-phase ownership transfer
+The former A/B/C implementation plans have been retired after integration. Their history is recoverable from
+Git; they are not an active feature backlog. Avoid concurrent edits to shared files and never resolve conflicts
+by blindly taking one contributor's entire version.
 
-Professor + Claude own frontend/3D work through B1–B6 and continue with the user-facing implementation of C1–C5 after B6 is accepted and integrated. Codex may prepare nonvisual C contracts while B work continues without touching Claude-owned frontend paths. Ahmad + Codex retain simulator/API meaning, generated evidence, backend/data tests and release integration. C6/A9 is optional and remains unassigned until the required candidate is stable. This split prevents concurrent edits to the same frontend files.
+## Release records
 
-For cross-layer work, agree on the twin/API contract before parallel implementation. Ahmad + Codex own field meaning, units, allowed values, scenario/reset behavior and backend fixtures. Professor + Claude own presentation and may request contract changes before it is frozen. After freeze, neither side silently renames, duplicates or reinterprets a field.
-
-## Branch rules
-
-1. Never work directly on `main`.
-2. Each task uses one branch named for its owner and purpose: `codex/...` or `claude/...`.
-3. Before coding, fetch `origin`, read `PROJECT_CONTEXT.md`, and add the task to **Active Work** with owner, branch, and exact paths.
-4. Commit a coherent checkpoint before another agent integrates it. Do not hand off an uncommitted working tree.
-5. Open one pull request into the integration branch. Do not merge related stacked branches separately.
-6. The integrator reviews changed files, resolves conflicts deliberately, runs all checks, and only then merges to `main`.
-7. At the start of every AI session, run `git fetch origin`, compare the working branch with both `origin/codex/ademix` and `origin/claude/data-asset-layer`, and report overlapping changed paths before editing.
-8. Never use an automatic conflict resolution such as “take ours/theirs” for a shared file. The designated integrator composes shared files intentionally.
-
-## Current Claude branch relationship
-
-`claude/data-asset-layer` is stacked on `claude/what-if-scenarios`, which is stacked on `claude/core-simulation-engine`. Therefore, integrate only `claude/data-asset-layer` if the team wants the full Claude work. Merging all three would duplicate history and create unnecessary conflict resolution.
-
-## Shared-file handoff
-
-Files in the release-integration row are a lock zone. Before changing one, write a short message in **Active Work**:
-
-```text
-Owner / branch / exact files / purpose / expected handoff
-```
-
-Only the listed owner edits those files until the checkpoint is committed or the ownership entry is removed. Documentation is reconciled after code integration, not independently on both branches.
-
-## Cross-layer contract: truck breakdown
-
-Codex owns the behavior and publishes tested twin state: the selected truck enters `breakdown`, speed becomes zero, occupied resources are released, queues/throughput react, recovery is deterministic, and reset removes stale effects. Claude owns only the presentation of that state: the correct truck visibly stops, receives a breakdown marker/alert, and the UI explains the operational consequence. Neither side duplicates the other's logic.
-
-## Integration order for current work
-
-1. Each owner commits and pushes only owned files on their branch.
-2. The owner writes a handoff containing commit SHA, exact paths, interface changes, tests, and screenshots if visual.
-3. Use one temporary `integration/...` branch based on the chosen release candidate.
-4. Integrate Codex engine/API commits first, then Claude frontend commits against the documented twin contract.
-5. The integrator alone resolves `main.tsx`, documentation, Compose, generated replay data, and presentation files.
-6. Run frontend build, all Python tests, Compose build/start, every what-if smoke check, and visual review before merging to `main`.
-
-## Definition of done for a handoff
-
-- changed files and purpose are listed;
-- tests and unverified items are stated truthfully;
-- third-party licenses are recorded;
-- no credentials or generated junk are committed;
-- the branch is pushed and has one clear pull request;
-- the next owner knows whether to merge, cherry-pick, or reject it.
+Use `README.md` for startup and operation, `SUBMISSION.md` for scope and limitations, `DATA_LICENSES.md` for
+provenance, and `JUDGE_EVIDENCE.md` for factual evidence navigation. Report clean Ubuntu results separately from
+Windows/Docker Desktop results. Never fabricate test results, hide limitations, or commit deployment credentials.

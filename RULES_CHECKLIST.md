@@ -3,6 +3,10 @@
 Source of truth: <https://openegiz-contest.github.io/rules/>  
 Controlling edition reviewed: **12 October 2026**. If translations differ, the Russian rules control.
 
+Current audit of official application `221ae3ec69b1d21b4d5130273c5c9c31b6b1bfb6`:
+see [final acceptance results](evidence/final-acceptance-2026-10-25.md). Dated checks below retain their original
+scope; their completion does not imply that a later candidate passed a clean Ubuntu run.
+
 Use this file as a release gate. A checked item means it has been verified on the exact release candidate; items that
 specifically concern the submitted branch remain unchecked until the accepted candidate is pushed to `main` and
 re-verified there.
@@ -32,7 +36,7 @@ re-verified there.
 
 ## Deadline and Submission
 
-- [x] Final work is merged into `main` before **25 October 2026, 23:59 Astana time (UTC+5)**. Remote read-back on 2026-10-25 confirmed candidate `2b7f5d4c61ddb83852f8299b281e6a20e59564b9`.
+- [x] Final work is merged into `main` before **25 October 2026, 23:59 Astana time (UTC+5)**. Remote read-back on 2026-10-25 confirmed candidate `221ae3ec69b1d21b4d5130273c5c9c31b6b1bfb6`.
 - [ ] `main` differs materially from the organizer's template.
 - [ ] All required files and assets are committed; nothing depends on an uncommitted local file.
 - [x] Team composition and GitHub usernames match registration.

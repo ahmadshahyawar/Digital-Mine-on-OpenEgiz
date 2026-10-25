@@ -57,16 +57,16 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 
 ## Three-minute judging path
 
-1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
-2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Keep **Balanced** graphics for software rendering.
+1. Open <http://localhost:4173> and wait for the header to show `LIVE · Eclipse Ditto twins · checked every 2 s`.
+2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Software rendering automatically selects **Light**; the **Graphics** button switches between Light and Balanced.
 3. Select a truck to inspect payload, fuel, speed, position, trips, and cycle time from its Ditto twin.
-4. In the **What-If Scenario Engine**, choose **C — Smart dispatch**. The policy keeps four trucks cycling and parks two empty trucks on the ready line under normal operations.
+4. In the **Scenarios** panel, choose **C — Smart dispatch**. The policy keeps four trucks cycling and parks two empty trucks in the standby bay under normal operations.
 5. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls. Smart Dispatch can remain enabled so the reserve response is visible.
 6. Choose **Main road restriction**. The road turns orange and moving-truck speed falls from 25 to approximately 10.72 km/h.
 7. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
 8. Choose **A — Normal operations** to reset both the operating condition and dispatch policy.
 
-Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within four seconds.
+Scenario controls change the underlying simulation state. Their effects are published through MQTT and become visible after Ditto returns the updated twins. Allow several seconds for publication and polling; persistence/read delays can take longer. The UI reports STALE when the returned simulation clock stops advancing.
 
 The default demonstration runs at **20 simulated seconds per wall-clock second**. The authoritative
 `sim_time_s`, `simulation_speed_multiplier`, and `simulation_mode` values are published on the `mine-01`
@@ -118,7 +118,11 @@ matrix through the frontend proxy, scenario API, MQTT, Eclipse Ditto, and the re
 API, including the exact frontend field contract and a clean reset to fixed/baseline:
 
 ```bash
-python ademix/simulator/verify_scenarios.py
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  run --rm --no-deps ademix-simulator \
+  python verify_scenarios.py --url http://ademix-ui
 ```
 
 The check fails unless `/api/state` reports `source: eclipse-ditto`; local demo
