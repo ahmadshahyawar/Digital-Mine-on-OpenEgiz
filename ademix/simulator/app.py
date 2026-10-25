@@ -27,7 +27,7 @@ DITTO_URL = os.environ.get("DITTO_URL", "http://localhost:8080").rstrip("/")
 DITTO_USER = os.environ.get("DITTO_USER", "ditto")
 DITTO_PASSWORD = os.environ.get("DITTO_PASSWORD", "")
 SPEEDUP = float(os.environ.get("SIM_SPEEDUP", "20"))
-INTERVAL = float(os.environ.get("SIM_INTERVAL", "2"))
+INTERVAL = float(os.environ.get("SIM_INTERVAL", "4"))
 THING_NAMES = ["mine-01", "excavator-01", "crusher-01", "road-main", "scenario-controller"] + [f"truck-{i:02d}" for i in range(1, 7)]
 TWINS_PATH = os.path.join(os.path.dirname(__file__), "twins.json")
 

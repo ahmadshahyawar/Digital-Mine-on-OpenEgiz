@@ -26,8 +26,8 @@ if not MAIN_SOURCE.exists():
 
 
 class SlowDependencyTests(unittest.TestCase):
-    def test_deployment_publish_interval_matches_frontend_refresh(self):
-        self.assertEqual(simulator_app.INTERVAL, 2)
+    def test_deployment_publish_interval_limits_ditto_pressure(self):
+        self.assertEqual(simulator_app.INTERVAL, 4)
 
     def test_mqtt_connect_retries_then_recovers(self):
         client = mock.Mock()

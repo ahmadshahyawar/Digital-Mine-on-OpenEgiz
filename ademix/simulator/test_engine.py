@@ -24,6 +24,10 @@ def run(mine, hours, dt=20.0, check=None):
 
 
 class DeterminismTests(unittest.TestCase):
+    def test_metric_rounding_is_stable_at_half_cent_boundary(self):
+        self.assertEqual(MineEngine.metric(35.6550000001)["value"], 35.66)
+        self.assertEqual(MineEngine.metric(35.6549999999)["value"], 35.66)
+
     def test_same_seed_produces_same_state_after_a_run(self):
         first, second = MineEngine(42), MineEngine(42)
         for mine in (first, second):

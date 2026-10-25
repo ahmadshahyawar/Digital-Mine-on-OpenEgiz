@@ -51,7 +51,7 @@
           "fleet_cases": [
             {
               "fleet_size_trucks": 2,
-              "start_state_sha256": "e75934220c9ca99be2beb94dd63e060dbd7ddfde92228477c77943e02807ee55",
+              "start_state_sha256": "c4e4cf258d58908697ce4a41594fa6babf020fb6d77f843a207a3a1c376c7662",
               "production_t": 4466.0,
               "throughput_tph": 558.25,
               "bottleneck": "available truck fleet",
@@ -327,7 +327,7 @@
             },
             {
               "fleet_size_trucks": 4,
-              "start_state_sha256": "fa468958bd4595dfcc8f8e1143cdb306c54c01257df4350bdee6df717c9a3eb7",
+              "start_state_sha256": "009a48452869c7df14cd50c5b83d92cd8b0313772a1d7385da02e0aab54004e5",
               "production_t": 4714.0,
               "throughput_tph": 589.25,
               "bottleneck": "available truck fleet",
@@ -535,7 +535,7 @@
           "fleet_cases": [
             {
               "fleet_size_trucks": 2,
-              "start_state_sha256": "5511e475b1f5105c4288015f6af731a14bfbf098697cccafeacfea7f4fd9c46c",
+              "start_state_sha256": "35744993f3b4b13b29c46c1bb2a91e453ea5828556322f12e2f0666cd9e848c7",
               "production_t": 2926.0,
               "throughput_tph": 365.75,
               "bottleneck": "available truck fleet",
@@ -554,7 +554,7 @@
             },
             {
               "fleet_size_trucks": 3,
-              "start_state_sha256": "28f5d36027fc334a7634d1fa6f9a0371010c34d04aba3969d438af2a7415f0de",
+              "start_state_sha256": "9362400f9d838931d776c029cd0a78367ecc6751cdba037c2f124423624ecaa0",
               "production_t": 4126.0,
               "throughput_tph": 515.75,
               "bottleneck": "loading resource",
@@ -611,7 +611,7 @@
             },
             {
               "fleet_size_trucks": 6,
-              "start_state_sha256": "173525facd5a8133cb44636e5c7a2a569f183e88f89b9a6e58ea337b1cd3191e",
+              "start_state_sha256": "ee7790623e684a21b64caaf4eab820f63e0588872b49bf26eb4f4d3b22a062e8",
               "production_t": 4122.6,
               "throughput_tph": 515.325,
               "bottleneck": "loading resource",
@@ -673,7 +673,7 @@
             },
             {
               "fleet_size_trucks": 3,
-              "start_state_sha256": "fd5e5c618a1559405f7087fa10409d845184ba5ccf5e412104dbf25322fee960",
+              "start_state_sha256": "35f33777f87bf095fc7e5b6b638c6fa97d6560e421a31f72c760ab14c231ba05",
               "production_t": 3080.0,
               "throughput_tph": 385.0,
               "bottleneck": "loading resource",
@@ -692,7 +692,7 @@
             },
             {
               "fleet_size_trucks": 4,
-              "start_state_sha256": "20242a0078b145bbb022be10da4b7bcf5fed2d9e0c59ea5e4b6002b70ddd4a75",
+              "start_state_sha256": "6e356bb844baa6484607894895701b2cb9e3250cbe4df5ed94a1d686d25c52da",
               "production_t": 3080.0,
               "throughput_tph": 385.0,
               "bottleneck": "loading resource",
@@ -857,7 +857,7 @@
             },
             {
               "fleet_size_trucks": 6,
-              "start_state_sha256": "dc3fd0930557fbb452718649301e03c91e93c33cf188b364f971bbbf62499486",
+              "start_state_sha256": "1518e5a58eb1e0a7c995e7c013da26e0152f3ffd835ebbcb2b3acf0d6d911d0a",
               "production_t": 4000.0,
               "throughput_tph": 500.0,
               "bottleneck": "crusher processing capacity",

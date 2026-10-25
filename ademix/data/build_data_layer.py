@@ -46,6 +46,11 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def canonical_source_bytes(path: Path) -> bytes:
+    """Hash tracked text inputs independent of Git checkout line endings."""
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
 def to_csv(header, rows) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\n")
@@ -170,14 +175,14 @@ def build(write: bool = True) -> dict:
         "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
         "generator": "ademix/data/build_data_layer.py",
         "inputs_sha256": {
-            "ademix/data/openmines/north_pit_mine.json": sha256(SOURCE.read_bytes()),
-            "ademix/data/registry/parameters.csv": sha256(REGISTER.read_bytes()),
-            "ademix/data/topology/twin_relationships.json": sha256(RELATIONSHIPS.read_bytes()),
-            "ademix/data/evidence/model_truth.json": sha256(MODEL_TRUTH.read_bytes()),
-            "ademix/data/evidence/decision_explanation.json": sha256(DECISION_EXPLANATION.read_bytes()),
-            "ademix/simulator/engine.py": sha256((SIMULATOR / "engine.py").read_bytes()),
-            "ademix/simulator/compare_scenarios.py": sha256((SIMULATOR / "compare_scenarios.py").read_bytes()),
-            "ademix/simulator/history_evidence.py": sha256((SIMULATOR / "history_evidence.py").read_bytes()),
+            "ademix/data/openmines/north_pit_mine.json": sha256(canonical_source_bytes(SOURCE)),
+            "ademix/data/registry/parameters.csv": sha256(canonical_source_bytes(REGISTER)),
+            "ademix/data/topology/twin_relationships.json": sha256(canonical_source_bytes(RELATIONSHIPS)),
+            "ademix/data/evidence/model_truth.json": sha256(canonical_source_bytes(MODEL_TRUTH)),
+            "ademix/data/evidence/decision_explanation.json": sha256(canonical_source_bytes(DECISION_EXPLANATION)),
+            "ademix/simulator/engine.py": sha256(canonical_source_bytes(SIMULATOR / "engine.py")),
+            "ademix/simulator/compare_scenarios.py": sha256(canonical_source_bytes(SIMULATOR / "compare_scenarios.py")),
+            "ademix/simulator/history_evidence.py": sha256(canonical_source_bytes(SIMULATOR / "history_evidence.py")),
         },
         "telemetry_settings": {
             "seed": LOG_SEED, "step_s": LOG_STEP_S, "sample_s": LOG_SAMPLE_S,

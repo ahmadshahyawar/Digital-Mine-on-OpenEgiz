@@ -2,12 +2,12 @@
   "synthetic": "telemetry/logs/* are synthetic simulator output, not measurements from a mine.",
   "generator": "ademix/data/build_data_layer.py",
   "inputs_sha256": {
-    "ademix/data/openmines/north_pit_mine.json": "271134d6bbb46bc00162fad87d0e10510b0bf4d1fec4a2860f9784d663a7bbd8",
+    "ademix/data/openmines/north_pit_mine.json": "a966a72a6bfa91a86bcd6c3cdcccd9df5d4e83cdb36217a4ac4505ee77c0f16c",
     "ademix/data/registry/parameters.csv": "a1935be8a1e980a04e654e1804a6f992e0d2a0b6e20c489e54bab04e9ef7b8f1",
     "ademix/data/topology/twin_relationships.json": "78553bbeeec401088e06db0534007132d71cf7f8fe3236696e64abfbd27103d3",
     "ademix/data/evidence/model_truth.json": "2624f36c9bf21eea6a08cb42a65d19be45b1946a2dcb09ed2da583df982a4d5d",
     "ademix/data/evidence/decision_explanation.json": "804c58472bdb8208111363b76e10d2b7823c133d0943fa078050e97b687baf70",
-    "ademix/simulator/engine.py": "365f68213e2cf9c2da62afb0e4a908516eb0ccf5adf308f64a686c90167f52b0",
+    "ademix/simulator/engine.py": "0aa4e9f25efeed72ff491b83d8d614af80692995a4fe217e5b0bc3070ea5a0d0",
     "ademix/simulator/compare_scenarios.py": "a71e38f77678ad59b33c6d6f6a6b6d1762d5be5bcdd3d902c8b72d48e8ddcb88",
     "ademix/simulator/history_evidence.py": "e35f052a114bc650d8bc83060cdd68ec87370657fba2845ed016a06dbfbe6c33"
   },
@@ -36,22 +36,22 @@
       "columns": 10
     },
     "telemetry/logs/baseline.csv": {
-      "sha256": "d54c63b97558377b0cea0fd76622ddcdcb423281068e04d01ada1f2cdfd2fe94",
+      "sha256": "ab72cf2d0985930228acd08c16a00731583f3e1a97e86d47127bc7022e80dae5",
       "rows": 157,
       "columns": 145
     },
     "telemetry/logs/truck_breakdown.csv": {
-      "sha256": "a59334189ae2494f34fb30625f2cc5a67911b64aedc24fb8eb58d16a8d690f71",
+      "sha256": "18a69b34cc3f7401367f03f69d102fc67891ca92cf061b944aeaeddc4c15ad64",
       "rows": 157,
       "columns": 145
     },
     "telemetry/logs/road_closure.csv": {
-      "sha256": "0549901b4a054b78f16d6649be3e5bf9bcd73e2d2de3e767bf9e2d75e21bce0d",
+      "sha256": "2b8e3d11d1cf55eca0b9a9fa5b5e25f0b8e808ec6d6ae9e65fc0fb8168d2beff",
       "rows": 157,
       "columns": 145
     },
     "telemetry/logs/crusher_slowdown.csv": {
-      "sha256": "475bedd823c0c1be6be59d81ec7175652c33ee9771a2ad7e4e29e09542713b1d",
+      "sha256": "1c8c0da8245b79cbcfe59444a4c934b3c92406e1818fa031e761f13e3a647388",
       "rows": 157,
       "columns": 145
     },

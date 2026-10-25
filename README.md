@@ -26,6 +26,23 @@ docker compose --env-file deploy/compose/.env \
 
 Expected result: the command exits successfully after OpenEgiz, the twin setup job, simulator, and UI are ready.
 
+For a complete stack restart, recreate the containers while preserving the named volumes; do not use
+`docker compose restart` for every service because `init` and `ademix-setup` are one-shot jobs and Eclipse Ditto's
+Akka cluster requires coordinated recreation:
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  down --remove-orphans
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  up -d --wait --wait-timeout 900
+```
+
+This command does not delete the named data volumes. Do not add `--volumes`.
+
 The latest recorded clean-start rehearsal, including startup time, disk use,
 image architecture, URL checks, and the remaining Ubuntu verification gate, is
 in [`evidence/docker-clean-start-2026-10-23.md`](evidence/docker-clean-start-2026-10-23.md).
@@ -38,7 +55,7 @@ in [`evidence/docker-clean-start-2026-10-23.md`](evidence/docker-clean-start-202
 
 The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored `deploy/compose/.env` file. They are not needed to use the 3D Command Center.
 
-## Five-minute judging path
+## Three-minute judging path
 
 1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
 2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Keep **Balanced** graphics for software rendering.
@@ -49,20 +66,20 @@ The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored
 7. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
 8. Choose **A — Normal operations** to reset both the operating condition and dispatch policy.
 
-Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
+Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within four seconds.
 
 The default demonstration runs at **20 simulated seconds per wall-clock second**. The authoritative
 `sim_time_s`, `simulation_speed_multiplier`, and `simulation_mode` values are published on the `mine-01`
 twin through OpenEgiz; they are not independent frontend constants. Acceleration shortens demonstration
 waiting only—it does not change modeled travel, loading, dumping, production, queue, or recovery equations.
-The visible A6 clock/interpolation UI is intentionally deferred until the Professor + Claude B6 handoff is
-integrated; until then inspect the three fields through `/api/state`.
+The header displays the authoritative simulation time, 20x multiplier and OpenEgiz mode returned by the
+`mine-01` twin. Visual interpolation consumes that clock; it does not maintain an independent simulation time.
 
-The simulator publishes one complete 11-twin snapshot every two wall-clock seconds by default, matching the
-frontend refresh interval. `SIM_SPEEDUP=20` is unchanged: each batch advances 40 simulated seconds, so the mine
-still runs at 20× while avoiding redundant one-second persistence bursts in Eclipse Ditto. `SIM_INTERVAL` can be
-overridden for diagnostics, but should not be reduced on the resource-limited judge stack without a sustained
-Ditto read/write test.
+The simulator publishes one complete 11-twin snapshot every four wall-clock seconds by default. The frontend
+still refreshes every two seconds and reuses the last complete bulk-read snapshot between publications.
+`SIM_SPEEDUP=20` is unchanged: each batch advances 80 simulated seconds, so the mine still runs at exactly 20×
+while halving Eclipse Ditto persistence pressure. `SIM_INTERVAL` can be overridden for diagnostics, but should not
+be reduced on the resource-limited judge stack without a sustained Ditto read/write test.
 
 ## Verify from the terminal
 
@@ -162,6 +179,7 @@ Deterministic Python simulation
 | `ademix/data/openmines/` | Included MIT-licensed North Pit reference configuration and its license |
 | `ademix/compose.yml` | Services layered onto the official OpenEgiz Compose deployment |
 | `SUBMISSION.md` | Concept, modules, scenarios, verification path, data, and limitations |
+| `JUDGE_EVIDENCE.md` | Factual map from each rubric criterion and release claim to runtime and repository evidence |
 | `DATA_LICENSES.md` | Exact data/asset provenance and licensing record |
 | `REUSE_CATALOG.md` | License-reviewed reuse decisions and rejected sources |
 | `RULES_CHECKLIST.md` | Internal competition release gate |
