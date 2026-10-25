@@ -6,7 +6,7 @@ Candidate base: `caf6ee0`
 
 ## Passed checks
 
-- 92 simulator, API and evidence unit tests passed.
+- 93 simulator, API and evidence unit tests passed.
 - 48 data-layer and evidence tests passed.
 - Frontend TypeScript and Vite production build passed (619 modules).
 - Three consecutive live smoke runs passed before restart: API healthy, source `eclipse-ditto`, 11 required twins, 143 required fields and units.
@@ -25,6 +25,14 @@ After rebuilding and cleanly recreating the stack with that setting:
 - the full baseline/Smart/breakdown/road/crusher matrix and reset passed;
 - three further sustained-load smoke runs passed;
 - the SwiftShader run reported the live Ditto source with zero console errors and zero failed HTTP responses.
+
+## Cross-platform evidence correction
+
+Professor's independent audit found that the OpenMines input checksum depended on CRLF versus LF checkout bytes,
+and an exact `.005` display boundary could produce 35.65 or 35.66 on different Python versions. Input hashes now
+canonicalize tracked text to LF. Metric display values first stabilize to six decimals and then use explicit
+decimal half-up quantization. Python 3.11 and bundled Python 3.12 generated identical SHA-256 values for every
+data-layer output; both test suites passed, including byte-for-byte regeneration.
 
 ## Restart finding and safe operation
 

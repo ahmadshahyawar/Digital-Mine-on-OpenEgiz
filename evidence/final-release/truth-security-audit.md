@@ -15,7 +15,7 @@ Candidate basis: `caf6ee0` plus release documentation and presentation updates o
 
 ## Findings and disposition
 
-- Corrected the release-facing 107-test and 141-field figures to 92 simulator/API/evidence tests, 48 data tests and 143 required fields/units.
+- Corrected the release-facing 107-test and 141-field figures to 93 simulator/API/evidence tests, 48 data tests and 143 required fields/units.
 - Removed the obsolete presentation statements that described three trucks, the old shared-lane 581.6 t/h case, Smart Dispatch as future work and port 8090.
 - Preserved the Team-authored Concept text. Release-facing scenario tables and limitations state that the implemented road event is a 10.72 km/h restriction with no reroute.
 - No hosted API token signature was found in tracked project work. The organizer template contains example Hono certificate keys under `charts/hono/example/certs/`; they are public example material inherited from the platform, not Ademix deployment credentials.

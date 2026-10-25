@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 import heapq
 import itertools
 import math
@@ -931,7 +932,10 @@ class MineEngine:
 
     @staticmethod
     def metric(value, unit=None):
-        result = {"value": round(value, 2) if isinstance(value, float) else value}
+        # Quantize a six-decimal stable value so exact .005 boundaries produce the
+        # same evidence on supported Python versions and operating systems.
+        rounded = float(Decimal(str(round(value, 6))).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)) if isinstance(value, float) else value
+        result = {"value": rounded}
         if unit:
             result["unit"] = unit
         return result

@@ -110,7 +110,7 @@ A strong submission should ideally provide:
 
 **Last updated:** 2026-10-25
 
-- The frozen C5 candidate is in final release audit. Windows verification passes 92 simulator/API/evidence tests,
+- The frozen C5 candidate is in final release audit. Windows verification passes 93 simulator/API/evidence tests,
   48 data tests, the production frontend build, the complete live scenario matrix, clean baseline reset, and
   repeated 11-twin/143-field smoke checks.
 - Sustained mixed browser and renderer load reproduced Ditto HTTP 503s at the former two-second 11-twin publish
@@ -270,7 +270,7 @@ Status: Windows release candidate verified. Commit d290063 was pushed, but GitHu
   native Ubuntu remains an explicit external gate rather than a claimed pass.
 Key correction: SIM_INTERVAL 2 → 4 seconds, SIM_SPEEDUP unchanged at 20; this halves Ditto persistence pressure
   without changing physical equations or simulated-time rate.
-Verification: 92 simulator/API/evidence tests; 48 data tests; frontend production build; full live fixed/Smart
+Verification: 93 simulator/API/evidence tests; 48 data tests; frontend production build; full live fixed/Smart
   scenario matrix and reset; three immediate plus three sustained smoke runs; clean Compose recreate; SwiftShader
   live render with zero final console/network errors; authoritative clock observed at exactly 20x.
 Artifacts: JUDGE_EVIDENCE.md; evidence/final-release/*; presentation.pdf; presentation.pptx;
@@ -1479,7 +1479,8 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 
 | Date | Contributor | Work completed | Verification |
 | --- | --- | --- | --- |
-| 2026-10-25 | Codex | Prepared the final release candidate, evidence index, current nine-slide deck/PDF, software-render proof and Ubuntu workflow; fixed sustained Ditto overload by publishing complete snapshots every four seconds while preserving the authoritative 20x clock | 92 simulator/API/evidence tests, 48 data tests, production build, live scenario matrix/reset, six sustained smoke checks, clean recreate, exact 20x clock observation and SwiftShader live render pass |
+| 2026-10-25 | Codex | Prepared the final release candidate, evidence index, current nine-slide deck/PDF, software-render proof and Ubuntu workflow; fixed sustained Ditto overload by publishing complete snapshots every four seconds while preserving the authoritative 20x clock | 93 simulator/API/evidence tests, 48 data tests, production build, live scenario matrix/reset, six sustained smoke checks, clean recreate, exact 20x clock observation and SwiftShader live render pass |
+| 2026-10-25 | Codex | Resolved independent-audit F6 cross-platform evidence drift | Every generated output has identical SHA-256 under Python 3.11 and 3.12; LF-canonical input hashes and explicit decimal rounding are tested; 93 + 48 suites pass |
 | 2026-10-21 | Codex | Created the shared project context and assistant guidance files | Files reviewed locally |
 | 2026-10-21 | Codex | Reviewed the official rubric and recorded the agreed 3D project direction | Context updated locally |
 | 2026-10-21 | Codex | Connected the workspace to the competition repository and verified its current state | Remote is reachable but contains no branches or commits |

@@ -56,7 +56,7 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 
 Verified on the final combined Windows candidate:
 
-- 92 simulator/API/evidence checks and 48 data-layer checks pass, including Smart Dispatch, directional breakdown behavior, convergence, scenario propagation, FIFO/exclusive resources, stage timing, evidence-to-frontend equality, startup recovery, API failure handling, twin fields/units, provenance, sensitivity and mass conservation;
+- 93 simulator/API/evidence checks and 48 data-layer checks pass, including Smart Dispatch, directional breakdown behavior, convergence, scenario propagation, FIFO/exclusive resources, stage timing, evidence-to-frontend equality, startup recovery, API failure handling, cross-platform deterministic rounding, twin fields/units, provenance, sensitivity and mass conservation;
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and

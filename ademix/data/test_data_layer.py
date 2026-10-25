@@ -288,7 +288,7 @@ class TelemetryLogTests(unittest.TestCase):
         root = DATA.parent.parent
         for path, digest in MANIFEST["inputs_sha256"].items():
             with self.subTest(input=path):
-                self.assertEqual(hashlib.sha256((root / path).read_bytes()).hexdigest(), digest,
+                self.assertEqual(hashlib.sha256(build.canonical_source_bytes(root / path)).hexdigest(), digest,
                                  "input changed: rerun build_data_layer.py")
 
     def test_outputs_match_the_manifest(self):
@@ -539,7 +539,7 @@ class SensorTopologyBundleTests(unittest.TestCase):
         self.assertTrue(evidence["synthetic"])
         bundle = json.loads(outputs[build.BUNDLE_PATH])
         self.assertEqual(bundle["decisionExplanation"], evidence)
-        expected_hash = build.sha256(build.DECISION_EXPLANATION.read_bytes())
+        expected_hash = build.sha256(build.canonical_source_bytes(build.DECISION_EXPLANATION))
         self.assertEqual(
             bundle["provenance"]["inputs_sha256"]["ademix/data/evidence/decision_explanation.json"],
             expected_hash,
