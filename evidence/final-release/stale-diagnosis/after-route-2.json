@@ -1,0 +1,250 @@
+{
+  "url": "http://127.0.0.1:4173/",
+  "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "quality": "Graphics: Balanced",
+  "acknowledgements": {
+    "initialLive": true,
+    "breakdown": true,
+    "smart": true,
+    "reset": true
+  },
+  "modes": [
+    {
+      "at": 870,
+      "className": "ig-mode replay",
+      "text": "REPLAY · recorded synthetic log (stand offline)"
+    },
+    {
+      "at": 1216,
+      "className": "ig-mode live",
+      "text": "LIVE · Eclipse Ditto twins · checked every 2 s"
+    }
+  ],
+  "stateResponses": [
+    {
+      "at": 736,
+      "duration": 471,
+      "status": 200,
+      "simTime": 7000
+    },
+    {
+      "at": 4019,
+      "duration": 390,
+      "status": 200,
+      "simTime": 7100
+    },
+    {
+      "at": 4742,
+      "duration": 83,
+      "status": 200,
+      "simTime": 7100
+    },
+    {
+      "at": 6753,
+      "duration": 86,
+      "status": 200,
+      "simTime": 7100
+    },
+    {
+      "at": 8747,
+      "duration": 548,
+      "status": 200,
+      "simTime": 7200
+    },
+    {
+      "at": 10739,
+      "duration": 54,
+      "status": 200,
+      "simTime": 7200
+    },
+    {
+      "at": 12746,
+      "duration": 187,
+      "status": 200,
+      "simTime": 7200
+    },
+    {
+      "at": 14744,
+      "duration": 35,
+      "status": 200,
+      "simTime": 7200
+    },
+    {
+      "at": 16754,
+      "duration": 419,
+      "status": 200,
+      "simTime": 7300
+    },
+    {
+      "at": 18750,
+      "duration": 520,
+      "status": 200,
+      "simTime": 7300
+    },
+    {
+      "at": 20739,
+      "duration": 478,
+      "status": 200,
+      "simTime": 7400
+    },
+    {
+      "at": 22742,
+      "duration": 51,
+      "status": 200,
+      "simTime": 7400
+    },
+    {
+      "at": 24749,
+      "duration": 673,
+      "status": 200,
+      "simTime": 7500
+    },
+    {
+      "at": 26747,
+      "duration": 37,
+      "status": 200,
+      "simTime": 7500
+    },
+    {
+      "at": 28744,
+      "duration": 904,
+      "status": 200,
+      "simTime": 7600
+    },
+    {
+      "at": 30739,
+      "duration": 53,
+      "status": 200,
+      "simTime": 7600
+    },
+    {
+      "at": 32743,
+      "duration": 287,
+      "status": 200,
+      "simTime": 7600
+    },
+    {
+      "at": 34740,
+      "duration": 36,
+      "status": 200,
+      "simTime": 7600
+    },
+    {
+      "at": 36745,
+      "duration": 1040,
+      "status": 200,
+      "simTime": 7700
+    },
+    {
+      "at": 38754,
+      "duration": 80,
+      "status": 200,
+      "simTime": 7700
+    },
+    {
+      "at": 40744,
+      "duration": 550,
+      "status": 200,
+      "simTime": 7800
+    },
+    {
+      "at": 42757,
+      "duration": 100,
+      "status": 200,
+      "simTime": 7800
+    },
+    {
+      "at": 44749,
+      "duration": 436,
+      "status": 200,
+      "simTime": 7900
+    },
+    {
+      "at": 46742,
+      "duration": 34,
+      "status": 200,
+      "simTime": 7900
+    },
+    {
+      "at": 48739,
+      "duration": 161,
+      "status": 200,
+      "simTime": 7900
+    },
+    {
+      "at": 50746,
+      "duration": 19,
+      "status": 200,
+      "simTime": 7900
+    },
+    {
+      "at": 52742,
+      "duration": 218,
+      "status": 200,
+      "simTime": 8000
+    },
+    {
+      "at": 54740,
+      "duration": 15,
+      "status": 200,
+      "simTime": 8000
+    }
+  ],
+  "longTasks": [
+    {
+      "at": 445,
+      "duration": 164
+    },
+    {
+      "at": 615,
+      "duration": 62
+    },
+    {
+      "at": 832,
+      "duration": 356
+    },
+    {
+      "at": 1256,
+      "duration": 159
+    },
+    {
+      "at": 1452,
+      "duration": 1407
+    },
+    {
+      "at": 2860,
+      "duration": 1156
+    },
+    {
+      "at": 21544,
+      "duration": 96
+    },
+    {
+      "at": 21652,
+      "duration": 142
+    },
+    {
+      "at": 21794,
+      "duration": 65
+    },
+    {
+      "at": 24158,
+      "duration": 125
+    }
+  ],
+  "screenshots": [],
+  "consoleErrors": [],
+  "reset": {
+    "source": "eclipse-ditto",
+    "scenario": "baseline",
+    "policy": "fixed",
+    "blockage": "none",
+    "staleBadgeSeen": false
+  },
+  "runError": null,
+  "badgeCheck": {
+    "firstLiveIndex": 1,
+    "checkedTransitionsAfterFirstLive": 1,
+    "passed": true
+  }
+}

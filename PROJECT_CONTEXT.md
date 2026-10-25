@@ -251,6 +251,31 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Handoff — Codex — post-submission STALE diagnosis and safe performance review — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/stale-performance-fix (from official main 94fda0a)
+Priority: reproduce and correct the underlying intermittent simulated-clock/DITTO stall without changing the
+  authoritative 20x clock or the simulation equations. Secondary work is read-only profiling of the software
+  renderer unless Professor explicitly transfers a frontend path.
+Owned paths: ademix/simulator/**; diagnostic evidence under evidence/final-release/**; PROJECT_CONTEXT.md and
+  release documentation needed for the handoff. Compose changes require evidence and release-integrator review.
+Protected paths: ademix/frontend/src/** and frontend visual assets remain Professor + Claude owned. The latest
+  remote Professor frontend branch is claude/audit-fixes and is already contained in official main; no newer
+  Professor frontend or presentation branch was found after fetch.
+Result: confirmed the engine and MQTT clock never froze; the intermittent gap is Ditto/Mongo persistence/read
+  contention. Removed the redundant steady-state 11-twin read caused by Docker's 10-second health probe while
+  preserving its cold-start cache/readiness gate. No frontend-owned file, 20x setting, cadence or equation changed.
+Verification: 98 simulator/API/evidence tests and 48 data tests passed; production build passed; live smoke passed
+  3/3; complete fixed/Smart scenario matrix and reset passed; rebuilt-container startup passed; three instrumented
+  browser routes passed with 84/84 HTTP 200 reads, zero STALE transitions and zero console errors. Post-test Ditto
+  Things logs had zero actor timeouts/errors. SwiftShader read-only spot check: 7.2 average / 6.0 low-5% FPS.
+Evidence: evidence/final-release/stale-diagnosis/README.md and raw JSON/PNG files in that directory.
+Safety: official main remains unchanged. Do not repeat the failed alternating full/mine-only publish experiment.
+  This feature branch is ready for Team review; merge only with explicit approval.
+```
+
 ### Lock — Codex — final-day release candidate — 2026-10-25
 
 ```text

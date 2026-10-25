@@ -196,6 +196,15 @@ class ApiReliabilityTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 503)
         read_state.assert_called_once()
 
+    def test_live_health_does_not_repeat_ditto_reads_after_cache_warmup(self):
+        simulator_app.ditto_cache = [{"thingId": f"{simulator_app.NAMESPACE}:mine-01"}]
+        with mock.patch.object(simulator_app, "DEMO_MODE", False), mock.patch.object(
+            simulator_app, "state"
+        ) as read_state:
+            result = simulator_app.health()
+        self.assertEqual(result["status"], "ok")
+        read_state.assert_not_called()
+
     def test_invalid_scenario_is_rejected_without_state_change(self):
         before = simulator_app.engine.snapshot()
         with self.assertRaises(simulator_app.HTTPException) as raised:

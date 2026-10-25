@@ -1,0 +1,234 @@
+{
+  "url": "http://127.0.0.1:4173/",
+  "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "quality": "Graphics: Balanced",
+  "acknowledgements": {
+    "initialLive": true,
+    "breakdown": true,
+    "smart": true,
+    "reset": true
+  },
+  "modes": [
+    {
+      "at": 588,
+      "className": "ig-mode replay",
+      "text": "REPLAY · recorded synthetic log (stand offline)"
+    },
+    {
+      "at": 868,
+      "className": "ig-mode live",
+      "text": "LIVE · Eclipse Ditto twins · checked every 2 s"
+    }
+  ],
+  "stateResponses": [
+    {
+      "at": 442,
+      "duration": 412,
+      "status": 200,
+      "simTime": 46700
+    },
+    {
+      "at": 2449,
+      "duration": 31,
+      "status": 200,
+      "simTime": 46700
+    },
+    {
+      "at": 4446,
+      "duration": 114,
+      "status": 200,
+      "simTime": 46800
+    },
+    {
+      "at": 6455,
+      "duration": 67,
+      "status": 200,
+      "simTime": 46800
+    },
+    {
+      "at": 8454,
+      "duration": 115,
+      "status": 200,
+      "simTime": 46900
+    },
+    {
+      "at": 10459,
+      "duration": 35,
+      "status": 200,
+      "simTime": 46900
+    },
+    {
+      "at": 12453,
+      "duration": 339,
+      "status": 200,
+      "simTime": 46900
+    },
+    {
+      "at": 14445,
+      "duration": 20,
+      "status": 200,
+      "simTime": 46900
+    },
+    {
+      "at": 16445,
+      "duration": 456,
+      "status": 200,
+      "simTime": 47000
+    },
+    {
+      "at": 18457,
+      "duration": 103,
+      "status": 200,
+      "simTime": 47000
+    },
+    {
+      "at": 20449,
+      "duration": 355,
+      "status": 200,
+      "simTime": 47100
+    },
+    {
+      "at": 22447,
+      "duration": 106,
+      "status": 200,
+      "simTime": 47100
+    },
+    {
+      "at": 24465,
+      "duration": 461,
+      "status": 200,
+      "simTime": 47200
+    },
+    {
+      "at": 26454,
+      "duration": 87,
+      "status": 200,
+      "simTime": 47200
+    },
+    {
+      "at": 28448,
+      "duration": 398,
+      "status": 200,
+      "simTime": 47300
+    },
+    {
+      "at": 30469,
+      "duration": 72,
+      "status": 200,
+      "simTime": 47300
+    },
+    {
+      "at": 32447,
+      "duration": 153,
+      "status": 200,
+      "simTime": 47300
+    },
+    {
+      "at": 34444,
+      "duration": 20,
+      "status": 200,
+      "simTime": 47300
+    },
+    {
+      "at": 36452,
+      "duration": 226,
+      "status": 200,
+      "simTime": 47400
+    },
+    {
+      "at": 38456,
+      "duration": 34,
+      "status": 200,
+      "simTime": 47400
+    },
+    {
+      "at": 40450,
+      "duration": 182,
+      "status": 200,
+      "simTime": 47500
+    },
+    {
+      "at": 42453,
+      "duration": 10,
+      "status": 200,
+      "simTime": 47500
+    },
+    {
+      "at": 44454,
+      "duration": 201,
+      "status": 200,
+      "simTime": 47600
+    },
+    {
+      "at": 46445,
+      "duration": 18,
+      "status": 200,
+      "simTime": 47600
+    },
+    {
+      "at": 48454,
+      "duration": 104,
+      "status": 200,
+      "simTime": 47700
+    },
+    {
+      "at": 50451,
+      "duration": 21,
+      "status": 200,
+      "simTime": 47700
+    }
+  ],
+  "longTasks": [
+    {
+      "at": 194,
+      "duration": 155
+    },
+    {
+      "at": 551,
+      "duration": 290
+    },
+    {
+      "at": 910,
+      "duration": 113
+    },
+    {
+      "at": 1025,
+      "duration": 715
+    },
+    {
+      "at": 1741,
+      "duration": 487
+    },
+    {
+      "at": 20889,
+      "duration": 67
+    },
+    {
+      "at": 21122,
+      "duration": 83
+    },
+    {
+      "at": 21222,
+      "duration": 127
+    },
+    {
+      "at": 23711,
+      "duration": 95
+    }
+  ],
+  "screenshots": [],
+  "consoleErrors": [],
+  "reset": {
+    "source": "eclipse-ditto",
+    "scenario": "baseline",
+    "policy": "fixed",
+    "blockage": "none",
+    "staleBadgeSeen": false
+  },
+  "runError": null,
+  "badgeCheck": {
+    "firstLiveIndex": 1,
+    "checkedTransitionsAfterFirstLive": 1,
+    "passed": true
+  }
+}

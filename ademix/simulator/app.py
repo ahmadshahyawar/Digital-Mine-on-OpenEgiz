@@ -129,9 +129,10 @@ def shutdown():
 
 @app.get("/api/health")
 def health():
-    if not DEMO_MODE:
+    if not DEMO_MODE and ditto_cache is None:
         # Do not report the API ready (and therefore start the polling UI) until
-        # one complete bulk read has warmed the Ditto cache.
+        # one complete bulk read has warmed the Ditto cache. Once warm, avoid
+        # making every Docker health probe compete with frontend Ditto reads.
         state()
     return {
         "status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch,

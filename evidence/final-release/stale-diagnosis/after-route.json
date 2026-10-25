@@ -1,0 +1,282 @@
+{
+  "url": "http://127.0.0.1:4173/",
+  "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "quality": "Graphics: Balanced",
+  "acknowledgements": {
+    "initialLive": true,
+    "breakdown": true,
+    "smart": true,
+    "reset": true
+  },
+  "modes": [
+    {
+      "at": 841,
+      "className": "ig-mode replay",
+      "text": "REPLAY · recorded synthetic log (stand offline)"
+    },
+    {
+      "at": 1148,
+      "className": "ig-mode live",
+      "text": "LIVE · Eclipse Ditto twins · checked every 2 s"
+    }
+  ],
+  "stateResponses": [
+    {
+      "at": 695,
+      "duration": 442,
+      "status": 200,
+      "simTime": 5200
+    },
+    {
+      "at": 2978,
+      "duration": 44,
+      "status": 200,
+      "simTime": 5200
+    },
+    {
+      "at": 4710,
+      "duration": 290,
+      "status": 200,
+      "simTime": 5300
+    },
+    {
+      "at": 6702,
+      "duration": 19,
+      "status": 200,
+      "simTime": 5300
+    },
+    {
+      "at": 8701,
+      "duration": 550,
+      "status": 200,
+      "simTime": 5400
+    },
+    {
+      "at": 10708,
+      "duration": 41,
+      "status": 200,
+      "simTime": 5400
+    },
+    {
+      "at": 12720,
+      "duration": 387,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 14699,
+      "duration": 71,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 16722,
+      "duration": 390,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 18707,
+      "duration": 67,
+      "status": 200,
+      "simTime": 5500
+    },
+    {
+      "at": 20700,
+      "duration": 635,
+      "status": 200,
+      "simTime": 5600
+    },
+    {
+      "at": 22727,
+      "duration": 97,
+      "status": 200,
+      "simTime": 5600
+    },
+    {
+      "at": 24711,
+      "duration": 629,
+      "status": 200,
+      "simTime": 5700
+    },
+    {
+      "at": 26728,
+      "duration": 300,
+      "status": 200,
+      "simTime": 5700
+    },
+    {
+      "at": 28701,
+      "duration": 412,
+      "status": 200,
+      "simTime": 5800
+    },
+    {
+      "at": 30704,
+      "duration": 39,
+      "status": 200,
+      "simTime": 5800
+    },
+    {
+      "at": 32698,
+      "duration": 418,
+      "status": 200,
+      "simTime": 5900
+    },
+    {
+      "at": 34700,
+      "duration": 138,
+      "status": 200,
+      "simTime": 5900
+    },
+    {
+      "at": 36702,
+      "duration": 173,
+      "status": 200,
+      "simTime": 5900
+    },
+    {
+      "at": 38705,
+      "duration": 36,
+      "status": 200,
+      "simTime": 5900
+    },
+    {
+      "at": 40700,
+      "duration": 162,
+      "status": 200,
+      "simTime": 6000
+    },
+    {
+      "at": 42705,
+      "duration": 24,
+      "status": 200,
+      "simTime": 6000
+    },
+    {
+      "at": 44699,
+      "duration": 471,
+      "status": 200,
+      "simTime": 6100
+    },
+    {
+      "at": 46703,
+      "duration": 11,
+      "status": 200,
+      "simTime": 6100
+    },
+    {
+      "at": 48707,
+      "duration": 98,
+      "status": 200,
+      "simTime": 6200
+    },
+    {
+      "at": 50700,
+      "duration": 56,
+      "status": 200,
+      "simTime": 6200
+    },
+    {
+      "at": 52703,
+      "duration": 94,
+      "status": 200,
+      "simTime": 6300
+    },
+    {
+      "at": 54708,
+      "duration": 20,
+      "status": 200,
+      "simTime": 6300
+    }
+  ],
+  "longTasks": [
+    {
+      "at": 177,
+      "duration": 167
+    },
+    {
+      "at": 350,
+      "duration": 263
+    },
+    {
+      "at": 807,
+      "duration": 316
+    },
+    {
+      "at": 1194,
+      "duration": 111
+    },
+    {
+      "at": 1306,
+      "duration": 962
+    },
+    {
+      "at": 2269,
+      "duration": 694
+    },
+    {
+      "at": 21372,
+      "duration": 58
+    },
+    {
+      "at": 21431,
+      "duration": 168
+    },
+    {
+      "at": 22266,
+      "duration": 108
+    },
+    {
+      "at": 22394,
+      "duration": 178
+    },
+    {
+      "at": 22880,
+      "duration": 57
+    },
+    {
+      "at": 22989,
+      "duration": 86
+    },
+    {
+      "at": 23183,
+      "duration": 73
+    },
+    {
+      "at": 23316,
+      "duration": 142
+    },
+    {
+      "at": 23516,
+      "duration": 138
+    },
+    {
+      "at": 24180,
+      "duration": 53
+    },
+    {
+      "at": 25023,
+      "duration": 130
+    },
+    {
+      "at": 34604,
+      "duration": 53
+    }
+  ],
+  "screenshots": [],
+  "consoleErrors": [],
+  "reset": {
+    "source": "eclipse-ditto",
+    "scenario": "baseline",
+    "policy": "fixed",
+    "blockage": "none",
+    "staleBadgeSeen": false
+  },
+  "runError": null,
+  "badgeCheck": {
+    "firstLiveIndex": 1,
+    "checkedTransitionsAfterFirstLive": 1,
+    "passed": true
+  }
+}
