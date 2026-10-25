@@ -32,7 +32,7 @@ re-verified there.
 
 ## Deadline and Submission
 
-- [ ] Final work is merged into `main` before **25 October 2026, 23:59 Astana time (UTC+5)**.
+- [x] Final work is merged into `main` before **25 October 2026, 23:59 Astana time (UTC+5)**. Remote read-back on 2026-10-25 confirmed candidate `2b7f5d4c61ddb83852f8299b281e6a20e59564b9`.
 - [ ] `main` differs materially from the organizer's template.
 - [ ] All required files and assets are committed; nothing depends on an uncommitted local file.
 - [x] Team composition and GitHub usernames match registration.

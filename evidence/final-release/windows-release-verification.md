@@ -62,8 +62,9 @@ No native Ubuntu success is claimed.
 
 ## Final-day Windows acceptance spot-check — 2026-10-25
 
-Candidate worktree: `codex/integrate-audit-fixes`, based on `origin/codex/ademix` plus the two Professor audit
-integration commits and current release fixes. The working tree was not yet committed when these checks ran.
+Candidate: `2b7f5d4c61ddb83852f8299b281e6a20e59564b9` on `origin/codex/ademix` and `origin/main`, based on the
+integrated Professor audit fixes plus current release updates. The tests ran against the exact source tree later
+committed as this SHA; only documentation/checklist status was amended afterward.
 
 - Simulator/API/evidence suite: 97 passed.
 - Data-layer suite: 48 passed.

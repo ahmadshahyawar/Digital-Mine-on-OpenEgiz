@@ -110,7 +110,8 @@ A strong submission should ideally provide:
 
 **Last updated:** 2026-10-25
 
-- The release candidate is being prepared on `codex/integrate-audit-fixes` for the official `main` push. The
+- The tested release candidate `2b7f5d4` has been pushed to both `origin/codex/ademix` and official `origin/main`;
+  the fetched remote `main` SHA matched `2b7f5d4c61ddb83852f8299b281e6a20e59564b9`. The
   tested publisher keeps `SIM_SPEEDUP=20`, advances the mine clock by 100 simulated seconds every five wall
   seconds, and spreads all 11 twin writes across that interval.
 - Final Windows acceptance on the current source passed 97 simulator/API/evidence tests, 48 data tests, the
@@ -260,8 +261,9 @@ Task: Complete final Windows smoke/scenario/build/browser checks, preserve the i
   candidate to official main as requested by the Team.
 Paths: simulator/backend reliability, README.md, SUBMISSION.md, JUDGE_EVIDENCE.md, PROJECT_CONTEXT.md,
   evidence/final-release/** and generated telemetry evidence. No new visual or simulation feature.
-Status: tests, three live smoke runs and full scenario matrix pass. The route passes all controls/reset but has
-  one intermittent simulated-clock stall; it is documented. Native Ubuntu remains unverified.
+Status: candidate `2b7f5d4` is pushed to shared integration and official main. Tests, three live smoke runs and
+  full scenario matrix pass. The route passes all controls/reset but has one intermittent simulated-clock stall;
+  it is documented. Native Ubuntu remains unverified.
 ```
 
 ### Handoff — Professor + Claude — presentation-only polish — requested 2026-10-25
@@ -1708,10 +1710,10 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 
 ## Next Recommended Action
 
-Commit and push the tested candidate to `origin/codex/ademix`, then fast-forward official `origin/main` as
-requested. Record the remote SHA and the unresolved Windows STALE/SwiftShader limitations. If Professor returns
-the presentation-only branch before the freeze, review its page renders and factual consistency, integrate it and
-repeat the production build; otherwise keep the currently committed presentation and state its limitation.
+The tested candidate is now on `origin/main`. Professor's only remaining task is presentation/PDF visual polish;
+if her separate branch returns before the freeze, review rendered pages and factual consistency, integrate it and
+repeat the production build. Keep the Windows STALE/SwiftShader limitations and missing native Ubuntu result
+visible in any final handoff.
 
 ### Breakdown verification handoff — 2026-10-23
 
