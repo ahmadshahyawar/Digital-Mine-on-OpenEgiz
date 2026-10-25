@@ -1,0 +1,16 @@
+{
+  "title": "Ademix Mine Command Center",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "vendor": "Google Inc. (Google)",
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
+  "liveLabel": true,
+  "fpsAverage": "2.1",
+  "fpsLow5": "1.9",
+  "frameSamples": "11",
+  "consoleErrors": [],
+  "failedResponses": [],
+  "screenshot": "evidence/final-release/software-rendering.png"
+}

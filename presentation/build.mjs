@@ -5,12 +5,12 @@ import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
-const SKILL = "C:\\Users\\turke\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1020.11127\\skills\\Presentations";
-const BUILD = path.join(ROOT, ".presentation-build");
-const FINAL = path.join(ROOT, "presentation", "output", "presentation-scenarios-final.pptx");
-const RUNTIME_PYTHON = "C:\\Users\\turke\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
+const SKILL = "C:\\Users\\R C S\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1024.11018\\skills\\presentations";
+const BUILD = path.join(ROOT, ".presentation-build-final");
+const FINAL = path.join(ROOT, "presentation", "output", "ademix-final-2026-10-25.pptx");
+const RUNTIME_PYTHON = "C:\\Users\\R C S\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
 const FONT = "Aptos";
-const C = { ink: "#F4F7F8", muted: "#A9B6BC", bg: "#071116", panel: "#101F26", panel2: "#162A32", orange: "#FF8A35", cyan: "#32D6C5", green: "#7DDA8A", red: "#FF6B5F", line: "#31505B", white: "#FFFFFF" };
+const C = { ink: "#F4F7F8", muted: "#A9B6BC", bg: "#071116", panel: "#101F26", panel2: "#162A32", orange: "#FF8A35", cyan: "#32D6C5", green: "#7DDA8A", red: "#FF6B5F", line: "#31505B" };
 
 await fs.mkdir(BUILD, { recursive: true });
 const p = Presentation.create({ slideSize: { width: 1280, height: 720 } });
@@ -25,169 +25,103 @@ function text(slide, value, x, y, w, h, size = 24, color = C.ink, bold = false, 
   return s;
 }
 function base(title, n) {
-  const slide = p.slides.add();
-  slide.background.fill = C.bg;
+  const slide = p.slides.add(); slide.background.fill = C.bg;
   box(slide, 0, 0, 1280, 9, C.orange, "none");
-  text(slide, title, 64, 40, 1100, 58, 34, C.ink, true);
+  text(slide, title, 64, 38, 1100, 62, 34, C.ink, true);
   text(slide, String(n).padStart(2, "0"), 1170, 48, 48, 30, 14, C.muted, true, "right");
   return slide;
 }
 function pill(slide, label, x, y, w, fill = C.panel2, color = C.cyan) {
-  box(slide, x, y, w, 36, fill, "rounded-xl");
-  text(slide, label, x + 12, y + 2, w - 24, 30, 13, color, true, "center");
+  box(slide, x, y, w, 36, fill); text(slide, label, x + 12, y + 2, w - 24, 30, 13, color, true, "center");
 }
 function metric(slide, value, label, x, y, w, color = C.cyan) {
-  box(slide, x, y, w, 112, C.panel);
-  text(slide, value, x + 18, y + 12, w - 36, 48, 31, color, true);
-  text(slide, label, x + 18, y + 64, w - 36, 28, 15, C.muted);
+  box(slide, x, y, w, 106); text(slide, value, x + 18, y + 10, w - 36, 44, 30, color, true); text(slide, label, x + 18, y + 59, w - 36, 30, 14, C.muted);
 }
 function connector(slide, x1, y1, x2, y2, color = C.orange) {
-  slide.shapes.add({ geometry: "line", position: { left: x1, top: y1, width: Math.max(1, x2 - x1), height: Math.max(1, y2 - y1) }, line: { fill: color, width: 3, beginArrowType: "none", endArrowType: "triangle" }, fill: "none" });
+  slide.shapes.add({ geometry: "line", position: { left: Math.min(x1, x2), top: Math.min(y1, y2), width: Math.max(1, Math.abs(x2 - x1)), height: Math.max(1, Math.abs(y2 - y1)) }, line: { fill: color, width: 3, beginArrowType: "none", endArrowType: "triangle" }, fill: "none" });
+}
+async function addImage(slide, rel, x, y, w, h, fit = "contain") {
+  const bytes = await fs.readFile(path.join(ROOT, rel));
+  slide.images.add({ blob: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), contentType: "image/png", alt: `Ademix interface evidence: ${path.basename(rel)}`, fit, position: { left: x, top: y, width: w, height: h }, geometry: "roundRect", borderRadius: "rounded-xl" });
 }
 
-// 1 Cover
 {
   const s = p.slides.add(); s.background.fill = C.bg;
-  box(s, 0, 0, 1280, 720, C.bg, "none");
-  box(s, 790, 0, 490, 720, C.panel, "none");
-  // Abstract open-pit benches
-  for (let i = 0; i < 6; i++) {
-    const inset = i * 38;
-    box(s, 835 + inset, 85 + inset, 390 - inset * 1.25, 390 - inset * 1.25, i % 2 ? C.panel2 : "#1B3640", "rounded-xl", C.line);
-  }
-  box(s, 0, 0, 15, 720, C.orange, "none");
-  pill(s, "DIGITAL MINE ON OPENGIZ", 70, 76, 260);
-  text(s, "Ademix", 70, 154, 620, 72, 54, C.ink, true);
-  text(s, "3D open-pit operations twin", 70, 235, 650, 70, 38, C.orange, true);
-  text(s, "A connected haulage and crushing simulation built for decisions, not decoration.", 70, 330, 610, 90, 23, C.muted);
-  text(s, "Ahmad Shah Yawar  •  Turken Gulzat", 70, 610, 650, 34, 17, C.ink, true);
-  text(s, "Al-Farabi Kazakh National University", 70, 650, 650, 28, 15, C.muted);
+  await addImage(s, "evidence/final-release/live-opening.png", 555, 0, 725, 720, "cover");
+  box(s, 0, 0, 610, 720, C.bg, "none"); box(s, 0, 0, 14, 720, C.orange, "none");
+  pill(s, "DIGITAL MINE ON OPENGIZ", 64, 68, 260);
+  text(s, "Ademix", 64, 150, 470, 72, 54, C.ink, true);
+  text(s, "3D open-pit operations twin", 64, 232, 470, 88, 36, C.orange, true);
+  text(s, "Live OpenEgiz twins connect mine events to dispatcher decisions.", 64, 338, 450, 82, 23, C.muted);
+  text(s, "Ahmad Shah Yawar  |  Professor", 64, 612, 450, 30, 17, C.ink, true);
+  text(s, "Team Ademix", 64, 651, 450, 26, 15, C.muted);
 }
 
-// 2 Decision problem
 {
-  const s = base("One disruption changes the whole production chain", 2);
-  text(s, "Dispatchers need to see consequences across equipment, roads, stockpiles and the crusher in one place.", 64, 112, 1040, 56, 21, C.muted);
-  const items = [
-    ["01", "Observe", "Live state for trucks, excavator, road, ROM pad and crusher", C.cyan],
-    ["02", "Intervene", "Trigger breakdown, road closure or crusher slowdown", C.orange],
-    ["03", "Compare", "Read projected throughput against the 770 t/h baseline", C.green],
-  ];
-  items.forEach(([n, h, b, col], i) => { const y = 205 + i * 135; text(s, n, 76, y, 70, 50, 26, col, true); box(s, 154, y - 5, 2, 85, col, "none"); text(s, h, 184, y - 5, 190, 38, 25, C.ink, true); text(s, b, 385, y - 5, 745, 70, 18, C.muted); });
-  pill(s, "DECISION LOOP", 1000, 610, 190, C.panel2, C.orange);
+  const s = base("The load-haul-crush decision", 2);
+  text(s, "A dispatcher must keep ore moving when equipment, road speed or crusher capacity changes.", 64, 108, 1110, 54, 21, C.muted);
+  const items = [["Observe", "Returned twin state shows trucks, queues, road condition, production and constraints.", C.cyan], ["Decide", "The Decision workspace compares fixed and Smart Dispatch using matched model evidence.", C.orange], ["Act", "The operator restores the road or crusher, tows a failed truck, or parks surplus fleet.", C.green]];
+  items.forEach(([h, b, col], i) => { const y = 205 + i * 135; text(s, String(i + 1).padStart(2, "0"), 76, y, 68, 48, 25, col, true); box(s, 154, y - 5, 3, 88, col, "none"); text(s, h, 184, y - 5, 190, 38, 25, C.ink, true); text(s, b, 385, y - 5, 760, 72, 18, C.muted); });
+  pill(s, "FICTIONAL LAYOUT | SOURCE-CALIBRATED | SYNTHETIC TELEMETRY", 290, 610, 700, C.panel2, C.orange);
 }
 
-// 3 Architecture
 {
-  const s = base("OpenEgiz is the source of truth", 3);
-  text(s, "The browser does not invent mine state. Telemetry flows through MQTT into Eclipse Ditto twins, then the interface reads it through the API.", 64, 108, 1120, 64, 20, C.muted);
-  const nodes = [
-    [70, 245, 190, "Python simulator", "Deterministic events"],
-    [300, 245, 155, "MQTT", "Telemetry"],
-    [495, 245, 190, "Eclipse Ditto", "11 digital twins"],
-    [725, 245, 170, "Twin API", "Read model"],
-    [935, 245, 250, "React + Three.js", "3D command center"],
-  ];
-  nodes.forEach(([x,y,w,h,sub]) => { box(s,x,y,w,132,C.panel); text(s,h,x+16,y+22,w-32,38,21,C.ink,true,"center"); text(s,sub,x+12,y+72,w-24,30,14,C.muted,false,"center"); });
-  for (let i=0;i<nodes.length-1;i++) connector(s,nodes[i][0]+nodes[i][2]+8,311,nodes[i+1][0]-8,311);
-  box(s, 300, 465, 585, 96, C.panel2);
-  text(s, "InfluxDB", 330, 483, 160, 30, 18, C.cyan, true);
-  text(s, "time-series history", 330, 517, 180, 24, 14, C.muted);
-  text(s, "Grafana", 585, 483, 160, 30, 18, C.cyan, true);
-  text(s, "operational trends", 585, 517, 180, 24, 14, C.muted);
-  connector(s, 575, 378, 575, 460, C.cyan);
+  const s = base("OpenEgiz is the source of displayed state", 3);
+  text(s, "The interface never reads the simulator directly. Every operational value returns through Eclipse Ditto.", 64, 108, 1120, 54, 20, C.muted);
+  const nodes = [[64, 220, 205, "Python simulation", "Deterministic events"], [310, 220, 150, "MQTT", "Ditto Protocol"], [500, 220, 210, "Eclipse Ditto", "11 digital twins"], [750, 220, 170, "Ademix API", "Authenticated reads"], [960, 220, 250, "3D command center", "Returned state only"]];
+  nodes.forEach(([x,y,w,h,sub]) => { box(s,x,y,w,142); text(s,h,x+14,y+24,w-28,38,20,C.ink,true,"center"); text(s,sub,x+12,y+77,w-24,35,14,C.muted,false,"center"); });
+  for (let i=0;i<nodes.length-1;i++) connector(s,nodes[i][0]+nodes[i][2]+8,291,nodes[i+1][0]-8,291);
+  metric(s, "11", "Ditto twins", 180, 450, 240, C.cyan); metric(s, "143", "required fields and units", 520, 450, 260, C.orange); metric(s, "20x", "authoritative simulation clock", 880, 450, 240, C.green);
 }
 
-// 4 Model
 {
-  const s = base("Eleven twins describe one connected mine", 4);
-  text(s, "Relationships make the model navigable. Features carry operational state, not only geometry.", 64, 108, 1020, 48, 20, C.muted);
-  const groups = [
-    [70, 205, 270, 335, "Mine system", ["North Pit", "Haul road", "ROM stockpile"]],
-    [380, 205, 370, 335, "Mobile fleet", ["3 haul trucks", "1 excavator", "Position • speed • payload • status"]],
-    [790, 205, 420, 335, "Processing + control", ["Crusher", "Scenario controller", "Inventory • processed tonnes • constraints"]],
-  ];
-  groups.forEach(([x,y,w,h,title,rows], gi) => { box(s,x,y,w,h,gi===1?C.panel2:C.panel); text(s,title,x+24,y+24,w-48,38,23,gi===1?C.orange:C.cyan,true); rows.forEach((r,i)=>{ box(s,x+24,y+89+i*67,w-48,48,"#0B181E"); text(s,r,x+39,y+97+i*67,w-78,30,16,i===rows.length-1?C.muted:C.ink,i<2); }); });
-  text(s, "Twin relationships", 70, 585, 205, 28, 15, C.orange, true);
-  text(s, "mine → assets → process state → scenario impact", 275, 585, 760, 28, 17, C.ink);
+  const s = base("Eleven twins describe one production circuit", 4);
+  text(s, "Thirty-eight explicit relationships make hierarchy, material flow, movement and control inspectable.", 64, 108, 1120, 50, 20, C.muted);
+  box(s, 520, 185, 240, 82, C.panel2); text(s, "Mine aggregate", 540, 203, 200, 38, 22, C.orange, true, "center");
+  const groups = [[64,340,300,"Mobile fleet","6 haul trucks"],[350,340,250,"Loading","1 excavator"],[650,340,250,"Infrastructure","1 haul road"],[950,340,265,"Processing + control","1 crusher + 1 controller"]];
+  groups.forEach(([x,y,w,h,sub],i)=>{box(s,x,y,w,150);text(s,h,x+18,y+22,w-36,38,20,[C.cyan,C.green,C.orange,C.red][i],true,"center");text(s,sub,x+18,y+78,w-36,36,17,C.ink,true,"center");connector(s,640,270,x+w/2,330,[C.cyan,C.green,C.orange,C.red][i]);});
+  text(s, "Relationships carry model meaning. Support buildings and two waste trucks remain visual context.", 90, 575, 1100, 44, 17, C.muted, false, "center");
 }
 
-// 5 3D interface
 {
-  const s = base("The 3D scene is an operational interface", 5);
-  box(s, 64, 118, 760, 500, "#0B181E");
-  // Stylised terrain and haul route
-  for (let i=0;i<5;i++) box(s, 115+i*44, 174+i*43, 520-i*88, 320-i*68, i%2?"#17313A":"#1E3C45", "rounded-xl", C.line);
-  connector(s, 210, 490, 615, 235, C.orange);
-  [[220,475],[385,380],[585,264]].forEach(([x,y],i)=>{box(s,x,y,55,28,i===1?C.red:C.orange,"rounded-xl"); text(s,`T${i+1}`,x,y+1,55,22,11,C.bg,true,"center");});
-  box(s, 854, 118, 362, 500, C.panel);
-  text(s, "Interface layers", 884, 150, 300, 36, 24, C.ink, true);
-  [["Spatial","Camera, benches, route, animated fleet"],["Operational","KPIs, asset selection, status and payload"],["Decision","Scenario controls and projected impact"]].forEach(([h,b],i)=>{ const y=220+i*112; text(s,h,884,y,270,30,19,[C.cyan,C.orange,C.green][i],true); text(s,b,884,y+35,280,57,15,C.muted); });
-  text(s, "Conceptual interface composition", 92, 580, 310, 23, 12, C.muted);
+  const s = base("The mine view starts with the operating picture", 5);
+  await addImage(s, "evidence/final-release/live-overview-reset.png", 64, 120, 800, 515);
+  text(s, "Opening priorities", 905, 135, 285, 34, 23, C.ink, true);
+  [["Production", "Observed output and processed tonnes"],["Constraint", "Current bottleneck and scenario"],["Fleet", "Cycling and ready reserve trucks"],["Queue", "One operator-relevant wait measure"]].forEach(([h,b],i)=>{const y=195+i*105;text(s,h,905,y,265,28,18,[C.cyan,C.orange,C.green,C.red][i],true);text(s,b,905,y+32,270,53,15,C.muted);});
+  text(s, "Technical layers stay closed until requested.", 905, 602, 270, 27, 14, C.muted);
 }
 
-// 6 Simulation
 {
-  const s = base("Mass balance keeps the simulation credible", 6);
-  text(s, "Truck cycles deliver ore to the ROM pad. The crusher consumes inventory continuously, so material is never deleted at dump time.", 64, 108, 1110, 58, 20, C.muted);
-  metric(s, "77 t", "truck payload", 64, 205, 245, C.orange);
-  metric(s, "250 t", "initial ROM inventory", 330, 205, 265, C.cyan);
-  metric(s, "770 t/h", "baseline throughput", 616, 205, 275, C.green);
-  metric(s, "10.72 km/h", "restricted-road speed", 912, 205, 304, C.red);
-  box(s, 64, 365, 1152, 180, C.panel2);
-  text(s, "Material accounting", 94, 390, 280, 32, 22, C.ink, true);
-  text(s, "initial ROM + delivered ore = current ROM + processed ore", 94, 445, 860, 44, 25, C.orange, true);
-  text(s, "Scenario parameters are explicit, testable and visible to the jury.", 94, 500, 920, 28, 16, C.muted);
+  const s = base("Material balance and model assumptions", 6);
+  metric(s, "77 t", "truck payload", 64, 150, 245, C.orange); metric(s, "770 t/h", "modeled baseline", 330, 150, 265, C.green); metric(s, "3.2 km", "one-way route assumption", 616, 150, 275, C.cyan); metric(s, "0 t", "accepted mass-balance error", 912, 150, 304, C.green);
+  box(s, 64, 310, 720, 270, C.panel2); text(s, "Material accounting", 94, 334, 300, 32, 23, C.ink, true); text(s, "initial ROM + extracted ore", 94, 392, 320, 34, 22, C.orange, true); text(s, "payload in trucks + current ROM + processed ore", 94, 447, 610, 52, 21, C.cyan, true); text(s, "The equality is checked throughout every scenario.", 94, 518, 620, 28, 16, C.muted);
+  box(s, 820, 310, 396, 270); text(s, "Evidence classes", 846, 334, 330, 32, 23, C.ink, true);
+  text(s, "Sourced", 846, 388, 110, 28, 17, C.cyan, true); text(s, "OpenMines parameters and licenses", 964, 388, 225, 28, 14, C.muted);
+  text(s, "Assumed", 846, 438, 110, 28, 17, C.orange, true); text(s, "Route, fleet and crusher planning values", 964, 432, 225, 42, 14, C.muted);
+  text(s, "Synthetic", 846, 496, 110, 28, 17, C.green, true); text(s, "Telemetry and modeled outcomes", 964, 496, 225, 28, 14, C.muted);
 }
 
-// 7 What-if scenario engine
 {
-  const s = base("What-if scenario engine", 7);
-  text(s, "Compare normal operations with injected failures and capacity constraints. Bars show analytical steady-state throughput.", 64, 108, 1110, 48, 19, C.muted);
-  s.charts.add("bar", {
-    position: { left: 60, top: 175, width: 735, height: 410 },
-    categories: ["Normal ops", "Truck fault", "Road restriction", "Crusher −45%"],
-    series: [{ name: "Projected throughput (t/h)", values: [770, 770, 647.3, 495], fill: C.orange }],
-    hasLegend: false,
-    dataLabels: { showValue: true, position: "outEnd", textStyle: { fill: C.ink, fontSize: 14, bold: true } },
-    xAxis: { minimumScale: 0, maximumScale: 900, majorUnit: 150, textStyle: { fill: C.muted, fontSize: 13 }, majorGridlines: { style: "solid", fill: C.line, width: 1 } },
-    yAxis: { textStyle: { fill: C.muted, fontSize: 13 } },
-  });
-  box(s, 820, 168, 396, 438, C.panel);
-  text(s, "Scenario readout", 846, 188, 340, 34, 22, C.ink, true);
-  text(s, "A  Normal operations", 846, 232, 340, 26, 17, C.green, true);
-  text(s, "770 t/h. The excavator sets the baseline limit.", 846, 261, 340, 42, 15, C.muted);
-  text(s, "B  Fault injection", 846, 310, 340, 26, 17, C.orange, true);
-  text(s, "HT-01 can block the single lane for 20 min. First-hour output is 581.6 t/h, then the five-truck fleet recovers.", 846, 339, 340, 62, 14, C.muted);
-  text(s, "Dynamic bottleneck", 846, 411, 340, 26, 17, C.cyan, true);
-  text(s, "Road restriction shifts the limit to haulage at 647 t/h. Crusher slowdown makes the crusher the limit at 495 t/h.", 846, 440, 340, 58, 14, C.muted);
-  text(s, "C  Smart dispatch", 846, 510, 340, 26, 17, C.red, true);
-  text(s, "Future work. Automatic dispatch and alternate-route rerouting are not implemented.", 846, 539, 340, 50, 14, C.muted);
+  const s = base("Each disruption changes a visible constraint", 7);
+  s.charts.add("bar", { position: { left: 54, top: 135, width: 630, height: 430 }, categories: ["Normal", "Breakdown first hour", "Road restriction", "Crusher slowdown"], series: [{ name: "Throughput (t/h)", values: [770, 691, 645.3, 495], fill: C.orange }], hasLegend: false, dataLabels: { showValue: true, position: "outEnd", textStyle: { fill: C.ink, fontSize: 14, bold: true } }, xAxis: { minimumScale: 0, maximumScale: 900, majorUnit: 150, textStyle: { fill: C.muted, fontSize: 12 }, majorGridlines: { style: "solid", fill: C.line, width: 1 } }, yAxis: { textStyle: { fill: C.muted, fontSize: 12 } } });
+  await addImage(s, "evidence/final-release/live-effect.png", 715, 140, 500, 420);
+  text(s, "Breakdown is the matched returning-lane first-hour case. Other values use the documented steady comparison window.", 64, 592, 1130, 40, 14, C.muted);
 }
 
-// 8 Validation
 {
-  const s = base("Evidence is separated from release gates", 8);
-  text(s, "What is already verified is stated plainly. Remaining environment checks stay visible until they pass.", 64, 108, 1100, 46, 20, C.muted);
-  const cols = [
-    [64, "Verified", C.green, ["21 deterministic engine tests pass", "Frontend production build passes", "Python compile and twin JSON validation pass", "Compose configuration parses"]],
-    [652, "Before submission", C.orange, ["Rerun DES scenarios through Docker and Ditto", "Capture real 3D interface evidence", "Record demo and rehearse jury flow", "Confirm final commit on official main"]],
-  ];
-  cols.forEach(([x,h,c,rows])=>{box(s,x,190,564,350,C.panel);text(s,h,x+30,218,500,38,25,c,true);rows.forEach((r,i)=>{box(s,x+30,282+i*56,18,18,c,"rounded-xl");text(s,r,x+64,270+i*56,455,42,17,C.ink,i===0);});});
-  pill(s, "NO FABRICATED TELEMETRY • NO HIDDEN CLAIMS", 365, 585, 550, C.panel2, C.cyan);
+  const s = base("Smart Dispatch removes avoidable truck activity", 8);
+  await addImage(s, "evidence/final-release/live-decision.png", 64, 122, 790, 510);
+  metric(s, "4 + 2", "cycling + ready reserve", 890, 145, 300, C.cyan); metric(s, "-33%", "truck-hours per 1,000 t", 890, 280, 300, C.green); metric(s, "-26%", "estimated fuel in matched model", 890, 415, 300, C.orange);
+  text(s, "Baseline throughput remains 770 t/h. Results are synthetic model evidence, not measured mine savings.", 890, 553, 300, 68, 14, C.muted);
 }
 
-// 9 Close
 {
-  const s = p.slides.add(); s.background.fill = C.bg;
-  box(s, 0, 0, 1280, 12, C.orange, "none");
-  text(s, "Ademix turns mine events into decisions", 84, 116, 930, 72, 42, C.ink, true);
-  text(s, "Connected twins. Visible material flow. Measurable scenarios.", 84, 207, 940, 50, 26, C.orange, true);
-  const stages = [["1","Select an asset"],["2","Trigger a scenario"],["3","Compare throughput"]];
-  stages.forEach(([n,l],i)=>{const x=84+i*365;box(s,x,340,320,128,C.panel);text(s,n,x+24,362,52,52,31,C.cyan,true);text(s,l,x+82,360,205,56,19,C.ink,true);});
-  pill(s, "OPEN http://localhost:8090", 84, 515, 300, C.panel2, C.orange);
-  text(s, "Team Ademix • Digital Mine on OpenEgiz", 84, 620, 650, 30, 16, C.muted);
-  text(s, "github.com/openegiz-contest/team-111", 790, 620, 405, 30, 16, C.muted, false, "right");
+  const s = base("A judge can follow the evidence in three minutes", 9);
+  await addImage(s, "evidence/final-release/live-why-trust.png", 64, 120, 735, 500);
+  text(s, "Judge route", 845, 132, 330, 32, 23, C.ink, true);
+  ["1  Baseline mine", "2  HT-01 breakdown", "3  Show effect", "4  Decision evidence", "5  Why trust this?", "6  Overview and reset"].forEach((r,i)=>text(s,r,845,183+i*54,330,34,18,i===3?C.orange:C.ink,i===3));
+  pill(s, "http://localhost:4173", 845, 535, 330, C.panel2, C.cyan);
+  text(s, "Scope: decision demonstration, not an engineering design, safety system or site forecast.", 845, 585, 330, 58, 14, C.muted);
 }
 
 for (let i = 0; i < p.slides.items.length; i++) {
@@ -198,17 +132,8 @@ const montage = await p.export({ format: "webp", montage: true });
 await fs.writeFile(path.join(BUILD, "montage.webp"), new Uint8Array(await montage.arrayBuffer()));
 
 const requirements = { explicitTotalSlideCount: 9, requiredNativeTableOwnerSlides: [], requiredNativeChartOwnerSlides: [7], materializeLiteralChartWorkbooks: true };
-const fontPolicy = { basis: "design", families: [FONT] };
 const { finalizePresentation } = await import(pathToFileURL(path.join(SKILL, "container_tools/artifact_tool_utils.mjs")).href);
-const candidatePath = path.join(BUILD, "candidate-scenarios-final.pptx");
+const candidatePath = path.join(BUILD, "candidate.pptx");
 await (await PresentationFile.exportPptx(p)).save(candidatePath);
-await fs.mkdir(path.dirname(FINAL), { recursive: true });
-await finalizePresentation({
-  ...requirements, workspaceDir: ROOT, candidatePath, finalPath: FINAL,
-  pythonExecutable: RUNTIME_PYTHON,
-  integrityValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_package_integrity.py"),
-  layoutValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_layout_geometry.py"),
-  layoutArgs: ["--expected-slide-size-emu", "12192000,6858000", "--validate-bullet-geometry", "--validate-heading-fit"],
-  requiredNativeTableOwnerSlides: [], fontPolicy, verifyArtifactToolImport: true,
-  receiptPath: path.join(BUILD, "presentation-scenarios-final.validation.json"),
-});
+await fs.mkdir(path.dirname(FINAL), { recursive: true }); await fs.rm(FINAL, { force: true }); await fs.rm(path.join(BUILD, "validation.json"), { force: true });
+await finalizePresentation({ ...requirements, workspaceDir: ROOT, candidatePath, finalPath: FINAL, pythonExecutable: RUNTIME_PYTHON, integrityValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_package_integrity.py"), layoutValidatorPath: path.join(SKILL, "container_tools/inspect_presentation_layout_geometry.py"), layoutArgs: ["--expected-slide-size-emu", "12192000,6858000", "--validate-bullet-geometry", "--validate-heading-fit"], requiredNativeTableOwnerSlides: [], fontPolicy: { basis: "design", families: [FONT] }, verifyArtifactToolImport: true, receiptPath: path.join(BUILD, "validation.json") });

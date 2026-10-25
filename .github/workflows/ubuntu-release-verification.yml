@@ -1,0 +1,177 @@
+name: Ubuntu 24.04 AMD64 release verification
+
+on:
+  push:
+    branches:
+      - main
+      - codex/ademix
+      - codex/final-release-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ubuntu-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Full OpenEgiz and Ademix stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out the exact branch commit
+        uses: actions/checkout@v4
+
+      - name: Confirm Ubuntu and AMD64 runner
+        run: |
+          set -euxo pipefail
+          test "$(uname -m)" = "x86_64"
+          grep -q '^VERSION_ID="24.04"' /etc/os-release
+          docker version
+          docker compose version
+
+      - name: Generate ignored Compose credentials
+        run: bash scripts/compose-env.sh
+
+      - name: Start complete stack with README command
+        run: |
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            up -d --build --wait --wait-timeout 900
+
+      - name: Record ready service state
+        run: |
+          mkdir -p ci-artifacts
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            ps --all | tee ci-artifacts/compose-ready.txt
+
+      - name: Run judge smoke test three times
+        run: |
+          for run in 1 2 3; do
+            echo "SMOKE RUN ${run}"
+            docker compose --env-file deploy/compose/.env \
+              -f deploy/compose/docker-compose.yml \
+              -f ademix/compose.yml \
+              run --rm --no-deps ademix-simulator \
+              python smoke_check.py --base-url http://ademix-ui
+          done | tee ci-artifacts/judge-smoke.txt
+
+      - name: Verify live freshness and absence of HTTP 503
+        run: |
+          python - <<'PY' | tee ci-artifacts/live-freshness.txt
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          URL = "http://127.0.0.1:8088/api/state"
+
+          def read_state():
+              with urllib.request.urlopen(URL, timeout=20) as response:
+                  if response.status != 200:
+                      raise AssertionError(f"unexpected HTTP {response.status}")
+                  return json.load(response)
+
+          def feature(state, thing, name):
+              twin = next(item for item in state["twins"] if item["thingId"].endswith(f":{thing}"))
+              return twin["features"][name]["properties"]["value"]
+
+          first = read_state()
+          assert first["source"] == "eclipse-ditto"
+          assert len(first["twins"]) == 11
+          first_time = feature(first, "mine-01", "sim_time_s")
+          first_production = feature(first, "mine-01", "production_t")
+          time.sleep(6)
+          second = read_state()
+          second_time = feature(second, "mine-01", "sim_time_s")
+          second_production = feature(second, "mine-01", "production_t")
+          assert second_time > first_time, (first_time, second_time)
+          assert second_production >= first_production, (first_production, second_production)
+
+          for attempt in range(20):
+              try:
+                  state = read_state()
+              except urllib.error.HTTPError as exc:
+                  raise AssertionError(f"state read {attempt + 1} returned HTTP {exc.code}") from exc
+              assert state["source"] == "eclipse-ditto"
+              assert len(state["twins"]) == 11
+              time.sleep(1)
+
+          print(f"PASS source=eclipse-ditto twins=11")
+          print(f"PASS sim_time_s advanced {first_time} -> {second_time}")
+          print(f"PASS production_t advanced/nondecreasing {first_production} -> {second_production}")
+          print("PASS 20 repeated state reads returned HTTP 200; no HTTP 503")
+          PY
+
+      - name: Verify frontend and live API proxy
+        run: |
+          set -euxo pipefail
+          curl --fail --show-error --silent http://127.0.0.1:4173/ -o ci-artifacts/frontend.html
+          curl --fail --show-error --silent http://127.0.0.1:4173/api/state -o ci-artifacts/frontend-state.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          html = Path("ci-artifacts/frontend.html").read_text(encoding="utf-8")
+          state = json.loads(Path("ci-artifacts/frontend-state.json").read_text(encoding="utf-8"))
+          assert '<div id="root"></div>' in html
+          assert state["source"] == "eclipse-ditto"
+          assert len(state["twins"]) == 11
+          print("PASS frontend served and its API proxy returned 11 live Eclipse Ditto twins")
+          PY
+
+      - name: Verify baseline and what-if scenarios end to end
+        run: python ademix/simulator/verify_scenarios.py | tee ci-artifacts/scenario-matrix.txt
+
+      - name: Recreate the release stack and repeat smoke
+        run: |
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml down --remove-orphans
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml up -d --wait --wait-timeout 900
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            run --rm --no-deps ademix-simulator \
+            python smoke_check.py --base-url http://ademix-ui \
+            | tee ci-artifacts/post-restart-smoke.txt
+
+      - name: Capture diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-artifacts
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            ps --all > ci-artifacts/compose-final.txt 2>&1 || true
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            logs --no-color --timestamps > ci-artifacts/compose.log 2>&1 || true
+          docker stats --no-stream > ci-artifacts/docker-stats.txt 2>&1 || true
+          docker system df > ci-artifacts/docker-disk.txt 2>&1 || true
+
+      - name: Upload logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-24.04-amd64-verification-${{ github.run_id }}
+          path: ci-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Shut down containers
+        if: always()
+        run: |
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            down --remove-orphans

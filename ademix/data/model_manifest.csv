@@ -6,4 +6,5 @@ frontend/public/models/plant-crusher.glb,Primary crusher,Kenney Factory Kit pinn
 frontend/public/models/plant-conveyor.glb,Transfer conveyor,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,26632,727A56DFAE9A04D12437123B7B051EF76327887F02C837090178B9781FA56534
 frontend/public/models/plant-conveyor-slope.glb,Inclined conveyor,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,36556,EF043AC520572CEA0AB570873EF891D9BD8F0C748A1CAA4FEEA82F560CDC8C6F
 frontend/public/models/plant-stairs.glb,Plant access stairs,Kenney Factory Kit pinned commit 3694c6879e487c108f55677be7dd2ca75b07cc3b,CC0-1.0,66256,0356A040EBBF632CD20DFE384A13108270DF26426AD1DD51A2C767C8F6A6960C
+frontend/public/models/Textures/colormap.png,Shared plant color map,Kenney Factory Kit 3.0 official archive,CC0-1.0,11813,35D7BD6900DDE0208429EEAEC87FA17FBF024ED59F3F4EAB54BC92802EBA9DD7
 

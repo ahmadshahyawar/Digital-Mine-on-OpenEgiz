@@ -54,15 +54,15 @@ Equipment and infrastructure twins refer to the mine as their parent. Their init
 
 ## What works and what does not
 
-Verified locally:
+Verified on the final combined Windows candidate:
 
-- on 23 October, all 107 automated checks pass (72 simulator/API checks and 35 data-layer checks), including Smart Dispatch, directional breakdown behavior, convergence, scenario propagation, FIFO/exclusive resources, stage timing, evidence-to-frontend equality, startup recovery, API failure handling, twin fields/units, and mass conservation;
+- 92 simulator/API/evidence checks and 48 data-layer checks pass, including Smart Dispatch, directional breakdown behavior, convergence, scenario propagation, FIFO/exclusive resources, stage timing, evidence-to-frontend equality, startup recovery, API failure handling, twin fields/units, provenance, sensitivity and mass conservation;
 - simulator Python sources compile and twin JSON parses;
 - simulator and frontend container images build;
 - the production React/Three.js bundle compiles; and
 - Docker Compose accepts the combined official OpenEgiz and Ademix configuration.
 
-The complete local OpenEgiz deployment has started successfully from fresh volumes on the development machine. Eleven twins flowed through MQTT into Eclipse Ditto, the API reported `source: eclipse-ditto`, the interface returned HTTP 200, and all operating conditions were exercised through the frontend proxy. `smoke_check.py` validates the live API, real Ditto source, exact 11-twin inventory, and all 141 required fields/units without changing state; `verify_scenarios.py` performs the complete fixed/smart × four-condition matrix and clean reset through the live path. A clean judge-like Ubuntu VM run and final human visual acceptance remain release gates.
+The complete local OpenEgiz deployment has started successfully from fresh volumes on the development machine. Eleven twins flowed through MQTT into Eclipse Ditto, the API reported `source: eclipse-ditto`, the interface returned HTTP 200, and all operating conditions were exercised through the frontend proxy. `smoke_check.py` validates the live API, real Ditto source, exact 11-twin inventory, and all 143 required fields/units without changing state; `verify_scenarios.py` performs the complete fixed/smart × four-condition matrix and clean reset through the live path. Native Ubuntu 24.04 evidence remains separate from Windows/Docker Desktop evidence and is reported only if its workflow completes.
 
 ### Baseline-versus-scenario evidence
 
@@ -108,7 +108,7 @@ Open <http://localhost:4173> after following `README.md`. The command center sho
 
 ## Presentation
 
-`presentation.pdf` is in the repository root. It predates the latest scene and must be reconciled with the final verified stand before submission. No video is submitted yet.
+`presentation.pdf` in the repository root uses current C5 interface evidence, current model counts and the verified decision results. `JUDGE_EVIDENCE.md` maps its claims to the running interface, source, fixtures and limitations. No video is required for the repository submission.
 
 ---
 

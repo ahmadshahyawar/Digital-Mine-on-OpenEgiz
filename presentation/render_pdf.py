@@ -4,8 +4,8 @@ from reportlab.pdfgen.canvas import Canvas
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILD = ROOT / ".presentation-build"
-OUTPUT = ROOT / "presentation" / "output" / "presentation-scenarios-final.pdf"
+BUILD = ROOT / ".presentation-build-final"
+OUTPUT = ROOT / "presentation" / "output" / "ademix-final-2026-10-25.pdf"
 
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 slides = sorted(BUILD.glob("slide-*.png"))

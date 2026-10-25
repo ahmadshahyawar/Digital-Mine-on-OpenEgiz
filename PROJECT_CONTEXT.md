@@ -108,7 +108,16 @@ A strong submission should ideally provide:
 
 ## Current Status
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-25
+
+- The frozen C5 candidate is in final release audit. Windows verification passes 92 simulator/API/evidence tests,
+  48 data tests, the production frontend build, the complete live scenario matrix, clean baseline reset, and
+  repeated 11-twin/143-field smoke checks.
+- Sustained mixed browser and renderer load reproduced Ditto HTTP 503s at the former two-second 11-twin publish
+  interval. The minimum verified correction is a four-second publication interval with unchanged `20x` simulation
+  speed; eight wall seconds advanced the authoritative clock by 160 simulated seconds.
+- The current nine-slide presentation and PDF, three-minute judge route, evidence index, truth/security audit,
+  software-rendering capture and Ubuntu 24.04 AMD64 workflow are prepared on `codex/final-release-audit`.
 
 - Team decision: `claude/data-asset-layer` is the authoritative visual implementation. Its terrain scale, roads, turning loops, vehicles, buildings, FIFO queues, loading/dumping animations, camera, sensor/topology/data-flow overlays, fleet/ESG, weather, and safety presentation are preserved as designed. Codex contributions are limited to compatible nonvisual improvements such as platform integration, Docker/build reliability, tests, evidence, and documentation unless the Team explicitly requests a visual change.
 
@@ -232,6 +241,43 @@ Update the following sections before handing off:
 Include changed paths, tests or checks performed, and anything the next contributor must know.
 
 ## Active Work
+
+### Lock — Codex — complete final release audit — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/final-release-audit (from verified C5 integration caf6ee0)
+Task: Execute J1-J8 across the frozen C5 candidate: release reproduction, evidence index, judge route,
+  current presentation/PDF, software-rendering evidence, truth/security audit, rubric rehearsal and official-main
+  readiness. Professor + Claude may repeat the same audit independently on a separate claude branch, but only
+  Ahmad + Codex integrate accepted release-file changes.
+Exact files: JUDGE_EVIDENCE.md; README.md; SUBMISSION.md; presentation/**; presentation.pptx;
+  presentation.pdf; evidence/final-release/**; .github/workflows/ubuntu-release-verification.yml;
+  DATA_LICENSES.md; ademix/data/model_manifest.csv; ademix/frontend/public/models/Textures/colormap.png;
+  PROJECT_CONTEXT.md; release documentation as required. Professor must flag any overlap with the frontend
+  release candidate before Codex integrates it.
+Expected handoff: exact candidate SHA, commands/results, current deck and rendered-page checks, known limitations,
+  independent-audit reconciliation requests and explicit main-release status. No unsupported success claims.
+```
+
+### Handoff — Codex — final release audit candidate — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/final-release-audit
+Base: caf6ee0 (verified C5 integration)
+Status: Windows release candidate verified; native Ubuntu Actions result pending after push.
+Key correction: SIM_INTERVAL 2 → 4 seconds, SIM_SPEEDUP unchanged at 20; this halves Ditto persistence pressure
+  without changing physical equations or simulated-time rate.
+Verification: 92 simulator/API/evidence tests; 48 data tests; frontend production build; full live fixed/Smart
+  scenario matrix and reset; three immediate plus three sustained smoke runs; clean Compose recreate; SwiftShader
+  live render with zero final console/network errors; authoritative clock observed at exactly 20x.
+Artifacts: JUDGE_EVIDENCE.md; evidence/final-release/*; presentation.pdf; presentation.pptx;
+  .github/workflows/ubuntu-release-verification.yml.
+Integration warning: Professor's F1-F5/F8 frontend branch must be reviewed against this exact release candidate.
+  Do not overwrite the four-second simulator/data contract or release evidence. Rebuild and rerun all gates after
+  accepting any visual changes.
+```
 
 ### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
 
@@ -1432,6 +1478,7 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 
 | Date | Contributor | Work completed | Verification |
 | --- | --- | --- | --- |
+| 2026-10-25 | Codex | Prepared the final release candidate, evidence index, current nine-slide deck/PDF, software-render proof and Ubuntu workflow; fixed sustained Ditto overload by publishing complete snapshots every four seconds while preserving the authoritative 20x clock | 92 simulator/API/evidence tests, 48 data tests, production build, live scenario matrix/reset, six sustained smoke checks, clean recreate, exact 20x clock observation and SwiftShader live render pass |
 | 2026-10-21 | Codex | Created the shared project context and assistant guidance files | Files reviewed locally |
 | 2026-10-21 | Codex | Reviewed the official rubric and recorded the agreed 3D project direction | Context updated locally |
 | 2026-10-21 | Codex | Connected the workspace to the competition repository and verified its current state | Remote is reachable but contains no branches or commits |
@@ -1495,6 +1542,8 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 
 | Date | Decision | Reason | Owner |
 | --- | --- | --- | --- |
+| 2026-10-25 | Publish the complete 11-twin snapshot every four wall seconds while retaining `SIM_SPEEDUP=20` | Sustained two-second writes reproduced Akka `RetrieveThing` timeouts and HTTP 503 under mixed judge-like load; four seconds halves persistence pressure and passed the same behavior/scenario gates at exactly 20x simulated time | Codex, pending Team acceptance |
+| 2026-10-25 | Use coordinated Compose `down --remove-orphans` then `up` for full-stack recovery, without deleting volumes | Restarting all containers in place incorrectly relaunches one-shot jobs and can preserve stale Ditto cluster references | Codex |
 | 2026-10-21 | Use `PROJECT_CONTEXT.md` as the shared project memory | Keeps human and AI contributors aligned through one maintained source of truth | Team |
 | 2026-10-21 | Build a 3D open-pit haulage and crusher optimization twin | Strong fit for spatial visualization, credible simulation, and visible what-if scenarios | Team |
 | 2026-10-21 | AI assistants handle most technical work | The human team should focus on access, decisions, feedback, and final review rather than complex setup | Team |
@@ -1521,10 +1570,18 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 - AI-based judging makes explicit documentation, reproducibility, and visible evidence especially important.
 - Concurrent work in one repository can cause conflicts unless task ownership and branches are kept current.
 - The expanded world facilities are currently visual context rather than independent simulated twins; do not claim them as operational modules until their states are modeled.
+- Headless SwiftShader rendered the exact live route with no final console/network errors, but its measured cadence
+  was only 2.1 average frames/s on this Windows host; do not claim universally smooth CPU-only rendering.
+- Native Ubuntu 24.04 AMD64 verification is automated but remains unclaimed until the pushed GitHub Actions run
+  completes successfully.
+- Professor's F1-F5/F8 frontend work is not yet integrated; any accepted overlap requires the full release matrix,
+  screenshots and presentation to be checked again.
 
 ## Next Recommended Action
 
-Obtain the Team's final visual approval of the combined pit and breakdown interface at `?stage=world`; keep further visual changes on the professor/Claude branch and preserve the validated simulator contract.
+Push `codex/final-release-audit`, wait for the Ubuntu 24.04 AMD64 workflow, then review Professor's F1-F5/F8
+frontend branch against this candidate. Integrate only accepted changes, rerun all release gates, obtain the Team's
+final visual approval, and merge the accepted release to `main` before the deadline.
 
 ### Breakdown verification handoff — 2026-10-23
 
