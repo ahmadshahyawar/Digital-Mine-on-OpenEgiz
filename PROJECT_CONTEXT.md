@@ -233,6 +233,20 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Claude — independent final audit — 2026-10-25
+
+```text
+Owner: Professor + Claude
+Branch: claude/final-independent-audit (from origin/codex/ademix caf6ee0, C5 integrated)
+Task: independent test of the combined candidate against 05_FINAL_ACCEPTANCE.md gates 1–4 and 6 on the live
+  Eclipse Ditto stack: three-minute route (baseline → breakdown → Show effect → Decision → Smart Dispatch →
+  Why trust this? → reset), LIVE desktop/narrow screenshots, overlap/collision/readability/number/stale-state/
+  false-LIVE checks, Balanced software-rendering measurements, frontend build, repeated smoke, full scenario
+  matrix, Docker restart, ruthless rubric review. Repeat against the exact release-candidate SHA when published.
+Exact files: evidence/claude-final-audit/* and this file only. No frontend, backend, contract, README,
+  SUBMISSION, presentation or main change; findings and fixes are recommendations in the handoff.
+```
+
 ### Lock — Claude — C5 integrate the complete judge journey — 2026-10-25
 
 ```text
