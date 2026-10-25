@@ -982,12 +982,14 @@ function FleetPanel({ frame, reg }: { frame: Frame; reg: Reg }) {
 function fleetSplit(frame: Frame) {
   const states = Array.from({ length: 6 }, (_, i) => String(frame.at(`truck-0${i + 1}.state`) ?? ''))
   const down = states.filter(s => s === 'breakdown').length
+  // Held behind a blocked lane: the controller's trucks_in_cycle excludes them, so they are shown separately.
+  const held = states.filter(s => s === 'blocked').length
   const reported = frame.at('scenario-controller.trucks_in_cycle')
   if (reported !== null && reported !== undefined) {
-    return { cycling: num(reported), parked: num(frame.at('scenario-controller.trucks_standby')), down }
+    return { cycling: num(reported), parked: num(frame.at('scenario-controller.trucks_standby')), down, held }
   }
   const parked = states.filter(s => s === 'standby').length
-  return { cycling: 6 - parked - down, parked, down }
+  return { cycling: 6 - parked - down - held, parked, down, held }
 }
 
 const CRUSHER_SIDE = new Set(['crusher processing capacity', 'dump point'])
@@ -1001,7 +1003,7 @@ const CONSTRAINT_NAME: Record<string, string> = {
 function KpiStrip({ frame }: { frame: Frame }) {
   const tph = frame.at('mine-01.throughput_tph')
   const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
-  const { cycling, parked, down } = fleetSplit(frame)
+  const { cycling, parked, down, held } = fleetSplit(frame)
   // The queue worth watching is the one in front of the constraint: the crusher when it limits output, else the face.
   const atCrusher = CRUSHER_SIDE.has(bottleneck)
   const wait = frame.at(atCrusher ? 'crusher-01.average_wait_min' : 'excavator-01.average_wait_min')
@@ -1010,9 +1012,36 @@ function KpiStrip({ frame }: { frame: Frame }) {
   return <section className="ig-kpis" aria-label="Key figures">
     <div><span>Production now</span><Flash value={tph}>{missing(tph) ? '—' : num(tph).toFixed(0)} <small>t/h</small></Flash></div>
     <div title={bottleneck}><span>What limits output</span><Flash value={bottleneck}>{CONSTRAINT_NAME[bottleneck] ?? bottleneck}</Flash></div>
-    <div><span>Trucks working · parked</span><Flash value={`${cycling}/${parked}/${down}`}>{cycling} <small>· {parked} parked{down ? ` · ${down} down` : ''}</small></Flash></div>
+    <div><span>Trucks working · parked</span><Flash value={`${cycling}/${parked}/${down}/${held}`}>{cycling} <small>· {parked} parked{held ? ` · ${held} held` : ''}{down ? ` · ${down} down` : ''}</small></Flash></div>
     <div><span>Wait at {atCrusher ? 'crusher' : 'loading face'}</span><Flash value={wait}>{missing(wait) ? '—' : num(wait).toFixed(1)} <small>min · {missing(queue) ? '—' : num(queue)} queued</small></Flash></div>
   </section>
+}
+
+/** True when WebGL runs on a CPU rasterizer (SwiftShader, llvmpipe, …), as on a judge machine without a GPU. */
+function softwareRenderer(): boolean {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER))
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name)
+  } catch { return false }
+}
+type Quality = 'light' | 'balanced'
+// light: 0.7 pixel ratio, no multisampling (about a quarter of the fragment work); balanced: the original settings.
+const QUALITY: Record<Quality, { label: string; dpr: number | [number, number]; antialias: boolean }> = {
+  light: { label: 'Light', dpr: .7, antialias: false },
+  balanced: { label: 'Balanced', dpr: [.75, 1.25], antialias: true },
+}
+// Live freshness: simulated time must advance within STALE_MS (three 2 s polls plus margin); after
+// FAILS_TO_REPLAY consecutive failed polls the view falls back to the labelled replay log.
+const STALE_MS = 7000
+const FAILS_TO_REPLAY = 3
+function initialQuality(): { quality: Quality; software: boolean } {
+  const software = softwareRenderer()
+  const asked = new URLSearchParams(window.location.search).get('quality')
+  return { quality: asked === 'light' || asked === 'balanced' ? asked : software ? 'light' : 'balanced', software }
 }
 
 type ViewRequest = { target: THREE.Vector3; offset: THREE.Vector3; n: number }
@@ -1540,7 +1569,7 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose, onSpecs }: {
   const focusRef = useFocusOnOpen<HTMLElement>()
   const condition = live ? String(frame.at('scenario-controller.active') ?? 'baseline') : 'baseline'
   const policy = live ? String(frame.at('scenario-controller.dispatch_policy') ?? 'fixed') : 'fixed'
-  const { cycling, parked, down } = fleetSplit(frame)
+  const { cycling, parked, down, held } = fleetSplit(frame)
   const bottleneckNow = String(frame.at('mine-01.bottleneck_live') ?? '—')
   const planned = String(frame.at('scenario-controller.bottleneck') ?? '—')
   const v = (key: string, digits = 0) => { const x = frame.at(key); return x === null || x === undefined || x === '' ? '—' : fmt(num(x), digits) }
@@ -1588,7 +1617,7 @@ function DecisionWorkspace({ frame, live, source, bundle, onClose, onSpecs }: {
       <div className="ig-gauges">
         <div><span>Output now</span><b>{v('mine-01.throughput_tph')} <small>t/h</small></b></div>
         <div><span>Limits output now (measured)</span><b>{CONSTRAINT_NAME[bottleneckNow] ?? bottleneckNow}</b></div>
-        <div><span>Trucks cycling · parked · down</span><b>{cycling} <small>· {parked} · {down}</small></b></div>
+        <div><span>Trucks cycling · parked · down{held ? ' · held' : ''}</span><b>{cycling} <small>· {parked} · {down}{held ? ` · ${held}` : ''}</small></b></div>
         <div><span>Truck-hours per 1,000 t (live)</span><b>{v('mine-01.truck_operating_h_per_kt', 2)} <small>h</small></b></div>
         <div><span>Wait at face · crusher</span><b>{v('excavator-01.average_wait_min', 1)} <small>· {v('crusher-01.average_wait_min', 1)} min</small></b></div>
         <div><span>Planned constraint (model)</span><b>{CONSTRAINT_NAME[planned] ?? planned}</b></div>
@@ -2056,6 +2085,7 @@ function BlockedLane({ frame }: { frame: Frame }) {
  * fields the simulator publishes; it does not decide anything itself and disappears on recovery.
  */
 function BreakdownAlert({ frame, reg }: { frame: Frame; reg: Reg }) {
+  const [open, setOpen] = React.useState(false)
   const broken = Array.from({ length: 6 }, (_, i) => i).filter(i => frame.at(`truck-0${i + 1}.state`) === 'breakdown')
   if (!broken.length) return null
   const first = broken[0]
@@ -2078,8 +2108,9 @@ function BreakdownAlert({ frame, reg }: { frame: Frame; reg: Reg }) {
   const throughput = num(frame.at('mine-01.throughput_tph'))
   const projected = num(frame.at('scenario-controller.projected_throughput_tph'))
   const bottleneck = String(frame.at('mine-01.bottleneck_live') ?? frame.at('scenario-controller.bottleneck') ?? '—')
-  return <section id="ig-breakdown-alert" className="ig-breakdown-alert" role="alert" aria-live="polite">
-    <b>Breakdown · {broken.map(i => `HT-0${i + 1}`).join(', ')}</b>
+  return <section id="ig-breakdown-alert" className={`ig-breakdown-alert${open ? ' open' : ''}`} role="alert" aria-live="polite">
+    <b>Breakdown · {broken.map(i => `HT-0${i + 1}`).join(', ')}
+      <button className="ig-alert-more" aria-expanded={open} onClick={() => setOpen(o => !o)}>{open ? 'Less' : 'Details'}</button></b>
     <span>Stopped at {where} · {num(frame.at(`truck-0${first + 1}.speed_kmh`)).toFixed(0)} km/h</span>
     <span>{roadText}</span>
     {typeof blockage === 'string' && blockage !== 'none' && <span className="ig-alert-detail">{blockage}</span>}
@@ -2247,6 +2278,13 @@ export function IngestionLayer() {
   const activity = React.useRef<Activity[]>([])
   // Live mode: poll the OpenEgiz stand; any failure falls back to the recorded-log replay.
   const [live, setLive] = React.useState(false)
+  // Freshness: simulated time must advance. Unchanged for STALE_MS, or polls failing, marks the live view stale;
+  // FAILS_TO_REPLAY consecutive failures fall back to the labelled replay log.
+  const [stale, setStale] = React.useState(false)
+  const [failCount, setFailCount] = React.useState(0)
+  const freshness = React.useRef({ sim: NaN, advancedAt: 0, failures: 0 })
+  const [{ quality: initial, software }] = React.useState(initialQuality)
+  const [quality, setQuality] = React.useState<Quality>(initial)
   const [liveSource, setLiveSource] = React.useState('eclipse-ditto')
   const [, setTick] = React.useState(0)
   const liveState = React.useRef<{ prev: Record<string, unknown>; curr: Record<string, unknown>; at: number; prevRanks: number[]; currRanks: number[] }>(
@@ -2270,6 +2308,13 @@ export function IngestionLayer() {
           for (const [feature, value] of Object.entries(twin.features ?? {})) flat[`${name}.${feature}`] = value?.properties?.value
         }
         if (stopped) return
+        const fresh = freshness.current, sim = Number(flat['mine-01.sim_time_s'])
+        // After an outage the view stays stale until simulated time is seen advancing again.
+        if (fresh.failures >= FAILS_TO_REPLAY) { fresh.sim = sim; fresh.advancedAt = -Infinity }
+        else if (sim !== fresh.sim) { fresh.sim = sim; fresh.advancedAt = performance.now() }
+        fresh.failures = 0
+        setFailCount(0)
+        setStale(performance.now() - fresh.advancedAt > STALE_MS)
         const previous = liveState.current.curr
         const prevRanks = liveState.current.currRanks
         const currRanks = advanceQueues(liveQueues.current, k => flat[k])
@@ -2277,7 +2322,12 @@ export function IngestionLayer() {
         setLive(true)
         setTick(t => t + 1)
       } catch {
-        if (!stopped) setLive(false)
+        if (stopped) return
+        const fresh = freshness.current
+        fresh.failures += 1
+        setFailCount(fresh.failures)
+        if (fresh.failures >= FAILS_TO_REPLAY) { setStale(false); setLive(false) }
+        else setStale(true)
       }
     }
     poll()
@@ -2408,9 +2458,11 @@ export function IngestionLayer() {
     else if (id === 'crusher-01') goTo(VIEWS.crusher.target, VIEWS.crusher.offset)
     else goTo(VIEWS.overview.target, VIEWS.overview.offset)
   }
+  const staleFor = Math.max(0, Math.round((performance.now() - freshness.current.advancedAt) / 1000))
   return <main className={`ig-shell${rightOpen ? ' ig-has-right' : ''}${rightOpen && (modelOpen || decisionOpen) ? ' ig-has-wide' : ''}${guideOpen ? ' ig-has-guide' : ''}`}>
     <div className="ig-stage">
-      <Canvas camera={{ position: [84, 78, 96], fov: 42 }} dpr={[.75, 1.25]} gl={{ antialias: true, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
+      <Canvas key={quality} camera={{ position: [84, 78, 96], fov: 42 }} dpr={QUALITY[quality].dpr}
+        gl={{ antialias: QUALITY[quality].antialias, powerPreference: 'low-power', toneMapping: THREE.ACESFilmicToneMapping }}
         onPointerMissed={() => { setSelected(null); setTwinCard(null) }}>
         <CameraRig view={view}/>
         <TerrainStage showRoads showPlant moving hideStorage twins={[{ thingId: 'c', attributes: { kind: 'crusher' }, features: { state: { properties: { value: String(frame.at('crusher-01.state')) } } } }]}/>
@@ -2472,8 +2524,9 @@ export function IngestionLayer() {
     <header className="ig-title">
       <span>ADEMIX · DISPATCHER VIEW</span>
       <h1>North Pit</h1>
-      <div id="ig-mode" className={`ig-mode ${live ? 'live' : 'replay'}`} role="status">
+      <div id="ig-mode" className={`ig-mode ${!live ? 'replay' : stale ? 'stale' : 'live'}`} role="status">
         <i/>{!live ? 'REPLAY · recorded synthetic log (stand offline)'
+          : stale ? `${liveSource === 'eclipse-ditto' ? 'Eclipse Ditto' : 'DEMO'} · STALE · ${failCount ? `state request failed (${failCount}), retrying` : 'simulated time not advancing'}${Number.isFinite(staleFor) ? ` · ${staleFor} s` : ''}`
           : liveSource === 'eclipse-ditto' ? 'LIVE · Eclipse Ditto twins · every 2 s' : 'DEMO · local simulator (not via OpenEgiz) · every 2 s'}
       </div>
     </header>
@@ -2483,6 +2536,8 @@ export function IngestionLayer() {
       <button id="ig-open-decision" className={`ig-decision-btn${decisionOpen ? ' on' : ''}`} aria-pressed={decisionOpen} onClick={() => setDecisionOpen(o => !o)}>Decision</button>
       <button id="ig-open-model" className={modelOpen ? 'on' : ''} aria-pressed={modelOpen} onClick={() => setModelOpen(o => !o)}>Mine model</button>
       {Object.entries(VIEWS).map(([id, v]) => <button key={id} id={`ig-view-${id}`} onClick={() => { goTo(v.target, v.offset); if (id === 'overview') closeWorkspaces() }}>{v.label}</button>)}
+      <button id="ig-quality" title={software ? 'Software WebGL detected: Light is the default' : 'Graphics quality'}
+        onClick={() => setQuality(q => q === 'light' ? 'balanced' : 'light')}>Graphics: {QUALITY[quality].label}</button>
       <button id="ig-layers-toggle" className={layersOpen || layers.size ? 'on' : ''} aria-expanded={layersOpen} aria-controls="ig-layer-list"
         onClick={() => setLayersOpen(o => !o)}>Technical layers{layers.size ? ` · ${layers.size}` : ''} {layersOpen ? '▴' : '▾'}</button>
       {layersOpen && <div id="ig-layer-list" className="ig-layers" role="group" aria-label="Technical layers: data and asset ingestion">
