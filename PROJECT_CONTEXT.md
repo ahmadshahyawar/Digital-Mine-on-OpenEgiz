@@ -242,6 +242,33 @@ Include changed paths, tests or checks performed, and anything the next contribu
 
 ## Active Work
 
+### Lock — Codex — reconcile final rules checklist — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/final-checklist (from shared integration 7835c28)
+Task: Reconcile RULES_CHECKLIST.md with evidence already verified on the exact integrated candidate, correct stale
+  scenario/field-count wording, and leave official-main, native-Ubuntu and human-only gates explicitly unchecked.
+Exact files: RULES_CHECKLIST.md; PROJECT_CONTEXT.md.
+Expected handoff: factual checklist-only commit and proof of the live smoke/scenario rerun. No frontend, simulator,
+  data contract, Compose, presentation or release-artifact changes.
+```
+
+### Handoff — Codex — reconciled final rules checklist — 2026-10-25
+
+```text
+Owner: Ahmad + Codex
+Branch: codex/final-checklist
+Base: 7835c28 (shared integration candidate)
+Status: Reconciled candidate-proven requirements and corrected the stale 141-field and road-rerouting wording.
+Live verification: a fresh documented smoke run passed Eclipse Ditto source, 11 twins and 143 fields/units; the
+  complete fixed/Smart scenario matrix and clean reset also passed on the running stand.
+Release gates deliberately still unchecked: official-main push, native Ubuntu clean start, Professor frontend
+  fixes/human visual acceptance, and post-freeze human obligations.
+Changed paths: RULES_CHECKLIST.md; PROJECT_CONTEXT.md only.
+Integration instruction: merge after review; it does not overlap frontend, simulator, data, Compose or presentation.
+```
+
 ### Lock — Codex — complete final release audit — 2026-10-25
 
 ```text

@@ -3,7 +3,9 @@
 Source of truth: <https://openegiz-contest.github.io/rules/>  
 Controlling edition reviewed: **12 October 2026**. If translations differ, the Russian rules control.
 
-Use this file as a release gate. A checked item means it has been verified in the final `main` branch, not merely planned.
+Use this file as a release gate. A checked item means it has been verified on the exact release candidate; items that
+specifically concern the submitted branch remain unchecked until the accepted candidate is pushed to `main` and
+re-verified there.
 
 ## Authority and Rule Changes
 
@@ -14,7 +16,8 @@ Use this file as a release gate. A checked item means it has been verified in th
 - All competition times use Astana time (UTC+5).
 - The scoring rubric dated 12 October 2026 and the final-word tie rule will not change.
 - Other rule changes must be published as a dated revision and announced in GitHub Discussions; deadlines may only move later.
-- [ ] Recheck the rules revision and official GitHub Discussions before final submission.
+- [x] Recheck the official rules revision before final submission: the published controlling edition remains 12 October 2026.
+- [ ] Recheck official GitHub Discussions immediately before the final `main` push.
 
 ## Eligibility and Team
 
@@ -32,16 +35,16 @@ Use this file as a release gate. A checked item means it has been verified in th
 - [ ] Final work is merged into `main` before **25 October 2026, 23:59 Astana time (UTC+5)**.
 - [ ] `main` differs materially from the organizer's template.
 - [ ] All required files and assets are committed; nothing depends on an uncommitted local file.
-- [ ] Team composition and GitHub usernames match registration.
+- [x] Team composition and GitHub usernames match registration.
 
 At the freeze, write access is removed, the final commit on `main` is recorded, and the repository becomes public and read-only. Other branches, open pull requests, and post-freeze changes are ignored.
 
 ## Mandatory Root Files
 
-- [ ] `README.md` contains complete installation and launch instructions from a clean machine.
-- [ ] `SUBMISSION.md` follows the organizer's template and begins with the team-authored Concept section.
+- [x] `README.md` contains complete installation and launch instructions from a clean machine.
+- [x] `SUBMISSION.md` follows the organizer's template and begins with the team-authored Concept section.
 - [x] `presentation.pdf` clearly explains the verified solution and how to view it on the running stand.
-- [ ] The repository is licensed under MIT as required by the competition.
+- [x] The repository is licensed under MIT as required by the competition.
 
 The official solution consists of the complete contents and Git history of the team repository's frozen `main` branch. Do not include secrets, private data, credentials, or material that cannot be made public.
 
@@ -49,11 +52,11 @@ The official solution consists of the complete contents and Git history of the t
 
 The first section of `SUBMISSION.md` must state:
 
-- [ ] What mine, enterprise, or facility is represented.
-- [ ] Who uses the digital twin.
-- [ ] What operational decision it helps that user make.
-- [ ] Why the team selected this problem.
-- [ ] For a fictional mine, which real operations it resembles and the sources of numerical parameters.
+- [x] What mine, enterprise, or facility is represented.
+- [x] Who uses the digital twin.
+- [x] What operational decision it helps that user make.
+- [x] Why the team selected this problem.
+- [x] For a fictional mine, which real operations it resembles and the sources of numerical parameters.
 
 Our current concept: a 3D open-pit haulage and crusher optimization twin for a mine dispatcher.
 
@@ -71,9 +74,9 @@ Failure to launch from `README.md`, or failure to build genuinely on OpenEgiz, c
 
 For every claimed module:
 
-- [ ] `SUBMISSION.md` explains what it does.
-- [ ] `SUBMISSION.md` explains exactly how to observe it on the running stand.
-- [ ] Its operation can be verified in the interface or source code.
+- [x] `SUBMISSION.md` explains what it does.
+- [x] `SUBMISSION.md` explains exactly how to observe it on the running stand.
+- [x] Its operation can be verified in the interface or source code.
 
 For every claimed what-if scenario:
 
@@ -84,7 +87,8 @@ For every claimed what-if scenario:
 - [x] `SUBMISSION.md` explains how to activate it.
 - [x] `SUBMISSION.md` explains how to cancel/reset it.
 
-Planned scenarios: truck breakdown, road closure with rerouting, and reduced crusher capacity.
+Implemented scenarios: truck breakdown with directional lane blockage, road speed restriction, reduced crusher
+capacity, and Smart Dispatch combined with each operating condition.
 
 HT-01 breakdown gate verified on 2026-10-23: the running stand changed Ditto
 twin state, stopped only HT-01 at zero speed, preserved FIFO/resource progress,
@@ -95,21 +99,21 @@ the older 581.6 t/h shared-lane result is superseded.
 Final scenario integration gate verified on 2026-10-23 with
 `ademix/simulator/verify_scenarios.py`: fixed and Smart Dispatch were each combined
 with baseline, truck breakdown, road restriction and crusher slowdown through the
-frontend proxy, API, simulator, MQTT and Eclipse Ditto. All 11 twins and 141
+frontend proxy, API, simulator, MQTT and Eclipse Ditto. All 11 twins and 143
 required fields/units were present; the final reset restored fixed/baseline without
 stale breakdown, blockage or standby state. Human visual acceptance and a clean
 Ubuntu run remain separate unchecked gates.
 
 ## Data and Assumptions
 
-- [ ] `SUBMISSION.md` contains a `Data and Assumptions` section.
-- [ ] Synthetic and real data are clearly distinguished.
-- [ ] Every significant simulation parameter has a credible source or explicit justification.
-- [ ] Dataset sources and licenses are recorded.
-- [ ] Copied datasets permit redistribution.
-- [ ] Required datasets are committed or downloaded reliably by `README.md`.
-- [ ] No confidential organizational data or personal data is used.
-- [ ] Required attribution and original license text are preserved.
+- [x] `SUBMISSION.md` contains a `Data and Assumptions` section.
+- [x] Synthetic and real data are clearly distinguished.
+- [x] Every significant simulation parameter has a credible source or explicit justification.
+- [x] Dataset sources and licenses are recorded.
+- [x] Copied datasets permit redistribution.
+- [x] Required datasets are committed or downloaded reliably by `README.md`.
+- [x] No confidential organizational data or personal data is used.
+- [x] Required attribution and original license text are preserved.
 
 Preferred haulage reference: the organizer-listed OpenMines `north_pit_mine.json` dataset, calibrated with cited equipment specifications where necessary.
 
@@ -129,26 +133,27 @@ The final solution must work in:
 
 Release checks:
 
-- [ ] Installation does not assume `make` or other non-default software is already installed.
-- [ ] All prerequisites are installed by explicit `README.md` steps.
-- [ ] No API keys, paid services, organizer accounts, or private network access are required.
-- [ ] Services bind to `localhost`/`127.0.0.1` where appropriate.
-- [ ] Critical scripts, fonts, models, textures, and UI assets are stored in or built from the repository.
-- [ ] The complete `README.md` procedure succeeds literally without manual intervention.
+- [x] Installation does not assume `make` or other non-default software is already installed.
+- [x] All prerequisites are installed by explicit `README.md` steps.
+- [x] No API keys, paid services, organizer accounts, or private network access are required.
+- [x] Services bind to `localhost`/`127.0.0.1` where appropriate.
+- [x] Critical scripts, fonts, models, textures, and UI assets are stored in or built from the repository.
+- [x] The complete `README.md` procedure succeeds literally without manual intervention on the verified Windows Docker stand.
+- [ ] The complete `README.md` procedure succeeds literally in the clean Ubuntu judge environment.
 - [ ] A clean judge-like VM test has been completed and recorded.
 
 ## 3D Performance Requirements
 
 The judge environment supports WebGL but renders **without GPU acceleration**.
 
-- [ ] The scene remains usable under software rendering.
-- [ ] Low-poly or optimized GLB models are used.
-- [ ] Texture resolution and total download size are controlled.
+- [x] The scene remains usable under software rendering at the documented acceptance threshold.
+- [x] Low-poly or optimized GLB models are used.
+- [x] Texture resolution and total download size are controlled.
 - [ ] Repeated trucks and props use instancing where supported.
-- [ ] Expensive shadows, reflections, post-processing, particles, and physics are limited or optional.
+- [x] Expensive shadows, reflections, post-processing, particles, and physics are limited or optional.
 - [ ] A quality setting or automatic low-quality mode is available.
-- [ ] Essential state remains understandable even if decorative effects are disabled.
-- [ ] The scene loads without relying on fragile external CDNs.
+- [x] Essential state remains understandable even if decorative effects are disabled.
+- [x] The scene loads without relying on fragile external CDNs.
 
 ## Fixed Scoring Rubric
 
@@ -174,10 +179,10 @@ The AI evaluation process is:
 
 ## Integrity and Disqualification
 
-- [ ] Repository text, source, data, presentation, and interface contain no instructions intended to manipulate the builder or AI judges.
-- [ ] Prompts used by the solution's own features are clearly part of product functionality, if any.
-- [ ] Third-party source code and assets have compatible licenses and required attribution.
-- [ ] Claims in `SUBMISSION.md` and `presentation.pdf` match what can actually be demonstrated.
+- [x] Repository text, source, data, presentation, and interface contain no instructions intended to manipulate the builder or AI judges.
+- [x] The solution has no product AI prompts requiring separate disclosure.
+- [x] Third-party source code and assets have compatible licenses and required attribution.
+- [x] Claims in `SUBMISSION.md` and `presentation.pdf` match what can actually be demonstrated.
 
 Any hidden or explicit instruction intended to manipulate the AI builder or judges can disqualify the solution. Human-facing instructions and prompts genuinely used by the solution's own AI features are permitted.
 
@@ -190,7 +195,7 @@ Any hidden or explicit instruction intended to manipulate the AI builder or judg
 - A successful appeal triggers a corrected build report and reevaluation, and the final score cannot be reduced as a result.
 - The final takes place live on YouTube on 31 October 2026.
 - Judges choose first through third place by majority. If no majority is reached after the final permitted round, the remaining finalist with the highest preliminary score wins the place; a remaining tie is broken first by Mine Model score, then by earlier registration.
-- [ ] Preserve clean-start logs and test evidence that could support a factual appeal.
+- [x] Preserve clean-start logs and test evidence that could support a factual appeal.
 - [ ] Team members remain available during the preliminary-results and appeal period.
 
 ## Prize and Winner Obligations
@@ -206,11 +211,12 @@ Any hidden or explicit instruction intended to manipulate the AI builder or judg
 
 ## Final Evidence Package
 
-- [ ] Screenshot showing the entire 3D mine and live operating state.
-- [ ] Screenshots or short demo showing each scenario and its effects.
-- [ ] Architecture diagram showing simulator → MQTT → Ditto → data store/UI/3D.
-- [ ] Twin schema and relationship diagram.
-- [ ] Baseline-versus-scenario metrics.
-- [ ] Clean-start logs and smoke-test results.
+- [x] Screenshot showing the entire 3D mine and live operating state.
+- [x] Screenshots showing the principal scenarios and their effects.
+- [x] Architecture diagram showing simulator → MQTT → Ditto → data store/UI/3D.
+- [x] Twin schema and relationship diagram.
+- [x] Baseline-versus-scenario metrics.
+- [x] Windows clean-recreate logs and live smoke-test results.
+- [ ] Native Ubuntu clean-start logs and smoke-test results.
 - [ ] Optional video link included in `SUBMISSION.md` if completed.
 
