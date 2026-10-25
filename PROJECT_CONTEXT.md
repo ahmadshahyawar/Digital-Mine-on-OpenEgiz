@@ -266,7 +266,8 @@ Expected handoff: exact candidate SHA, commands/results, current deck and render
 Owner: Ahmad + Codex
 Branch: codex/final-release-audit
 Base: caf6ee0 (verified C5 integration)
-Status: Windows release candidate verified; native Ubuntu Actions result pending after push.
+Status: Windows release candidate verified. Commit d290063 was pushed, but GitHub reported zero workflow runs;
+  native Ubuntu remains an explicit external gate rather than a claimed pass.
 Key correction: SIM_INTERVAL 2 → 4 seconds, SIM_SPEEDUP unchanged at 20; this halves Ditto persistence pressure
   without changing physical equations or simulated-time rate.
 Verification: 92 simulator/API/evidence tests; 48 data tests; frontend production build; full live fixed/Smart
@@ -1572,8 +1573,8 @@ Handoff — Claude — wider road / breakdown shoulder — 2026-10-23
 - The expanded world facilities are currently visual context rather than independent simulated twins; do not claim them as operational modules until their states are modeled.
 - Headless SwiftShader rendered the exact live route with no final console/network errors, but its measured cadence
   was only 2.1 average frames/s on this Windows host; do not claim universally smooth CPU-only rendering.
-- Native Ubuntu 24.04 AMD64 verification is automated but remains unclaimed until the pushed GitHub Actions run
-  completes successfully.
+- Native Ubuntu 24.04 AMD64 verification is automated but remains unclaimed. After pushing `d290063`, the
+  authenticated GitHub API reported zero workflow runs; repository Actions may need organizer/default-branch enablement.
 - Professor's F1-F5/F8 frontend work is not yet integrated; any accepted overlap requires the full release matrix,
   screenshots and presentation to be checked again.
 

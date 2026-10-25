@@ -42,3 +42,8 @@ This clears stale cluster membership, executes the one-shot jobs only after thei
 ## Remaining external gate
 
 The repository now contains `.github/workflows/ubuntu-release-verification.yml` for a fresh Ubuntu 24.04 AMD64 runner. Its result must be taken from GitHub Actions after this branch is pushed; Windows results are not mislabeled as native Ubuntu proof.
+
+The candidate was pushed as commit `d290063` on `codex/final-release-audit`. A read-only authenticated GitHub API
+check immediately afterward reported `total_count: 0` for repository workflow runs, so no Ubuntu run was created.
+The workflow may require repository Actions to be enabled or the workflow to be accepted on the default branch.
+No native Ubuntu success is claimed.
