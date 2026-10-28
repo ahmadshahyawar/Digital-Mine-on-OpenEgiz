@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a focused improvement to Ademix
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Problem or need
+      description: What user or engineering problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Explain the smallest useful change and how a user would interact with it.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Project area
+      options:
+        - OpenEgiz integration
+        - Mining simulation
+        - Smart Dispatch and scenarios
+        - 3D visualization
+        - Data provenance
+        - Documentation or accessibility
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+      description: Add references, examples or measurements if available.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked that a similar request is not already open.
+          required: true
+        - label: This request preserves the distinction between synthetic and measured data.
+          required: true

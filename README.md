@@ -147,6 +147,15 @@ The mine is a fictional, reduced visualization calibrated from the anonymized No
 
 This project is a decision-demonstration model—not an engineering design, safety system or production forecast. It models one loading–haulage–crusher circuit rather than an entire mine. Route geometry is not surveyed, equipment is simplified and only one operating disruption is active at a time. See the [simulation model documentation](ademix/simulator/MODEL.md), [scenario documentation](ademix/simulator/SCENARIOS.md) and [data provenance](DATA_LICENSES.md) for details.
 
+## Community
+
+Feedback and contributions are welcome:
+
+- [Report a reproducible bug](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/issues/new?template=bug_report.yml)
+- [Suggest an improvement](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/issues/new?template=feature_request.yml)
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request
+- If Ademix is useful to your work or learning, star the repository so others can discover it
+
 ## Team
 
 - [Ahmad Shah Yawar](https://github.com/ahmadshahyawar) — product direction, backend, integration and release verification
