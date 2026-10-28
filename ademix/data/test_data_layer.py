@@ -58,6 +58,7 @@ TWINS = json.loads((DATA.parent / "simulator" / "twins.json").read_text(encoding
 RELATIONSHIPS = json.loads((DATA / "topology" / "twin_relationships.json").read_text(encoding="utf-8"))
 MODEL_TRUTH = json.loads((DATA / "evidence" / "model_truth.json").read_text(encoding="utf-8"))
 MANIFEST = json.loads((DATA / "telemetry" / "manifest.json").read_text(encoding="utf-8"))
+UNIT_EVIDENCE = read_csv(DATA / "registry" / "openmines_unit_evidence.csv")
 
 
 def value(parameter_id):
@@ -73,6 +74,26 @@ class SourceIntegrityTests(unittest.TestCase):
 
     def test_source_license_is_present(self):
         self.assertIn("MIT", (DATA / "openmines" / "LICENSE").read_text(encoding="utf-8"))
+
+    def test_openmines_units_have_audited_upstream_evidence(self):
+        expected = {
+            "truck_capacity": "t",
+            "truck_speed": "km/h",
+            "road_distance": "km",
+            "shovel_tons": "t",
+            "shovel_cycle_time": "min",
+            "dumper_cycle_time": "min",
+            "road_repair_lambda": "1/min",
+            "road_repair_duration": "min",
+        }
+        actual = {row["item"]: row for row in UNIT_EVIDENCE}
+        self.assertEqual(set(actual), set(expected))
+        for item, unit in expected.items():
+            with self.subTest(item=item):
+                self.assertEqual(actual[item]["model_unit"], unit)
+                self.assertIn(actual[item]["status"], {"confirmed_explicit", "confirmed_executable_semantics"})
+                self.assertRegex(actual[item]["upstream_evidence"], r"openmines/src/.+\.py:\d+")
+                self.assertTrue(actual[item]["reason"])
 
 
 class RegisterTests(unittest.TestCase):
@@ -267,7 +288,7 @@ class TelemetryLogTests(unittest.TestCase):
         root = DATA.parent.parent
         for path, digest in MANIFEST["inputs_sha256"].items():
             with self.subTest(input=path):
-                self.assertEqual(hashlib.sha256((root / path).read_bytes()).hexdigest(), digest,
+                self.assertEqual(hashlib.sha256(build.canonical_source_bytes(root / path)).hexdigest(), digest,
                                  "input changed: rerun build_data_layer.py")
 
     def test_outputs_match_the_manifest(self):
@@ -396,9 +417,9 @@ class SensorTopologyBundleTests(unittest.TestCase):
     def test_sensor_publish_interval_matches_the_simulator_settings(self):
         app = (DATA.parent / "simulator" / "app.py").read_text(encoding="utf-8")
         self.assertIn('"SIM_SPEEDUP", "20"', app)
-        self.assertIn('"SIM_INTERVAL", "2"', app)
+        self.assertIn('"SIM_INTERVAL", "5"', app)
         for sensor in self.SENSORS:
-            self.assertEqual((sensor["publish_interval_s_wall"], sensor["publish_interval_s_simulated"]), ("2", "40"))
+            self.assertEqual((sensor["publish_interval_s_wall"], sensor["publish_interval_s_simulated"]), ("5", "100"))
 
     def test_topology_references_registered_parameters(self):
         for item in self.TOPOLOGY["nodes"] + self.TOPOLOGY["edges"]:
@@ -510,6 +531,19 @@ class SensorTopologyBundleTests(unittest.TestCase):
         })
         bundle = json.loads(outputs[build.BUNDLE_PATH])
         self.assertEqual(bundle["productionRecovery"], history)
+
+    def test_decision_explanation_is_bundled_with_provenance(self):
+        outputs = build.build(write=False)
+        evidence = json.loads(build.DECISION_EXPLANATION.read_text(encoding="utf-8"))
+        self.assertEqual(evidence["schema_version"], "ademix.decision-explanation.v1")
+        self.assertTrue(evidence["synthetic"])
+        bundle = json.loads(outputs[build.BUNDLE_PATH])
+        self.assertEqual(bundle["decisionExplanation"], evidence)
+        expected_hash = build.sha256(build.canonical_source_bytes(build.DECISION_EXPLANATION))
+        self.assertEqual(
+            bundle["provenance"]["inputs_sha256"]["ademix/data/evidence/decision_explanation.json"],
+            expected_hash,
+        )
 
     def test_breakdown_log_uses_directional_two_way_road_contract(self):
         outputs = build.build(write=False)

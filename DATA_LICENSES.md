@@ -1,23 +1,25 @@
 # Data and Asset Licenses
 
-This file records every external dataset, code reference, model, texture, and visual asset considered or included in the Ademix submission. The submission code is MIT-licensed; third-party material retains its own license.
+This file records every external dataset, code reference, model, texture, and visual asset considered or included in Ademix. Project code is MIT-licensed; third-party material retains its own license.
 
 ## Included Data
 
 ### OpenMines — North Pit Mine configuration
 
 - Source: <https://github.com/370025263/openmines>
+- Audited upstream commit: `acd77e23de2c3b743485ec87cabdbbf7779ceb3e`
 - File: `ademix/data/openmines/north_pit_mine.json`
 - Upstream path: `openmines/src/conf/north_pit_mine.json`
 - License: MIT
 - Copyright: Copyright (c) 2023 stone meng
 - License copy: `ademix/data/openmines/LICENSE`
-- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. This has not been re-checked against the upstream repository. `ademix/data/test_data_layer.py` verifies the stored file.
+- Local SHA-256 (file as stored in Git, LF line endings): `A966A72A6BFA91A86BCD6C3CDCCCD9DF5D4E83CDB36217A4AC4505EE77C0F16C`. The value recorded earlier, `271134D6BBB46BC00162FAD87D0E10510B0BF4D1FEC4A2860F9784D663A7BBD8`, is the same content with Windows CRLF line endings. On 24 October 2026 the LF-normalized file was checked byte-for-byte against the audited upstream commit and matched. `ademix/data/test_data_layer.py` verifies the stored file.
+- Unit evidence: `ademix/data/OPENMINES_UNIT_AUDIT.md` and `ademix/data/registry/openmines_unit_evidence.csv` distinguish units explicitly stated by upstream code from units established through executable equations.
 - Derived data: `ademix/data/fleet/` (equipment and route-distance tables extracted from this file) and `ademix/data/registry/parameters.csv` (field-level traceability). See `ademix/data/DATA_CARD.md`.
 - Use: calibration reference for fleet size, truck capacity, truck speed, shovel capacity/cycle time, dump time, route distances, and road-repair event parameters.
-- Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for judge-environment performance. It does not claim to reproduce the full OpenMines simulation.
+- Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for reliable software-rendered performance. It does not claim to reproduce the full OpenMines simulation.
 
-The competition organizer explicitly lists this dataset as a recommended MIT-licensed source for open-pit haulage.
+OpenMines is an MIT-licensed source for open-pit haulage simulation parameters.
 
 ### Caterpillar Performance Handbook — fuel consumption tables (referenced, not redistributed)
 
@@ -60,8 +62,9 @@ The competition organizer explicitly lists this dataset as a recommended MIT-lic
   - `plant-conveyor.glb` — `727A56DFAE9A04D12437123B7B051EF76327887F02C837090178B9781FA56534` (26,632 bytes)
   - `plant-conveyor-slope.glb` — `EF043AC520572CEA0AB570873EF891D9BD8F0C748A1CAA4FEEA82F560CDC8C6F` (36,556 bytes)
   - `plant-stairs.glb` — `0356A040EBBF632CD20DFE384A13108270DF26426AD1DD51A2C767C8F6A6960C` (66,256 bytes)
+  - `models/Textures/colormap.png` — <https://raw.githubusercontent.com/shorepine/kenney/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/factory/Textures/colormap.png>; `35D7BD6900DDE0208429EEAEC87FA17FBF024ED59F3F4EAB54BC92802EBA9DD7` (11,813 bytes), the shared Factory Kit 3.0 GLB texture from the official Kenney archive
 - Use: assembled into the truck dump pocket, guarded primary-crusher module, inclined/transfer conveyors, and access stairs. A lightweight locally generated cone represents the coarse-ore stockpile.
-- Modifications: only scene placement, scaling, and repetition; source GLBs are preserved unchanged and bundled locally.
+- Modifications: only scene placement, scaling, and repetition; source GLBs and their referenced shared color map are preserved unchanged and bundled locally.
 
 ## Approved Visual Asset Sources
 

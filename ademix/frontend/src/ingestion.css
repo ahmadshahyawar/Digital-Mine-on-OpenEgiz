@@ -93,9 +93,9 @@
 @media (max-width: 1100px) { .ig-stack { width: 250px; } }
 @media (max-width: 760px) { .ig-stack { left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 40vh; } }
 .ig-gauges .ig-val small { text-transform: none; }
-.ig-title, .ig-layers, .ig-bar, .ig-key { z-index: 40; }
+.ig-title, .ig-views, .ig-bar, .ig-key, .ig-kpis { z-index: 40; }
 /* Breakdown presentation: banner naming the affected truck and its consequence, plus the in-scene tag. */
-.ig-breakdown-alert { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 45; display: grid; gap: 2px; max-width: min(560px, calc(100vw - 32px));
+.ig-breakdown-alert { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); z-index: 45; display: grid; gap: 2px; max-width: min(560px, calc(100vw - 32px));
   padding: 9px 14px; border-radius: 9px; background: rgba(60, 8, 6, .92); border: 1px solid #ff5149; color: #ffe2df; font-size: 12px; box-shadow: 0 4px 18px rgba(0, 0, 0, .35); }
 .ig-breakdown-alert b { color: #fff; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .ig-breakdown-alert span { color: #ffc9c4; }
@@ -122,3 +122,219 @@
 .ig-wi-bottleneck b { font-size: 12px; text-transform: capitalize; }
 .ig-wi-bottleneck p { grid-column: 1 / -1; }
 .ig-bay-no { padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #1c1a16; background: #e8e2cf; }
+/* B1 opening view: key figures, camera views and the technical-layer menu. */
+/* The legacy command-centre stylesheet sets body { min-width: 1100px }; the dispatcher view must fit phones. */
+body:has(.ig-shell) { min-width: 0; }
+.ig-kpis { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(4, minmax(118px, 1fr)); gap: 6px; width: min(640px, calc(100vw - 640px)); min-width: 500px; }
+.ig-kpis > div { display: grid; gap: 1px; padding: 6px 10px; border-radius: 9px; background: var(--ig-glass); border: 1px solid var(--ig-line); }
+.ig-kpis span { font-size: 10px; letter-spacing: .05em; color: var(--ig-dim); white-space: nowrap; }
+.ig-kpis .ig-val { font-size: 17px; justify-self: start; padding: 0; line-height: 1.2; white-space: nowrap; }
+.ig-kpis .ig-val small { text-transform: none; }
+.ig-views { position: absolute; top: 18px; right: 22px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 300px; }
+.ig-views > button { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--ig-line); background: var(--ig-glass); color: var(--ig-ink); font-size: 12px; cursor: pointer; }
+.ig-views > button.on { border-color: var(--ig-accent); color: var(--ig-accent); }
+.ig-views .ig-layers { position: absolute; top: calc(100% + 6px); right: 0; display: grid; gap: 5px; width: 200px; max-width: none; padding: 10px; border-radius: 10px; background: var(--ig-glass); border: 1px solid var(--ig-line); }
+.ig-views .ig-layers p { margin: 0 0 2px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ig-dim); }
+.ig-views .ig-layers button { text-align: left; }
+.ig-right { top: 96px; }
+.ig-wi-line { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; font-size: 12px !important; color: var(--ig-ink) !important; }
+.ig-wi-line b { font-size: 15px; }
+.ig-wi-line span { color: var(--ig-dim); font-size: 11px; }
+.ig-wi-line .ig-neg { color: #ff9c92; }
+.ig-wi-more { justify-self: start; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-dim); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-stack .ig-whatif { gap: 7px; }
+.ig-truck-card { top: 96px; right: 22px; width: 250px; z-index: 41; }
+.ig-truck-card h2 { display: flex; align-items: center; gap: 7px; }
+.ig-truck-card h2 i { width: 9px; height: 9px; border-radius: 50%; }
+.ig-truck-card h2 span { margin-left: auto; font-size: 11px; letter-spacing: .04em; text-transform: capitalize; color: var(--ig-accent); }
+.ig-truck-card dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12px; }
+.ig-truck-card dt { color: var(--ig-dim); }
+.ig-truck-card dd { margin: 0; text-align: right; }
+.ig-truck-actions { display: flex; gap: 6px; }
+.ig-truck-actions button { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 11px; cursor: pointer; }
+@media (max-width: 1180px) { .ig-kpis { top: 92px; left: 22px; transform: none; width: auto; min-width: 0; right: 340px; } .ig-stack { top: 168px; } .ig-breakdown-alert { top: 160px; } }
+@media (max-width: 760px) {
+  .ig-title { top: 10px; left: 12px; right: 12px; }
+  .ig-title h1 { font-size: 20px; }
+  .ig-mode { font-size: 10px; letter-spacing: .03em; }
+  .ig-kpis { top: 116px; left: 12px; right: 12px; width: auto; min-width: 0; transform: none; grid-template-columns: repeat(2, 1fr); }
+  .ig-kpis > div { padding: 5px 8px; }
+  .ig-kpis .ig-val { font-size: 14px; }
+  .ig-views { top: auto; bottom: 58px; left: 12px; right: 12px; max-width: none; justify-content: flex-start; }
+  .ig-views > button { padding: 5px 9px; font-size: 11px; }
+  .ig-views .ig-layers { top: auto; bottom: calc(100% + 6px); right: auto; left: 0; }
+  .ig-stack { top: auto; left: 12px; right: 12px; width: auto; bottom: 100px; max-height: 32vh; }
+  .ig-stack .ig-foot-note { display: none; }
+  .ig-truck-card { top: auto; bottom: 100px; left: 12px; right: 12px; width: auto; }
+  .ig-right { bottom: 100px; }
+  .ig-breakdown-alert { top: 228px; }
+  .ig-bar { left: 12px; right: 12px; bottom: 10px; padding: 6px 10px; gap: 8px; }
+  .ig-bar .ig-read { display: none; } /* the key figures above already show these */
+  .ig-bar .ig-clock { white-space: normal; font-size: 11px; }
+}
+/* B2 fuel and CO2: published estimates, saved comparison and value-kind tags. */
+.ig-fuel h3 { margin: 4px 0 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cfe; }
+.ig-fuel-list { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; margin: 0; font-size: 12px; align-items: baseline; }
+.ig-fuel-list dt { color: var(--ig-dim); }
+.ig-fuel-list dd { margin: 0; text-align: right; }
+.ig-fuel-list .ig-val { font-size: 15px; }
+.ig-kind { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 4px; font-size: 9px; font-style: normal; letter-spacing: .04em; vertical-align: 1px; white-space: nowrap; }
+.ig-kind-simulated { color: #bfe9ff; background: rgba(94, 200, 242, .18); }
+.ig-kind-derived { color: #d9c8ff; background: rgba(160, 130, 240, .2); }
+.ig-kind-assumed { color: #f3d9a4; background: rgba(240, 184, 90, .18); }
+.ig-shift { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ig-shift button { margin-left: auto; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-ink); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-unavailable { color: #ffcf8a !important; }
+.ig-dim { color: var(--ig-dim); }
+.ig-fuel-compare { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ig-fuel-compare th { font-weight: 400; font-size: 10px; color: var(--ig-dim); text-align: right; padding: 0 3px 3px; }
+.ig-fuel-compare td { text-align: right; padding: 3px; border-top: 1px solid rgba(79, 209, 197, .15); white-space: nowrap; }
+.ig-fuel-compare td:first-child, .ig-fuel-compare th:first-child { text-align: left; white-space: normal; }
+.ig-why { margin: 0; padding-left: 15px; display: grid; gap: 4px; font-size: 11px; line-height: 1.45; color: var(--ig-dim); }
+.ig-sources { padding-left: 0; list-style: none; }
+.ig-sources .ig-kind { margin: 0 4px 0 0; }
+/* Right-hand column: selected truck, fuel and CO2, sensor readings. */
+.ig-rstack { position: absolute; top: 96px; right: 22px; width: 360px; max-height: calc(100vh - 176px); overflow: auto; display: grid; gap: 10px; align-content: start; z-index: 30; }
+.ig-rstack .ig-truck-card { position: static; width: auto; }
+.ig-total { font-size: 15px; font-weight: 600; color: #fff; }
+.ig-total small { font-size: 10px; font-weight: 400; color: var(--ig-dim); }
+@media (max-width: 1180px) { .ig-rstack { top: 168px; width: 320px; } }
+@media (max-width: 760px) {
+  .ig-rstack { top: auto; left: 12px; right: 12px; width: auto; bottom: 132px; max-height: 44vh; z-index: 42; }
+  .ig-rstack .ig-panel { background: #08130f; }
+  /* One panel at a time on a phone: a right-hand panel replaces the scenario panel until it is closed. */
+  .ig-has-right .ig-stack { display: none; }
+}
+/* B3 fixed-versus-smart evidence. */
+.ig-wi-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.ig-wi-evidence { color: var(--ig-accent); border-color: var(--ig-accent); }
+.ig-evidence h2 { display: flex; align-items: center; }
+.ig-x { margin-left: auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--ig-line); background: transparent; color: var(--ig-ink); font-size: 15px; line-height: 1; cursor: pointer; }
+.ig-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.ig-tabs button { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .04); color: var(--ig-dim); font: inherit; font-size: 11px; cursor: pointer; }
+.ig-tabs button.on { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); }
+.ig-tabs-small button { font-size: 10px; padding: 3px 7px; }
+.ig-evidence-table td small { color: var(--ig-dim); font-size: 9px; }
+.ig-evidence-table th:first-child { color: var(--ig-ink); }
+/* B4 production and recovery timeline. */
+.ig-timeline svg { width: 100%; height: auto; display: block; }
+.ig-axis { font-size: 9px; fill: #9db3aa; }
+.ig-badge { font-size: 8px; font-weight: 700; fill: #10201b; }
+.ig-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10px; color: var(--ig-dim); }
+.ig-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.ig-legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid #4fd1c5; }
+.ig-legend .ig-line-dash { border-top: 2px dashed #f0b85a; }
+.ig-legend .ig-line-thin { border-top: 1px solid #9db3aa; }
+.ig-events { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 11px; color: var(--ig-ink); }
+.ig-events li { display: grid; grid-template-columns: 16px 34px 1fr; gap: 6px; align-items: baseline; }
+.ig-events b { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; color: #10201b; }
+.ig-events span { color: var(--ig-dim); }
+.ig-timeline-summary dd { font-size: 12px; }
+/* B5 two-way road: only the blocked lane is marked. */
+.ig-lane-tag { padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.ig-lane-blocked { color: #fff; background: rgba(176, 30, 30, .9); }
+.ig-lane-blocked::first-letter { text-transform: uppercase; }
+.ig-lane-open { color: #062320; background: rgba(56, 239, 157, .85); }
+.ig-alert-detail { font-size: 11px; color: #ffb3ad !important; }
+/* B6 guided demonstration card. */
+.ig-views > button.ig-guide-start { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); font-weight: 600; }
+.ig-views > button.ig-guide-start:disabled { opacity: .5; }
+.ig-guide { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%); z-index: 46; width: min(560px, calc(100vw - 24px));
+  display: grid; gap: 7px; padding: 12px 14px; border-radius: 10px; background: rgba(6, 16, 14, .94); border: 1px solid var(--ig-accent); box-shadow: 0 6px 24px rgba(0, 0, 0, .4); }
+.ig-guide-head { display: flex; align-items: baseline; gap: 10px; }
+.ig-guide-head b { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ig-accent); }
+.ig-guide-head span { font-size: 15px; font-weight: 600; }
+.ig-guide p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ig-ink); }
+.ig-guide-status { font-size: 11px; color: var(--ig-dim); }
+.ig-guide-confirmed { color: #8ff0bf; }
+.ig-guide-failed { color: #ff9c92; }
+.ig-guide-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.ig-guide-actions button { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--ig-line); background: rgba(255, 255, 255, .05); color: var(--ig-ink); font: inherit; font-size: 12px; cursor: pointer; }
+.ig-guide-actions .ig-guide-next { color: #06231e; background: var(--ig-accent); border-color: var(--ig-accent); font-weight: 600; }
+.ig-guide-actions button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) { .ig-guide { bottom: 96px; } .ig-has-guide .ig-stack { display: none; } }
+/* C1 mine model. */
+.ig-rstack.ig-rstack-wide { width: 500px; }
+.ig-model svg { width: 100%; height: auto; display: block; }
+.ig-model-node { cursor: pointer; }
+.ig-model-node:focus-visible { outline: none; }
+.ig-model-node:focus-visible .ig-model-rect, .ig-model-node:hover .ig-model-rect { stroke: #ffe36e; stroke-width: 2; }
+.ig-model-rect { fill: rgba(6, 30, 26, .95); stroke: #4fd1c5; stroke-width: 1; }
+.ig-kind-mine { stroke: #fff; }
+.ig-kind-haul-truck { stroke: #f0b85a; }
+.ig-kind-scenario { stroke: #c497f5; }
+.ig-model-label { font-size: 10px; font-weight: 600; fill: #e8f1ed; }
+.ig-model-state { font-size: 9px; fill: #8ff0bf; text-transform: capitalize; }
+.ig-model-missing { fill: #ffcf8a; }
+.ig-model-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10px; color: var(--ig-dim); text-transform: capitalize; }
+.ig-model-legend label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.ig-model-legend i { display: inline-block; width: 18px; height: 0; }
+.ig-truck-card code { font-size: 10px; color: var(--ig-accent); }
+@media (max-width: 1180px) { .ig-rstack.ig-rstack-wide { width: 420px; } }
+@media (max-width: 760px) { .ig-rstack.ig-rstack-wide { width: auto; } }
+/* C2 Decision workspace: live and saved evidence are labelled differently. */
+.ig-decision h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #cfe; }
+.ig-src { padding: 1px 6px; border-radius: 4px; font-size: 9px; font-style: normal; letter-spacing: .04em; text-transform: none; }
+.ig-src-live { color: #062320; background: #38ef9d; }
+.ig-src-saved { color: #f3d9a4; background: rgba(240, 184, 90, .18); border: 1px solid rgba(240, 184, 90, .5); }
+.ig-now { font-size: 13px !important; color: var(--ig-ink) !important; font-weight: 600; }
+.ig-decision .ig-gauges b { font-size: 15px; text-transform: capitalize; }
+.ig-decision .ig-gauges b small { font-size: 10px; font-weight: 400; color: var(--ig-dim); text-transform: none; }
+.ig-reco { display: grid; gap: 4px; padding: 9px 11px; border-radius: 8px; background: rgba(79, 209, 197, .1); border: 1px solid var(--ig-accent); }
+.ig-reco p { font-size: 12px !important; color: var(--ig-ink) !important; }
+.ig-reco b { font-size: 14px; color: #fff; }
+.ig-reco-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ig-reco-actions button { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--ig-accent); background: var(--ig-accent); color: #06231e; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ig-q summary { cursor: pointer; font-size: 12px; color: var(--ig-ink); }
+.ig-q p { margin: 4px 0 !important; }
+.ig-linkish { padding: 0; border: 0; background: none; color: var(--ig-accent); font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.ig-decision .ig-timeline { padding: 0; border: 0; background: none; }
+.ig-views > button.ig-decision-btn { border-color: #f0b85a; }
+.ig-views > button.ig-decision-btn.on { color: #f0b85a; }
+/* C3 show effect. */
+.ig-wi-effect { color: #ff9f8f; border-color: #ff5149; }
+.ig-chain { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 12px; line-height: 1.45; color: var(--ig-ink); }
+.ig-effect-tag { color: #10201b; background: rgba(240, 184, 90, .92); }
+/* The view buttons wrap to three rows on desktop; the right-hand column starts below them. */
+@media (min-width: 1181px) { .ig-rstack { top: 132px; max-height: calc(100vh - 212px); } }
+/* C4 why trust this. */
+.ig-why { margin-top: 6px; border: 1px solid #7fb3ff; border-radius: 8px; padding: 6px 10px; background: rgba(127, 179, 255, .06); }
+.ig-why > summary { cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #a9cbff; }
+.ig-trust { display: grid; gap: 6px; margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--ig-ink); }
+.ig-trust p, .ig-trust ul { margin: 0; }
+.ig-trust ul { padding-left: 18px; }
+.ig-panel .ig-trust-head { font-size: 12px; padding: 7px 9px; border-left: 3px solid #a9cbff; background: rgba(127, 179, 255, .1); color: #eef5ff; }
+.ig-trust-live td small { color: var(--ig-dim); font-size: 10px; }
+.ig-trust-live td:nth-child(2) { white-space: nowrap; }
+.ig-trust code { font-size: 11px; color: #cfe; word-break: break-word; }
+.ig-trust h4 { margin: 4px 0 2px; font-size: 11px; color: #cfe; }
+.ig-trust-no li { color: #ffb3a6; }
+/* C5 judge journey: keep the breakdown alert between the left stack and an open right column; focusable panels. */
+@media (min-width: 1181px) {
+  .ig-has-right .ig-breakdown-alert { top: 112px; left: 340px; right: 394px; transform: none; max-width: none; }
+  .ig-has-wide .ig-breakdown-alert { right: 534px; }
+}
+/* Mid widths: KPIs below the source pill, alert above the status bar right of the Scenarios stack, panels end above the bar. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .ig-kpis { top: 116px; }
+  .ig-stack, .ig-rstack { top: 176px; }
+  .ig-rstack { max-height: calc(100vh - 176px - 70px); }
+  .ig-breakdown-alert { top: auto; bottom: 66px; left: 284px; right: 22px; transform: none; max-width: none; }
+  .ig-has-right .ig-breakdown-alert { right: 354px; }
+  .ig-has-wide .ig-breakdown-alert { right: 454px; }
+}
+/* Phones: panels clear the two rows of view buttons; with a panel open the alert keeps only its headline. */
+@media (max-width: 760px) {
+  .ig-stack, .ig-rstack { bottom: 140px; }
+  .ig-stack { max-height: 34vh; }
+  .ig-has-right .ig-breakdown-alert span { display: none; }
+}
+.ig-panel[tabindex="-1"]:focus { outline: none; }
+.ig-panel[tabindex="-1"]:focus-visible { outline: 2px solid #ffe36e; outline-offset: 2px; }
+/* Audit fixes: stale live state (F1/F8), breakdown alert details on phones (F5). */
+.ig-mode.stale { color: #ffd9a8; border: 1px solid #ff9f2e; } .ig-mode.stale i { background: #ff9f2e; }
+.ig-alert-more { display: none; margin-left: 8px; padding: 1px 8px; border-radius: 999px; border: 1px solid #ffc9c4; background: transparent; color: #fff; font: inherit; font-size: 10px; letter-spacing: .04em; text-transform: none; cursor: pointer; }
+@media (max-width: 760px) {
+  .ig-alert-more { display: inline-block; }
+  .ig-breakdown-alert:not(.open) span { display: none; }
+}

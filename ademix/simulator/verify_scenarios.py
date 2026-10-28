@@ -166,6 +166,15 @@ def verify(base_url: str, timeout_s: float) -> None:
                 value(t, "road-main", "state") == "restricted"
                 and abs(float(value(t, "road-main", "speed_limit_kmh")) - 10.72) < 0.01
                 and float(value(t, "scenario-controller", "projected_throughput_tph")) < 770.0
+                # Twin updates are intentionally paced across a tick. Do not
+                # accept the scenario until every currently moving truck's
+                # downstream Ditto state reflects the restriction too.
+                and any(value(t, truck, "state") in {"hauling", "returning"} for truck in TRUCKS)
+                and all(
+                    value(t, truck, "state") not in {"hauling", "returning"}
+                    or abs(float(value(t, truck, "speed_kmh")) - 10.72) < 0.01
+                    for truck in TRUCKS
+                )
             ), timeout_s,
         )
         moving = [truck for truck in TRUCKS if value(twins, truck, "state") in {"hauling", "returning"}]

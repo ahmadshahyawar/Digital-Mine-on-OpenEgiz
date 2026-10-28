@@ -15,8 +15,8 @@ repository over `raw.githubusercontent.com`.
 | `upstream/*.zip` | Unmodified originals, kept for provenance and diffing |
 | `patch-branding.py` | Regenerates the two patched zips from `upstream/` |
 
-Consumed by the `install-opentwins-plugins` init container in `values.yaml`
-(under `grafana.extraInitContainers`).
+Consumed by the `grafana-plugin-loader` service in
+`deploy/compose/docker-compose.yml`.
 
 ## Upstream sources
 
@@ -100,7 +100,7 @@ pointing at an upstream repo or the OpenTwins documentation site are left
 intact. The plugins are ERTIS work under Apache-2.0; stripping attribution while
 putting our name on them is both bad practice and a licence-compliance problem.
 Link *text* naming the upstream project is kept too — relabelling
-`[OpenTwins](github.com/ertis-research/opentwins)` as "OpenEgiz" would simply
+`[OpenTwins](https://github.com/ertis-research/opentwins)` as "OpenEgiz" would simply
 make the link wrong.
 
 ### The logo asset

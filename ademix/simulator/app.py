@@ -27,7 +27,8 @@ DITTO_URL = os.environ.get("DITTO_URL", "http://localhost:8080").rstrip("/")
 DITTO_USER = os.environ.get("DITTO_USER", "ditto")
 DITTO_PASSWORD = os.environ.get("DITTO_PASSWORD", "")
 SPEEDUP = float(os.environ.get("SIM_SPEEDUP", "20"))
-INTERVAL = float(os.environ.get("SIM_INTERVAL", "2"))
+INTERVAL = float(os.environ.get("SIM_INTERVAL", "5"))
+CACHE_TTL = float(os.environ.get("DITTO_CACHE_TTL", "3"))
 THING_NAMES = ["mine-01", "excavator-01", "crusher-01", "road-main", "scenario-controller"] + [f"truck-{i:02d}" for i in range(1, 7)]
 TWINS_PATH = os.path.join(os.path.dirname(__file__), "twins.json")
 
@@ -39,6 +40,7 @@ stop_event = Event()
 ditto_read_lock = Lock()
 ditto_cache = None
 ditto_cache_time = 0.0
+ditto_retry_after = 0.0
 mqtt_client = None if DEMO_MODE else mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ademix-simulator")
 app = FastAPI(title="Ademix Mine API", version="0.1.0")
 
@@ -59,6 +61,18 @@ def ditto_message(name, features):
     }
 
 
+def publish_snapshot(snapshot, cycle_started):
+    """Spread twin writes through the tick instead of bursting all writes together."""
+    if not snapshot:
+        return
+    for index, (name, features) in enumerate(snapshot.items()):
+        mqtt_client.publish(f"telemetry/{name}", json.dumps(ditto_message(name, features)), qos=0)
+        deadline = cycle_started + INTERVAL * (index + 1) / len(snapshot)
+        remaining = deadline - time.monotonic()
+        if remaining > 0 and stop_event.wait(remaining):
+            return
+
+
 def simulation_loop():
     for attempt in range(60):
         try:
@@ -71,10 +85,9 @@ def simulation_loop():
                 return
             time.sleep(2)
     while not stop_event.is_set():
+        cycle_started = time.monotonic()
         engine.step(INTERVAL * SPEEDUP)
-        for name, features in engine.snapshot().items():
-            mqtt_client.publish(f"telemetry/{name}", json.dumps(ditto_message(name, features)), qos=0)
-        stop_event.wait(INTERVAL)
+        publish_snapshot(engine.snapshot(), cycle_started)
     mqtt_client.loop_stop()
     mqtt_client.disconnect()
 
@@ -116,9 +129,10 @@ def shutdown():
 
 @app.get("/api/health")
 def health():
-    if not DEMO_MODE:
+    if not DEMO_MODE and ditto_cache is None:
         # Do not report the API ready (and therefore start the polling UI) until
-        # one complete bulk read has warmed the Ditto cache.
+        # one complete bulk read has warmed the Ditto cache. Once warm, avoid
+        # making every Docker health probe compete with frontend Ditto reads.
         state()
     return {
         "status": "ok", "scenario": engine.scenario, "dispatch": engine.dispatch,
@@ -130,16 +144,34 @@ def health():
 
 @app.get("/api/state")
 def state():
-    global ditto_cache, ditto_cache_time
+    global ditto_cache, ditto_cache_time, ditto_retry_after
     if DEMO_MODE:
         return {"source": "local-simulator-demo", "twins": demo_twins()}
     if not DITTO_PASSWORD:
         raise HTTPException(status_code=503, detail="Ditto credentials unavailable")
-    with ditto_read_lock:
-        now = time.monotonic()
-        if ditto_cache is not None and now - ditto_cache_time < INTERVAL:
+    now = time.monotonic()
+    if ditto_cache is not None and now - ditto_cache_time < CACHE_TTL:
+        return {"source": "eclipse-ditto", "twins": ditto_cache}
+    if ditto_cache is not None and now < ditto_retry_after:
+        return {"source": "eclipse-ditto", "twins": ditto_cache}
+
+    # Do not queue every overlapping browser poll behind a slow Ditto read.
+    # A cached twin snapshot remains subject to the frontend's simulated-clock
+    # stale check; this only avoids multiplying one delayed read into a backlog.
+    if ditto_cache is not None:
+        if not ditto_read_lock.acquire(blocking=False):
             return {"source": "eclipse-ditto", "twins": ditto_cache}
+    else:
+        ditto_read_lock.acquire()
+    try:
         auth = (DITTO_USER, DITTO_PASSWORD)
+        now = time.monotonic()
+        if ditto_cache is not None and now - ditto_cache_time < CACHE_TTL:
+            return {"source": "eclipse-ditto", "twins": ditto_cache}
+        if ditto_cache is not None and now < ditto_retry_after:
+            return {"source": "eclipse-ditto", "twins": ditto_cache}
+        if ditto_cache is None and now < ditto_retry_after:
+            raise HTTPException(status_code=503, detail="Ditto state temporarily unavailable")
         try:
             with httpx.Client(timeout=5.0) as client:
                 thing_ids = ",".join(f"{NAMESPACE}:{name}" for name in THING_NAMES)
@@ -155,10 +187,21 @@ def state():
                     raise ValueError(f"expected {len(THING_NAMES)} twins, got {count}")
                 ditto_cache = twins
                 ditto_cache_time = time.monotonic()
+                ditto_retry_after = 0.0
         except httpx.HTTPError as exc:
+            ditto_retry_after = time.monotonic() + min(INTERVAL, 2.0)
+            if ditto_cache is not None:
+                log.warning("Ditto snapshot refresh failed; serving last confirmed twin snapshot: %s", exc)
+                return {"source": "eclipse-ditto", "twins": ditto_cache}
             raise HTTPException(status_code=503, detail=f"Ditto state unavailable: {exc}") from exc
         except ValueError as exc:
+            ditto_retry_after = time.monotonic() + min(INTERVAL, 2.0)
+            if ditto_cache is not None:
+                log.warning("Ditto returned an incomplete snapshot; serving last confirmed twin snapshot: %s", exc)
+                return {"source": "eclipse-ditto", "twins": ditto_cache}
             raise HTTPException(status_code=503, detail=f"Ditto state incomplete: {exc}") from exc
+    finally:
+        ditto_read_lock.release()
     return {"source": "eclipse-ditto", "twins": twins}
 
 

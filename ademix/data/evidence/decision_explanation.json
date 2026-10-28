@@ -1,0 +1,212 @@
+{
+  "schema_version": "ademix.decision-explanation.v1",
+  "source_label": "saved deterministic model evidence",
+  "synthetic": true,
+  "not_live_control": true,
+  "claim": "Planning evidence from matched model runs; not measured mine performance or a universal optimum.",
+  "questions": {
+    "baseline": {
+      "question": "Why are four cycling trucks sufficient under baseline conditions?",
+      "answer": "Four trucks keep the single excavator at its 770 t/h modeled limit; fifth and sixth trucks add queueing and operating hours, not output.",
+      "recommended_action": "Cycle four trucks and park two ready reserves.",
+      "comparison": [
+        {
+          "trucks": 4,
+          "throughput_tph": 770.0,
+          "loading_queue_trucks_avg": 0.273333,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 5.194805,
+          "bottleneck": "loading resource"
+        },
+        {
+          "trucks": 5,
+          "throughput_tph": 770.0,
+          "loading_queue_trucks_avg": 1.273333,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 6.493506,
+          "bottleneck": "loading resource"
+        },
+        {
+          "trucks": 6,
+          "throughput_tph": 770.0,
+          "loading_queue_trucks_avg": 2.273333,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 7.792208,
+          "bottleneck": "loading resource"
+        }
+      ],
+      "evidence_pointer": "fleet_sizing.json#/scenarios/baseline"
+    },
+    "road_closure": {
+      "question": "Why do all six remain useful during the road restriction?",
+      "answer": "The slower 10.72 km/h road limits truck supply. Throughput still rises with every added truck through six, and no plateau is observed in the tested range.",
+      "recommended_action": "Keep all six available trucks cycling; the model would require more than the available fleet to saturate loading.",
+      "comparison": [
+        {
+          "trucks": 4,
+          "throughput_tph": 435.197295,
+          "loading_queue_trucks_avg": 0.0,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 9.191234,
+          "bottleneck": "haul-road travel"
+        },
+        {
+          "trucks": 5,
+          "throughput_tph": 540.11319,
+          "loading_queue_trucks_avg": 0.0,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 9.257319,
+          "bottleneck": "haul-road travel"
+        },
+        {
+          "trucks": 6,
+          "throughput_tph": 645.348787,
+          "loading_queue_trucks_avg": 0.0,
+          "crusher_queue_trucks_avg": 0.0,
+          "truck_operating_h_per_1000_t": 9.297298,
+          "bottleneck": "haul-road travel"
+        }
+      ],
+      "evidence_pointer": "fleet_sizing.json#/scenarios/road_closure"
+    },
+    "crusher_slowdown": {
+      "question": "Why does crusher slowdown justify parking three trucks?",
+      "answer": "Three trucks already feed the reduced 495 t/h crusher limit. Additional trucks do not increase output and instead increase crusher queueing and truck-hours.",
+      "recommended_action": "Cycle three trucks and park three ready reserves.",
+      "comparison": [
+        {
+          "trucks": 3,
+          "throughput_tph": 495.0,
+          "loading_queue_trucks_avg": 0.0,
+          "crusher_queue_trucks_avg": 0.352164,
+          "truck_operating_h_per_1000_t": 6.060606,
+          "bottleneck": "crusher processing capacity"
+        },
+        {
+          "trucks": 4,
+          "throughput_tph": 495.0,
+          "loading_queue_trucks_avg": 0.035626,
+          "crusher_queue_trucks_avg": 1.382177,
+          "truck_operating_h_per_1000_t": 8.080808,
+          "bottleneck": "crusher processing capacity"
+        },
+        {
+          "trucks": 6,
+          "throughput_tph": 495.0,
+          "loading_queue_trucks_avg": 0.377338,
+          "crusher_queue_trucks_avg": 2.986131,
+          "truck_operating_h_per_1000_t": 12.121212,
+          "bottleneck": "crusher processing capacity"
+        }
+      ],
+      "evidence_pointer": "fleet_sizing.json#/scenarios/crusher_slowdown"
+    },
+    "sensitivity": {
+      "question": "Which changed assumption would make the recommendation different?",
+      "answer": "Route length, loading duration and crusher capacity each move the useful-fleet boundary in the tested planning cases.",
+      "recommended_action": "Re-run the planning study when any of these assumptions changes; do not reuse four trucks as a universal rule.",
+      "studies": {
+        "route_length_km": {
+          "unit": "km",
+          "category": "team planning assumption",
+          "baseline_value": 3.2,
+          "cases": [
+            {
+              "value": 2.0,
+              "recommended_active_trucks": 3,
+              "plateau_observed": true,
+              "throughput_tph": 770.0,
+              "bottleneck": "loading resource"
+            },
+            {
+              "value": 3.2,
+              "recommended_active_trucks": 4,
+              "plateau_observed": true,
+              "throughput_tph": 770.0,
+              "bottleneck": "loading resource"
+            },
+            {
+              "value": 5.0,
+              "recommended_active_trucks": 6,
+              "plateau_observed": false,
+              "throughput_tph": 770.0,
+              "bottleneck": "loading resource"
+            }
+          ]
+        },
+        "loading_duration_min": {
+          "unit": "min/truck",
+          "category": "derived baseline and planning alternatives",
+          "baseline_value": 6.0,
+          "cases": [
+            {
+              "value": 6.0,
+              "recommended_active_trucks": 4,
+              "plateau_observed": true,
+              "throughput_tph": 770.0,
+              "bottleneck": "loading resource"
+            },
+            {
+              "value": 9.0,
+              "recommended_active_trucks": 3,
+              "plateau_observed": true,
+              "throughput_tph": 515.75,
+              "bottleneck": "loading resource"
+            },
+            {
+              "value": 12.0,
+              "recommended_active_trucks": 3,
+              "plateau_observed": true,
+              "throughput_tph": 385.0,
+              "bottleneck": "loading resource"
+            }
+          ]
+        },
+        "crusher_capacity_tph": {
+          "unit": "t/h",
+          "category": "team planning assumption",
+          "baseline_value": 900.0,
+          "cases": [
+            {
+              "value": 500.0,
+              "recommended_active_trucks": 3,
+              "plateau_observed": true,
+              "throughput_tph": 500.0,
+              "bottleneck": "crusher processing capacity"
+            },
+            {
+              "value": 700.0,
+              "recommended_active_trucks": 4,
+              "plateau_observed": true,
+              "throughput_tph": 700.0,
+              "bottleneck": "crusher processing capacity"
+            },
+            {
+              "value": 900.0,
+              "recommended_active_trucks": 4,
+              "plateau_observed": true,
+              "throughput_tph": 770.0,
+              "bottleneck": "loading resource"
+            }
+          ]
+        }
+      },
+      "evidence_pointer": "fleet_sensitivity.json#/studies"
+    }
+  },
+  "presentation_contract": {
+    "required_labels": [
+      "saved model evidence",
+      "synthetic",
+      "not measured"
+    ],
+    "live_state_separation": "Do not present this fixture as current live twin state.",
+    "rounding": {
+      "throughput_tph": 1,
+      "queues_trucks": 2,
+      "truck_h_per_1000_t": 2
+    },
+    "missing_data_behavior": "Show unavailable and suppress a recommendation when the fixture or required scenario is missing.",
+    "reset_behavior": "Reset returns the live scenario to baseline; it does not rewrite or regenerate this saved evidence."
+  }
+}

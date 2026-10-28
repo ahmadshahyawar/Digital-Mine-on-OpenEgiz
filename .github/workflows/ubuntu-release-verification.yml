@@ -3,7 +3,9 @@ name: Ubuntu 24.04 AMD64 release verification
 on:
   push:
     branches:
-      - codex/ubuntu-2404-verification
+      - main
+      - codex/ademix
+      - codex/final-release-audit
   workflow_dispatch:
 
 permissions:
@@ -49,14 +51,16 @@ jobs:
             -f ademix/compose.yml \
             ps --all | tee ci-artifacts/compose-ready.txt
 
-      - name: Run judge smoke test
+      - name: Run smoke test three times
         run: |
-          docker compose --env-file deploy/compose/.env \
-            -f deploy/compose/docker-compose.yml \
-            -f ademix/compose.yml \
-            run --rm --no-deps ademix-simulator \
-            python smoke_check.py --base-url http://ademix-ui \
-            | tee ci-artifacts/judge-smoke.txt
+          for run in 1 2 3; do
+            echo "SMOKE RUN ${run}"
+            docker compose --env-file deploy/compose/.env \
+              -f deploy/compose/docker-compose.yml \
+              -f ademix/compose.yml \
+              run --rm --no-deps ademix-simulator \
+              python smoke_check.py --base-url http://ademix-ui
+          done | tee ci-artifacts/smoke-tests.txt
 
       - name: Verify live freshness and absence of HTTP 503
         run: |
@@ -124,6 +128,21 @@ jobs:
 
       - name: Verify baseline and what-if scenarios end to end
         run: python ademix/simulator/verify_scenarios.py | tee ci-artifacts/scenario-matrix.txt
+
+      - name: Recreate the release stack and repeat smoke
+        run: |
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml down --remove-orphans
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml up -d --wait --wait-timeout 900
+          docker compose --env-file deploy/compose/.env \
+            -f deploy/compose/docker-compose.yml \
+            -f ademix/compose.yml \
+            run --rm --no-deps ademix-simulator \
+            python smoke_check.py --base-url http://ademix-ui \
+            | tee ci-artifacts/post-restart-smoke.txt
 
       - name: Capture diagnostics
         if: always()

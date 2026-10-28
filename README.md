@@ -1,145 +1,28 @@
-# Ademix: 3D Open-Pit Operations Twin on OpenEgiz
+# Ademix Digital Mine
 
-Ademix is a live 3D digital twin for an open-pit mine dispatcher. Six haul trucks move between an excavator and primary crusher while OpenEgiz tracks equipment state, production, queues, road conditions, and scenario effects.
+[![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
+[![Ubuntu verification](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml/badge.svg)](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml)
+[![OpenEgiz](https://img.shields.io/badge/OpenEgiz-v1.0.4-0b7285)](https://github.com/aleka07/openegiz)
 
-The browser scene does not read the simulator directly. Operational updates travel through MQTT into Eclipse Ditto, and the UI reads the resulting twins back from Ditto through the Ademix API.
+Ademix is an interactive 3D digital twin of an open-pit mine's loading, haulage, road and primary-crusher circuit. Six haul trucks move between an excavator and crusher while Eclipse Ditto twins track equipment state, production, queues, road conditions and scenario effects.
 
-## Run on a clean Ubuntu machine
+![Ademix live 3D command center](docs/images/ademix-dashboard.png)
 
-Requirements match the competition judge environment:
+## Highlights
 
-- Ubuntu 24.04 amd64;
-- Docker Engine 29 or compatible; and
-- Docker Compose v2 (`docker compose`).
-
-No API key, paid service, GPU, Node.js, Python, `make`, or external dataset download is required. The first run downloads the declared container images and builds the Ademix simulator, UI, and commit-pinned OpenEgiz extended-API images.
-
-From the repository root, run exactly:
-
-```bash
-bash scripts/compose-env.sh
-docker compose --env-file deploy/compose/.env \
-  -f deploy/compose/docker-compose.yml \
-  -f ademix/compose.yml \
-  up -d --build --wait --wait-timeout 900
-```
-
-Expected result: the command exits successfully after OpenEgiz, the twin setup job, simulator, and UI are ready.
-
-The latest recorded clean-start rehearsal, including startup time, disk use,
-image architecture, URL checks, and the remaining Ubuntu verification gate, is
-in [`evidence/docker-clean-start-2026-10-23.md`](evidence/docker-clean-start-2026-10-23.md).
-
-## What to open
-
-- **Ademix 3D Command Center:** <http://localhost:4173>
-- OpenEgiz/Grafana: <http://localhost:3000>
-- Ademix health endpoint: <http://localhost:8088/api/health>
-
-The generated Grafana, Ditto, and InfluxDB credentials are stored in the ignored `deploy/compose/.env` file. They are not needed to use the 3D Command Center.
-
-## Five-minute judging path
-
-1. Open <http://localhost:4173> and wait for the header to show `LIVE VIA ECLIPSE-DITTO`.
-2. Left-drag to move around the mine, right-drag to rotate, and use the wheel to zoom toward the pointer. Double-click equipment for a close view; **Overview** restores the whole mine. Keep **Balanced** graphics for software rendering.
-3. Select a truck to inspect payload, fuel, speed, position, trips, and cycle time from its Ditto twin.
-4. In the **What-If Scenario Engine**, choose **C — Smart dispatch**. The policy keeps four trucks cycling and parks two empty trucks on the ready line under normal operations.
-5. Choose **Truck HT-01 breakdown**. Truck 01 turns red and stops; utilization falls. Smart Dispatch can remain enabled so the reserve response is visible.
-6. Choose **Main road restriction**. The road turns orange and moving-truck speed falls from 25 to approximately 10.72 km/h.
-7. Choose **Crusher capacity −45%**. Crusher state becomes constrained, capacity falls from 900 to 495 t/h, and run-of-mine inventory accumulates.
-8. Choose **A — Normal operations** to reset both the operating condition and dispatch policy.
-
-Scenario controls change the underlying simulation state. Their effects are published through MQTT and only become visible after Ditto returns the updated twins, normally within two seconds.
-
-The default demonstration runs at **20 simulated seconds per wall-clock second**. The authoritative
-`sim_time_s`, `simulation_speed_multiplier`, and `simulation_mode` values are published on the `mine-01`
-twin through OpenEgiz; they are not independent frontend constants. Acceleration shortens demonstration
-waiting only—it does not change modeled travel, loading, dumping, production, queue, or recovery equations.
-The visible A6 clock/interpolation UI is intentionally deferred until the Professor + Claude B6 handoff is
-integrated; until then inspect the three fields through `/api/state`.
-
-The simulator publishes one complete 11-twin snapshot every two wall-clock seconds by default, matching the
-frontend refresh interval. `SIM_SPEEDUP=20` is unchanged: each batch advances 40 simulated seconds, so the mine
-still runs at 20× while avoiding redundant one-second persistence bursts in Eclipse Ditto. `SIM_INTERVAL` can be
-overridden for diagnostics, but should not be reduced on the resource-limited judge stack without a sustained
-Ditto read/write test.
-
-## Verify from the terminal
-
-Run the read-only judge smoke check. It waits for slow startup, requires the
-real Eclipse Ditto source, and validates all 11 mine twins plus every required
-field and unit:
-
-```bash
-docker compose --env-file deploy/compose/.env \
-  -f deploy/compose/docker-compose.yml \
-  -f ademix/compose.yml \
-  run --rm --no-deps ademix-simulator \
-  python smoke_check.py --base-url http://ademix-ui
-```
-
-Expected result: four `PASS` lines for API health, Ditto source, twin inventory,
-and the complete field/unit contract. This command is read-only and does not
-change the active scenario.
-
-```bash
-curl --fail http://localhost:8088/api/health
-curl --fail http://localhost:8088/api/state
-
-curl --fail -X POST http://localhost:8088/api/scenario \
-  -H 'Content-Type: application/json' \
-  -d '{"scenario":"crusher_slowdown"}'
-
-sleep 3
-curl --fail http://localhost:8088/api/state
-```
-
-Verify the complete fixed/smart × baseline/breakdown/road-restriction/crusher-slowdown
-matrix through the frontend proxy, scenario API, MQTT, Eclipse Ditto, and the read
-API, including the exact frontend field contract and a clean reset to fixed/baseline:
-
-```bash
-python ademix/simulator/verify_scenarios.py
-```
-
-The check fails unless `/api/state` reports `source: eclipse-ditto`; local demo
-mode therefore cannot be mistaken for an end-to-end OpenEgiz verification. Smart
-Dispatch must report 4/4/2 required/cycling/standby in baseline, 4/4/1 during a
-breakdown, 8/6/0 during the road restriction, and 3/3/3 during crusher slowdown.
-
-The state response must report `"source":"eclipse-ditto"` and include 11 twins in namespace `org.openegiz.ademix`.
-
-Run the deterministic simulation checks in the already-built simulator image:
-
-```bash
-docker compose --env-file deploy/compose/.env \
-  -f deploy/compose/docker-compose.yml \
-  -f ademix/compose.yml \
-  run --rm --no-deps ademix-simulator \
-  python -m unittest discover -s /app/simulator -p 'test_*.py' -v
-```
-
-## Stop or reset
-
-Stop containers while keeping data:
-
-```bash
-docker compose --env-file deploy/compose/.env \
-  -f deploy/compose/docker-compose.yml \
-  -f ademix/compose.yml down
-```
-
-To remove this deployment's containers and volumes, add `-v` to the final command. Delete `deploy/compose/.env` only when deleting the volumes too, because existing services retain the credentials with which they were initialized.
-
-## Windows 10 development
-
-Docker Desktop with Linux containers is sufficient; WSL Ubuntu is not required. Run `scripts/compose-env.sh` with Git Bash once, then run the same `docker compose` command in PowerShell. A clean Ubuntu run of the commands above remains a release gate; Windows checks are not proof of judge-environment compatibility.
+- **Real OpenEgiz data path:** simulator → MQTT → Eclipse Ditto → API → React/Three.js interface.
+- **11 connected digital twins:** mine, six haul trucks, excavator, road, crusher and scenario controller.
+- **Operational simulation:** deterministic queues, exclusive loading/dumping resources, finite ROM inventory and mass conservation.
+- **Decision support:** bottleneck analysis, fleet sizing and Smart Dispatch that parks surplus trucks.
+- **Interactive what-if analysis:** truck breakdown, road restriction and crusher slowdown with clean reset.
+- **Reproducible deployment:** Docker Compose, no API keys, paid services or external dataset download.
+- **Transparent evidence:** synthetic telemetry, sourced parameters, assumptions, licenses and limitations are documented.
 
 ## Architecture
 
 ```text
 Deterministic Python simulation
-           │ Ditto Protocol messages
+           │ Ditto Protocol telemetry
            ▼
       MQTT / Mosquitto
            │ OpenEgiz connection
@@ -149,27 +32,141 @@ Deterministic Python simulation
            ▼
        Ademix API ─────► React + Three.js 3D Command Center
            │
-           └──────────► OpenEgiz telemetry pipeline / InfluxDB / Grafana
+           └──────────► InfluxDB / Grafana telemetry pipeline
 ```
 
-## Repository contents
+The browser never reads the simulator directly. Operational updates are published through MQTT into Eclipse Ditto, and the interface reads the resulting twin state back through the Ademix API.
+
+## Quick start
+
+### Requirements
+
+- Ubuntu 24.04 amd64 or Docker Desktop with Linux containers
+- Docker Engine 29 or compatible
+- Docker Compose v2
+
+No GPU, Node.js, Python installation, API key or external dataset download is required.
+
+From the repository root:
+
+```bash
+bash scripts/compose-env.sh
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  up -d --build --wait --wait-timeout 900
+```
+
+Open:
+
+- **Ademix 3D Command Center:** <http://localhost:4173>
+- **OpenEgiz/Grafana:** <http://localhost:3000>
+- **Ademix health endpoint:** <http://localhost:8088/api/health>
+
+Generated credentials are stored in the ignored `deploy/compose/.env` file. They are not required to use the 3D command center.
+
+## Explore the twin
+
+1. Wait for the header to show `LIVE · Eclipse Ditto twins`.
+2. Select a truck to inspect payload, fuel, speed, position, trips and cycle time.
+3. Enable **Smart dispatch** to keep four trucks cycling and park two empty trucks under normal conditions.
+4. Trigger **HT-01 breakdown** to stop the truck and observe directional traffic blockage.
+5. Trigger **Main road restriction** to reduce moving-truck speed from 25 to approximately 10.72 km/h.
+6. Trigger **Crusher capacity −45%** to reduce capacity from 900 to 495 t/h and accumulate ROM inventory.
+7. Select **Normal operations** to restore fixed dispatch and the baseline condition.
+
+Scenario controls change the simulation state and publish the result through OpenEgiz. Allow several seconds for the MQTT/Ditto publication cycle and frontend polling.
+
+| Operating condition | Modeled effect | Smart Dispatch |
+|---|---|---|
+| Baseline | Loader-limited, 770 t/h | 4 cycling, 2 standby |
+| HT-01 breakdown | Five healthy trucks after recovery | 4 cycling, 1 standby |
+| Road restriction | Haulage-limited, approximately 647 t/h | All 6 trucks needed |
+| Crusher slowdown | Crusher-limited, 495 t/h | 3 cycling, 3 standby |
+
+All figures are outputs of the synthetic model, not measurements or production forecasts.
+
+## Verify the live system
+
+Run the read-only smoke check:
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  run --rm --no-deps ademix-simulator \
+  python smoke_check.py --base-url http://ademix-ui
+```
+
+It requires the real Eclipse Ditto source and validates all 11 twins plus 143 required fields and units.
+
+Run the complete fixed/Smart Dispatch scenario matrix and final reset:
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  run --rm --no-deps ademix-simulator \
+  python verify_scenarios.py --url http://ademix-ui
+```
+
+Run the deterministic simulator test suite:
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  run --rm --no-deps ademix-simulator \
+  python -m unittest discover -s /app/simulator -p 'test_*.py' -v
+```
+
+The verified release includes **98 simulator/API tests**, **48 data-layer tests**, a production frontend build, repeated live Ditto smoke checks and a full scenario matrix/reset. The complete Ubuntu integration workflow is available in [`.github/workflows/ubuntu-release-verification.yml`](.github/workflows/ubuntu-release-verification.yml).
+
+## Simulation timing
+
+The demonstration runs at **20 simulated seconds per wall-clock second**. The authoritative `sim_time_s`, multiplier and mode are published on the `mine-01` twin. One complete 11-twin snapshot is spread across a five-second wall-clock cycle; the frontend checks every two seconds and the API cache lasts up to three seconds.
+
+Acceleration shortens demonstration waiting only. It does not change modeled travel, loading, dumping, production, queue or recovery equations.
+
+## Repository map
 
 | Path | Purpose |
 |---|---|
-| `ademix/simulator/` | Deterministic haulage/crusher model, twin definitions, MQTT publisher, Ditto read API, and tests |
-| `ademix/data/` | Fleet specification, telemetry dictionary, model manifest, and included OpenMines calibration data |
-| `ademix/frontend/` | CPU-conscious React Three Fiber command center served by Nginx |
-| `ademix/data/openmines/` | Included MIT-licensed North Pit reference configuration and its license |
-| `ademix/compose.yml` | Services layered onto the official OpenEgiz Compose deployment |
-| `SUBMISSION.md` | Concept, modules, scenarios, verification path, data, and limitations |
-| `DATA_LICENSES.md` | Exact data/asset provenance and licensing record |
-| `REUSE_CATALOG.md` | License-reviewed reuse decisions and rejected sources |
-| `RULES_CHECKLIST.md` | Internal competition release gate |
+| `ademix/simulator/` | Simulation engine, MQTT publisher, Ditto API and tests |
+| `ademix/frontend/` | React/Three.js 3D command center |
+| `ademix/data/` | Fleet specification, telemetry dictionary, evidence and calibration data |
+| `ademix/compose.yml` | Ademix services layered onto OpenEgiz |
+| `deploy/compose/` | OpenEgiz Docker Compose deployment |
+| `.github/workflows/` | Clean Ubuntu integration and restart verification |
+| `docs/images/` | Project screenshots used in this documentation |
+| `DATA_LICENSES.md` | Data and asset provenance |
 
-The included mine layout is a reduced fictional visualization calibrated from the anonymized North Pit configuration in OpenMines. Live values are synthetic simulation telemetry, not measurements from an operating mine.
+## Data and limitations
 
-## License
+The mine is a fictional, reduced visualization calibrated from the anonymized North Pit configuration distributed by the MIT-licensed [OpenMines](https://github.com/370025263/openmines) project. Live telemetry is synthetic and deterministic.
 
-Team code is released under the [MIT License](LICENSE). Included third-party data retains its recorded license; see [DATA_LICENSES.md](DATA_LICENSES.md).
+This project is a decision-demonstration model—not an engineering design, safety system or production forecast. It models one loading–haulage–crusher circuit rather than an entire mine. Route geometry is not surveyed, equipment is simplified and only one operating disruption is active at a time. See the [simulation model documentation](ademix/simulator/MODEL.md), [scenario documentation](ademix/simulator/SCENARIOS.md) and [data provenance](DATA_LICENSES.md) for details.
 
-Platform: OpenEgiz v1.0.4 from [aleka07/openegiz](https://github.com/aleka07/openegiz).
+## Team
+
+- [Ahmad Shah Yawar](https://github.com/ahmadshahyawar) — product direction, backend, integration and release verification
+- [Professor](https://github.com/TurkenGulzat) — frontend, 3D experience, visual assets and presentation
+
+The project was developed with assistance from OpenAI Codex and Anthropic Claude. Contributor history is preserved in Git.
+
+## Stop the stack
+
+```bash
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.yml \
+  -f ademix/compose.yml \
+  down
+```
+
+This preserves named data volumes. Add `-v` only when you intentionally want to delete deployment data.
+
+## License and credits
+
+Team code is released under the [MIT License](LICENSE). Included third-party code, data and assets retain their recorded licenses; see [DATA_LICENSES.md](DATA_LICENSES.md), [NOTICE](NOTICE) and [LICENSES/](LICENSES/).
+
+Ademix builds on [OpenEgiz v1.0.4](https://github.com/aleka07/openegiz).
