@@ -1,10 +1,6 @@
 # SUBMISSION
 
-<!-- Fill in every section. The AI Jury studies this file together with the code, the Build Report, the presentation and the Stand's interface. Accepted languages: English, Kazakh, Russian. These hint comments may be deleted. -->
-
 ## Concept
-
-<!-- Written by the Team before the code: your own choice, a few sentences per answer. Everything else in the Submission follows from it. -->
 
 **Enterprise:** A 3D digital twin of an open-pit mine's loading, haulage, road and primary-crusher system.
 
@@ -17,8 +13,6 @@
 **Real or fictional:** The displayed mine is a fictional, reduced demonstration layout calibrated from the anonymized North Pit Mine configuration published by the MIT-licensed OpenMines project. Synthetic live telemetry is clearly distinguished from the sourced reference parameters.
 
 ## Team
-
-<!-- GitHub usernames of the Participants. Other personal data are not required: the repository becomes public after the Freeze (Rules, section 15). -->
 
 | GitHub |
 |---|
@@ -39,8 +33,6 @@ The submission represents the production chain from an open-pit loading face, al
 Equipment and infrastructure twins refer to the mine as their parent. Their initial definitions are in `ademix/simulator/twins.json`. `ademix/simulator/engine.py` advances the deterministic operating model. `ademix/simulator/app.py` publishes Ditto Protocol updates to `telemetry/<thing>` over MQTT and reads every displayed state back through Ditto's HTTP API.
 
 ## Modules and What-if Scenarios
-
-<!-- Modules: functions on top of the twin, from the Mine Map or your own. What-if Scenarios: changes of an operating condition that can be run on the Stand without changing the code (close a road, stop equipment…). Only what works on the Stand is taken into account. -->
 
 | Module or What-if Scenario | What it does | How to see it on the Stand | How to undo it (scenarios) |
 |---|---|---|---|
