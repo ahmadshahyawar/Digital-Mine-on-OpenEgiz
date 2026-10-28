@@ -1,7 +1,7 @@
 # Ademix Digital Mine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
-[![Ubuntu verification](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml/badge.svg)](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml)
+[![Ubuntu verification](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml/badge.svg?branch=main)](https://github.com/ahmadshahyawar/Digital-Mine-on-OpenEgiz/actions/workflows/ubuntu-release-verification.yml?query=branch%3Amain)
 [![OpenEgiz](https://img.shields.io/badge/OpenEgiz-v1.0.4-0b7285)](https://github.com/aleka07/openegiz)
 
 Ademix is an interactive 3D digital twin of an open-pit mine's loading, haulage, road and primary-crusher circuit. Six haul trucks move between an excavator and crusher while Eclipse Ditto twins track equipment state, production, queues, road conditions and scenario effects.
