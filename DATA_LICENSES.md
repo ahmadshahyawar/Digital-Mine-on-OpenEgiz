@@ -1,6 +1,6 @@
 # Data and Asset Licenses
 
-This file records every external dataset, code reference, model, texture, and visual asset considered or included in the Ademix submission. The submission code is MIT-licensed; third-party material retains its own license.
+This file records every external dataset, code reference, model, texture, and visual asset considered or included in Ademix. Project code is MIT-licensed; third-party material retains its own license.
 
 ## Included Data
 
@@ -17,9 +17,9 @@ This file records every external dataset, code reference, model, texture, and vi
 - Unit evidence: `ademix/data/OPENMINES_UNIT_AUDIT.md` and `ademix/data/registry/openmines_unit_evidence.csv` distinguish units explicitly stated by upstream code from units established through executable equations.
 - Derived data: `ademix/data/fleet/` (equipment and route-distance tables extracted from this file) and `ademix/data/registry/parameters.csv` (field-level traceability). See `ademix/data/DATA_CARD.md`.
 - Use: calibration reference for fleet size, truck capacity, truck speed, shovel capacity/cycle time, dump time, route distances, and road-repair event parameters.
-- Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for judge-environment performance. It does not claim to reproduce the full OpenMines simulation.
+- Modifications: the Ademix live simulation uses a reduced six-truck demonstration fleet and a simplified spatial route for reliable software-rendered performance. It does not claim to reproduce the full OpenMines simulation.
 
-The competition organizer explicitly lists this dataset as a recommended MIT-licensed source for open-pit haulage.
+OpenMines is an MIT-licensed source for open-pit haulage simulation parameters.
 
 ### Caterpillar Performance Handbook — fuel consumption tables (referenced, not redistributed)
 

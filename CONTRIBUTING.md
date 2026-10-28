@@ -4,7 +4,7 @@ Thank you for your interest in Ademix. Contributions that improve reproducibilit
 
 ## Before you start
 
-1. Read `README.md`, `SUBMISSION.md` and the relevant contracts under `ademix/simulator/` and `ademix/data/`.
+1. Read `README.md`, `ademix/simulator/MODEL.md`, `ademix/data/README.md` and the relevant contracts under `ademix/simulator/` and `ademix/data/`.
 2. Open an issue describing the problem or proposed improvement before making a large change.
 3. Create a focused branch from the latest `main`.
 4. Preserve data provenance, units, scenario semantics and the distinction between synthetic telemetry and measured data.
@@ -34,7 +34,7 @@ For integration changes, start the complete Compose stack and run the smoke test
 - Explain the user-visible effect and the verification performed.
 - Add or update tests for behavior changes.
 - Do not commit credentials, generated `.env` files or private operational data.
-- Record new data, models, textures and copied code in `DATA_LICENSES.md`, `REUSE_CATALOG.md` and `NOTICE` as applicable.
+- Record new data, models, textures and copied code in `DATA_LICENSES.md` and `NOTICE` as applicable.
 - Do not present synthetic results as measured mine performance.
 
 ## Project areas

@@ -6,7 +6,7 @@
 
 Ademix is an interactive 3D digital twin of an open-pit mine's loading, haulage, road and primary-crusher circuit. Six haul trucks move between an excavator and crusher while Eclipse Ditto twins track equipment state, production, queues, road conditions and scenario effects.
 
-![Ademix live 3D command center](evidence/final-release/live-route/01-baseline.png)
+![Ademix live 3D command center](docs/images/ademix-dashboard.png)
 
 ## Highlights
 
@@ -120,7 +120,7 @@ docker compose --env-file deploy/compose/.env \
   python -m unittest discover -s /app/simulator -p 'test_*.py' -v
 ```
 
-The accepted release recorded **98 simulator/API/evidence tests**, **48 data-layer tests**, a successful production frontend build, repeated live Ditto smoke checks and a full scenario matrix/reset. The official competition builder independently confirmed startup, all four modules, all scenarios and OpenEgiz integration. See [JUDGE_EVIDENCE.md](JUDGE_EVIDENCE.md) and the [published qualifying report](https://github.com/openegiz-contest/qualifying-results/tree/main/solutions/team-111).
+The verified release includes **98 simulator/API tests**, **48 data-layer tests**, a production frontend build, repeated live Ditto smoke checks and a full scenario matrix/reset. The complete Ubuntu integration workflow is available in [`.github/workflows/ubuntu-release-verification.yml`](.github/workflows/ubuntu-release-verification.yml).
 
 ## Simulation timing
 
@@ -137,21 +137,15 @@ Acceleration shortens demonstration waiting only. It does not change modeled tra
 | `ademix/data/` | Fleet specification, telemetry dictionary, evidence and calibration data |
 | `ademix/compose.yml` | Ademix services layered onto OpenEgiz |
 | `deploy/compose/` | OpenEgiz Docker Compose deployment |
-| `evidence/final-release/` | Final screenshots and verification records |
-| `SUBMISSION.md` | Original competition concept, scenarios, assumptions and limitations |
-| `presentation.pdf` | Final 17-slide project presentation |
+| `.github/workflows/` | Clean Ubuntu integration and restart verification |
+| `docs/images/` | Project screenshots used in this documentation |
 | `DATA_LICENSES.md` | Data and asset provenance |
-| `JUDGE_EVIDENCE.md` | Traceability from claims to runtime and source evidence |
 
 ## Data and limitations
 
 The mine is a fictional, reduced visualization calibrated from the anonymized North Pit configuration distributed by the MIT-licensed [OpenMines](https://github.com/370025263/openmines) project. Live telemetry is synthetic and deterministic.
 
-This project is a decision-demonstration model—not an engineering design, safety system or production forecast. It models one loading–haulage–crusher circuit rather than an entire mine. Route geometry is not surveyed, equipment is simplified and only one operating disruption is active at a time. See [SUBMISSION.md](SUBMISSION.md) for the complete limitations and [DATA_LICENSES.md](DATA_LICENSES.md) for provenance.
-
-## Competition record
-
-Ademix was developed for the 2026 **Digital Mine on OpenEgiz** competition. The frozen submission started successfully in the organizer's environment, passed OpenEgiz integration and scenario checks, and received **62.92/100 (21st place)** in the qualifying round. The complete public reports are available in the [official results repository](https://github.com/openegiz-contest/qualifying-results).
+This project is a decision-demonstration model—not an engineering design, safety system or production forecast. It models one loading–haulage–crusher circuit rather than an entire mine. Route geometry is not surveyed, equipment is simplified and only one operating disruption is active at a time. See the [simulation model documentation](ademix/simulator/MODEL.md), [scenario documentation](ademix/simulator/SCENARIOS.md) and [data provenance](DATA_LICENSES.md) for details.
 
 ## Team
 
@@ -173,6 +167,6 @@ This preserves named data volumes. Add `-v` only when you intentionally want to 
 
 ## License and credits
 
-Team code is released under the [MIT License](LICENSE). Included third-party code, data and assets retain their recorded licenses; see [DATA_LICENSES.md](DATA_LICENSES.md), [REUSE_CATALOG.md](REUSE_CATALOG.md), [NOTICE](NOTICE) and [LICENSES/](LICENSES/).
+Team code is released under the [MIT License](LICENSE). Included third-party code, data and assets retain their recorded licenses; see [DATA_LICENSES.md](DATA_LICENSES.md), [NOTICE](NOTICE) and [LICENSES/](LICENSES/).
 
 Ademix builds on [OpenEgiz v1.0.4](https://github.com/aleka07/openegiz).

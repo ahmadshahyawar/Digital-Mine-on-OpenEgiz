@@ -51,7 +51,7 @@ jobs:
             -f ademix/compose.yml \
             ps --all | tee ci-artifacts/compose-ready.txt
 
-      - name: Run judge smoke test three times
+      - name: Run smoke test three times
         run: |
           for run in 1 2 3; do
             echo "SMOKE RUN ${run}"
@@ -60,7 +60,7 @@ jobs:
               -f ademix/compose.yml \
               run --rm --no-deps ademix-simulator \
               python smoke_check.py --base-url http://ademix-ui
-          done | tee ci-artifacts/judge-smoke.txt
+          done | tee ci-artifacts/smoke-tests.txt
 
       - name: Verify live freshness and absence of HTTP 503
         run: |

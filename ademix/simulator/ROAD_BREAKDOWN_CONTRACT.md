@@ -4,7 +4,7 @@ Version: `ademix.road-breakdown.v1`
 
 The accepted 3D road has two separated direction lanes. The simulator therefore treats a road failure
 as a blockage of the failed truck's lane, not as closure of the whole road. This is deterministic
-synthetic behavior for the competition twin, not a claim about a real mine traffic-control plan.
+synthetic behavior for the demonstration twin, not a claim about a real mine traffic-control plan.
 
 ## Direction rule
 
